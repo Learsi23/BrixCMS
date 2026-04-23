@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brix-bg':      '#0A0A0B',
+                        'brix-surface': '#111113',
+                        'brix-salt':    '#18181C',
+                        'brix-border':  '#2A2A30',
+                        'brix-accent':  '#5B6EF5',
+                        'brix-alight':  '#A5B4FC',
+                        'brix-tprim':   '#F0F0F5',
+                        'brix-tsec':    '#9696A6',
+                        'brix-tmute':   '#56566A',
+                        'brix-success': '#22C55E',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #0A0A0B; color: #F0F0F5; }
+        ::-webkit-scrollbar { width: 5px; background: #0A0A0B; }
+        ::-webkit-scrollbar-thumb { background: #2A2A30; border-radius: 3px; }
+
+        /* Glow radial hero */
+        .hero-glow {
+            position: absolute; inset: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 80% 55% at 50% -5%, rgba(91,110,245,.18) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 50%, rgba(91,110,245,.07) 0%, transparent 60%);
+        }
+        /* Grid overlay */
+        .hero-grid {
+            position: absolute; inset: 0; pointer-events: none;
+            background-image:
+                linear-gradient(#2A2A30 1px, transparent 1px),
+                linear-gradient(90deg, #2A2A30 1px, transparent 1px);
+            background-size: 60px 60px; opacity: .25;
+            -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 75%);
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 75%);
+        }
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #A5B4FC 0%, #818CF8 50%, #5B6EF5 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        /* Accent divider */
+        .divider-accent {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #2A2A30 20%, #5B6EF5 50%, #2A2A30 80%, transparent);
+        }
+        /* Card hover */
+        .brix-card {
+            background: #111113; border: 1px solid #2A2A30;
+            border-radius: 1rem; transition: border-color .25s ease;
+        }
+        .brix-card:hover { border-color: rgba(91,110,245,.45); }
+        /* Featured pricing */
+        .brix-card-featured {
+            background: #111113; border: 2px solid #5B6EF5;
+            border-radius: 1rem;
+            box-shadow: 0 0 40px rgba(91,110,245,.14);
+        }
+        /* Btn primary */
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: #5B6EF5; color: #fff; font-weight: 600;
+            padding: .75rem 1.5rem; border-radius: .625rem;
+            transition: background .2s, transform .2s, box-shadow .2s;
+            border: none; cursor: pointer; text-decoration: none;
+        }
+        .btn-primary:hover {
+            background: #7080F8; transform: translateY(-1px);
+            box-shadow: 0 0 24px rgba(91,110,245,.35);
+        }
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: transparent; color: #F0F0F5; font-weight: 600;
+            padding: .75rem 1.5rem; border-radius: .625rem;
+            border: 1px solid #2A2A30; cursor: pointer;
+            transition: background .2s, border-color .2s;
+            text-decoration: none;
+        }
+        .btn-secondary:hover { background: #18181C; border-color: #5B6EF5; }
+
+        /* Feature cell */
+        .feature-cell {
+            background: #111113; border: 1px solid #2A2A30;
+            padding: 2rem; transition: background .2s;
+        }
+        .feature-cell:hover { background: #18181C; }
+
+        /* Video card */
+        .video-card {
+            background: #111113; border: 1px solid #2A2A30;
+            border-radius: 1rem; overflow: hidden;
+            transition: border-color .25s, transform .25s, box-shadow .25s;
+        }
+        .video-card:hover {
+            border-color: rgba(91,110,245,.4);
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(0,0,0,.35);
+        }
+        /* Nav sticky blur */
+        .nav-sticky {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(10,10,11,.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #2A2A30;
+        }
+        /* Badge */
+        .badge-accent {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(91,110,245,.1); border: 1px solid rgba(91,110,245,.3);
+            color: #A5B4FC; font-size: .75rem; font-weight: 600;
+            padding: 4px 14px; border-radius: 9999px;
+        }
+        /* Brix block demo */
+        .brix-block {
+            background: #18181C; border: 1px solid #2A2A30;
+            border-radius: .625rem; display: flex; align-items: center;
+            justify-content: center; font-size: .7rem; font-weight: 600;
+            color: #56566A; transition: border-color .2s, color .2s, background .2s;
+            cursor: default;
+        }
+        .brix-block:hover {
+            border-color: #5B6EF5; color: #A5B4FC;
+            background: rgba(91,110,245,.08);
+        }
+        .brix-block.active {
+            background: rgba(91,110,245,.1); border-color: #5B6EF5; color: #5B6EF5;
+        }
+        /* Section label */
+        .section-label {
+            font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: #5B6EF5;
+        }
+        /* Key-value row */
+        .key-row { display: flex; align-items: center; gap: .75rem; padding: .75rem 0; border-bottom: 1px solid #2A2A30; }
+        .key-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    @RenderBody()
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

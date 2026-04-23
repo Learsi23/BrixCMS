@@ -1,0 +1,238 @@
+@using BrixCMS.Open.Models.BlazorBlocks
+@using BrixCMS.Open.Data.Fields
+
+@code {
+    [Parameter] public FlexibleImageTextBlock Block { get; set; } = null!;
+
+    private string GetLayoutClass()
+    {
+        return Block?.Layout?.Value switch
+        {
+            "image-right" => "md:flex-row-reverse",
+            "image-top" => "flex-col",
+            "image-bottom" => "flex-col-reverse",
+            "two-columns" => "md:flex-row",
+            _ => "md:flex-row" // image-left por defecto
+        };
+    }
+
+    private string GetVerticalAlignmentClass()
+    {
+        return Block?.VerticalAlignment?.Value switch
+        {
+            "start" => "items-start",
+            "end" => "items-end",
+            _ => "items-center" // center por defecto
+        };
+    }
+
+    private string GetImageContainerClass()
+    {
+        var classes = new List<string>();
+
+        // Ancho de la imagen
+        if (!string.IsNullOrEmpty(Block?.ImageWidth?.Value))
+            classes.Add(Block.ImageWidth.Value);
+        else
+            classes.Add("w-full");
+
+        // Ancho máximo
+        if (!string.IsNullOrEmpty(Block?.ImageMaxWidth?.Value))
+            classes.Add(Block.ImageMaxWidth.Value);
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetImageStyle()
+    {
+        var styles = new List<string>();
+
+        // Si el ImageWidth es un valor CSS personalizado (no una clase Tailwind)
+        if (Block?.ImageWidth?.Value != null &&
+            !Block.ImageWidth.Value.StartsWith("w-") &&
+            !Block.ImageWidth.Value.StartsWith("max-w-"))
+        {
+            if (int.TryParse(Block.ImageWidth.Value, out int px))
+                styles.Add($"width: {px}px");
+            else if (!Block.ImageWidth.Value.Contains("class"))
+                styles.Add($"width: {Block.ImageWidth.Value}");
+        }
+
+        // Si el ImageMaxWidth es un valor CSS personalizado
+        if (Block?.ImageMaxWidth?.Value != null &&
+            !Block.ImageMaxWidth.Value.StartsWith("max-w-"))
+        {
+            if (int.TryParse(Block.ImageMaxWidth.Value, out int px))
+                styles.Add($"max-width: {px}px");
+            else if (!Block.ImageMaxWidth.Value.Contains("class"))
+                styles.Add($"max-width: {Block.ImageMaxWidth.Value}");
+        }
+
+        return styles.Any() ? string.Join("; ", styles) : "";
+    }
+
+    private string GetTitleSizeClass()
+    {
+        var size = Block?.TitleSize?.Value;
+        if (string.IsNullOrEmpty(size)) return "";
+
+        // Si es una clase de Tailwind
+        if (size.StartsWith("text-"))
+            return size;
+
+        return "";
+    }
+
+    private string GetTitleSizeStyle()
+    {
+        var size = Block?.TitleSize?.Value;
+        if (string.IsNullOrEmpty(size)) return "";
+
+        // Si es un valor CSS personalizado
+        if (!size.StartsWith("text-"))
+            return $"font-size: {size};";
+
+        return "";
+    }
+
+    private string GetSubTitleSizeClass()
+    {
+        var size = Block?.SubTitleSize?.Value;
+        if (string.IsNullOrEmpty(size)) return "";
+
+        if (size.StartsWith("text-"))
+            return size;
+
+        return "";
+    }
+
+    private string GetSubTitleSizeStyle()
+    {
+        var size = Block?.SubTitleSize?.Value;
+        if (string.IsNullOrEmpty(size)) return "";
+
+        if (!size.StartsWith("text-"))
+            return $"font-size: {size};";
+
+        return "";
+    }
+
+    private string GetTextSizeClass()
+    {
+        var size = Block?.TextSize?.Value;
+        if (string.IsNullOrEmpty(size)) return "";
+
+        if (size.StartsWith("text-"))
+            return size;
+
+        return "";
+    }
+
+    private string GetTextSizeStyle()
+    {
+        var size = Block?.TextSize?.Value;
+        if (string.IsNullOrEmpty(size)) return "";
+
+        if (!size.StartsWith("text-"))
+            return $"font-size: {size};";
+
+        return "";
+    }
+
+    private string GetButtonClass()
+    {
+        var baseClass = "inline-block px-6 py-3 rounded-lg transition duration-300 mt-4";
+
+        return Block?.ButtonStyle?.Value switch
+        {
+            "primary" => $"{baseClass} bg-blue-600 text-white hover:bg-blue-700",
+            "secondary" => $"{baseClass} bg-gray-600 text-white hover:bg-gray-700",
+            "outline" => $"{baseClass} border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white",
+            _ => $"{baseClass} bg-blue-600 text-white hover:bg-blue-700"
+        };
+    }
+
+    private string GetImageUrl()
+    {
+        var imageUrl = Block?.Image?.Value;
+        if (string.IsNullOrEmpty(imageUrl))
+            return "";
+
+        return imageUrl.TrimStart('~');
+    }
+}
+
+@if (Block != null)
+{
+    var layoutClass = GetLayoutClass();
+    var verticalAlignment = GetVerticalAlignmentClass();
+    var imageContainerClass = GetImageContainerClass();
+    var imageStyle = GetImageStyle();
+    var imageUrl = GetImageUrl();
+    var isImageTop = Block.Layout?.Value == "image-top";
+    var isImageBottom = Block.Layout?.Value == "image-bottom";
+
+    <div class="flex @layoutClass @verticalAlignment @Block.Gap?.Value">
+        <!-- Imagen -->
+        @if (imageUrl != null && (Block.Layout?.Value != "image-bottom" || isImageTop))
+        {
+            <div class="@imageContainerClass @Block.ImageBorderRadius?.Value @Block.ImageShadow?.Value">
+                <img src="@imageUrl"
+                     class="w-full h-auto @Block.ImageBorderRadius?.Value @Block.ImageShadow?.Value @Block.ImageObjectFit?.Value"
+                     style="@imageStyle"
+                     alt="@(Block.Image?.AltText ?? "Imagen del bloque")" />
+            </div>
+        }
+
+        <!-- Contenido -->
+        <div class="flex-1">
+            @if (!string.IsNullOrEmpty(Block.Title?.Value))
+            {
+                <div class="@Block.TitleWeight?.Value @Block.TitleMarginBottom?.Value">
+                    <div class="@GetTitleSizeClass()"
+                         style="@GetTitleSizeStyle(); color: @(Block.TitleColor?.Value);">
+                        @((MarkupString)Block.Title.Value)
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Block.SubTitle?.Value))
+            {
+                <div class="@Block.SubTitleWeight?.Value @Block.SubTitleMarginBottom?.Value">
+                    <div class="@GetSubTitleSizeClass()"
+                         style="@GetSubTitleSizeStyle(); color: @(Block.SubTitleColor?.Value);">
+                        @((MarkupString)Block.SubTitle.Value)
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Block.Text?.Value))
+            {
+                <div class="@GetTextSizeClass() @Block.TextLineHeight?.Value"
+                     style="@GetTextSizeStyle(); color: @(Block.TextColor?.Value);">
+                    @((MarkupString)Block.Text.Value)
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Block.ButtonText?.Value))
+            {
+                <a href="@(Block.ButtonLink?.Value ?? "#")"
+                   class="@GetButtonClass()"
+                   target="@(Block.ButtonLink?.OpenInNewTab == true ? "_blank" : "")">
+                    @Block.ButtonText.Value
+                </a>
+            }
+        </div>
+
+        <!-- Imagen (para posición abajo) -->
+        @if (imageUrl != null && isImageBottom)
+        {
+            <div class="@imageContainerClass @Block.ImageBorderRadius?.Value @Block.ImageShadow?.Value">
+                <img src="@imageUrl"
+                     class="w-full h-auto @Block.ImageBorderRadius?.Value @Block.ImageShadow?.Value @Block.ImageObjectFit?.Value"
+                     style="@imageStyle"
+                     alt="@(Block.Image?.AltText ?? "Imagen del bloque")" />
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,33 @@
+@using BrixCMS.Open.Components.BlazorBlocks
+@model BrixCMS.Open.Models.BlazorBlocks.ButtonLinkBlock
+
+
+@{
+    var text = Model.Text?.Value;
+    var url = Model.Url?.Value;
+    var color = Model.Color?.Value;
+    var hoverColor = Model.HoverColor?.Value;
+    var borderRadius = Model.BorderRadius?.Value;
+    var border = Model.Border?.Value;
+    var width = Model.Width?.Value;
+    var padding = Model.Padding?.Value;
+    var textColor = Model.TextColor?.Value;
+    var buttonPosition = Model.ButtonPosition?.Value;
+}
+
+<div class="container mx-auto my-16">
+    <div style="text-align: @(buttonPosition ?? "left")">
+        <component type="typeof(ButtonLinkBlazor)"
+                   render-mode="Static"
+                   param-Text="@text"
+                   param-Url="@url"
+                   param-Color="@color"
+                   param-HoverColor="@hoverColor"
+                   param-BorderRadius="@borderRadius"
+                   param-Border="@border"
+                   param-Width="@width"
+                   param-Padding="@padding"
+                   param-TextColor="@textColor"
+                   param-ButtonPosition="@buttonPosition" />
+    </div>
+</div>

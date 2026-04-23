@@ -1,0 +1,19 @@
+@using BrixCMS.Open.Components.BlazorBlocks
+@using BrixCMS.Open.Models.BlazorBlocks
+@model ContactFormBlock
+
+<div class="container mx-auto my-10 flex justify-center">
+    <component type="typeof(ContactFormBlazor)"
+               render-mode="ServerPrerendered"
+               param-Title="@Model.Title?.Value"
+               param-RecipientEmail="@Model.RecipientEmail?.Value"
+               param-ButtonText="@Model.Text?.Value"
+               param-ButtonColor="@Model.Color?.Value"
+               param-HoverColor="@Model.HoverColor?.Value"
+               param-TextColor="@Model.TextColor?.Value"
+               param-BorderRadius="@Model.BorderRadius?.Value"
+               param-Border="@Model.Border?.Value"
+               param-Width="@Model.Width?.Value"
+               param-Padding="@Model.Padding?.Value"
+               param-ButtonPosition="@Model.ButtonPosition?.Value" />
+</div>

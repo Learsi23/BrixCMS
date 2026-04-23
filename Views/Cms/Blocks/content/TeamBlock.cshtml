@@ -1,0 +1,106 @@
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.Blocks
+@model TeamBlock
+@inject BrixCMS.Open.Data.BrixDbContext Db
+@inject BlockRegistry Registry
+
+@{
+    var blockData = (BrixCMS.Open.Data.Block)ViewData["RawBlock"];
+    var allBlocks = ViewData["AllBlocks"] as List<BrixCMS.Open.Data.Block>;
+    var children  = allBlocks != null
+        ? allBlocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList()
+        : Db.Blocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList();
+
+    var bg   = Model.BackgroundColor?.Value;
+    var cols = int.TryParse(Model.Columns?.Value, out var c) ? Math.Max(1, Math.Min(6, c)) : 3;
+}
+
+<section style="@(string.IsNullOrWhiteSpace(bg)||bg=="transparent"?"":$"background-color:{bg};")"
+         class="py-16 px-4">
+    <div class="max-w-6xl mx-auto">
+        @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
+        {
+            <h2 class="text-3xl font-bold text-center mb-3"
+                style="color:@(Model.TitleColor?.Value ?? "inherit")">@Model.Title.Value</h2>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
+        {
+            <p class="text-center text-gray-500 mb-12">@Model.Subtitle.Value</p>
+        }
+
+        @if (!children.Any())
+        {
+            <div class="text-center text-gray-400 py-10 border-2 border-dashed border-gray-200 rounded-xl">
+                Añade miembros con "+ Add member"
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-@cols gap-8">
+                @foreach (var child in children)
+                {
+                    var member = Registry.CreateModel(child) as TeamMemberBlock;
+                    if (member == null) continue;
+                    var cardBg = member.CardBgColor?.Value ?? "#ffffff";
+
+                    <div class="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow text-center"
+                         style="background-color:@cardBg;">
+                        @if (!string.IsNullOrEmpty(member.Photo?.Value))
+                        {
+                            <img src="@member.Photo.Value" alt="@member.Name?.Value"
+                                 class="w-full h-56 object-cover object-top" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-56 bg-gray-100 flex items-center justify-center">
+                                <i class="fas fa-user text-6xl text-gray-300"></i>
+                            </div>
+                        }
+                        <div class="p-5">
+                            <h3 class="font-bold text-gray-800 text-lg">@(member.Name?.Value ?? "")</h3>
+                            <p class="text-blue-500 text-sm font-medium mt-0.5">@(member.Role?.Value ?? "")</p>
+                            @if (!string.IsNullOrEmpty(member.Description?.Value))
+                            {
+                                <p class="text-gray-500 text-sm mt-2 leading-relaxed">@member.Description.Value</p>
+                            }
+                            @* Social links *@
+                            <div class="flex justify-center gap-3 mt-4">
+                                @if (!string.IsNullOrEmpty(member.LinkedInUrl?.Value))
+                                {
+                                    <a href="@member.LinkedInUrl.Value" target="_blank" rel="noopener"
+                                       class="text-gray-400 hover:text-blue-600 transition-colors">
+                                        <i class="fab fa-linkedin text-lg"></i>
+                                    </a>
+                                }
+                                @if (!string.IsNullOrEmpty(member.TwitterUrl?.Value))
+                                {
+                                    <a href="@member.TwitterUrl.Value" target="_blank" rel="noopener"
+                                       class="text-gray-400 hover:text-sky-500 transition-colors">
+                                        <i class="fab fa-x-twitter text-lg"></i>
+                                    </a>
+                                }
+                                @if (!string.IsNullOrEmpty(member.Email?.Value))
+                                {
+                                    <a href="mailto:@member.Email.Value"
+                                       class="text-gray-400 hover:text-red-500 transition-colors">
+                                        <i class="fas fa-envelope text-lg"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit"))
+        {
+            <div class="mt-8 text-center">
+                <button type="button" onclick="openSelectorForParent('@blockData.Id')"
+                        class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                    + Add team member
+                </button>
+            </div>
+        }
+    </div>
+</section>

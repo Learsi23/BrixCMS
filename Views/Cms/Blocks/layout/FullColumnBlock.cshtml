@@ -1,0 +1,388 @@
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.ColumnBlocks
+@model FullColumnBlock
+@inject BrixCMS.Open.Data.BrixDbContext Db
+@inject BlockRegistry Registry
+
+@{
+    // =========================================================================
+    // GET RAW BLOCK DATA & CHILDREN
+    // =========================================================================
+    var blockData = (BrixCMS.Open.Data.Block)ViewData["RawBlock"];
+    var children = Db.Blocks
+        .Where(b => b.ParentId == blockData.Id)
+        .OrderBy(b => b.SortOrder)
+        .ToList();
+    
+    var colId = "col-" + blockData.Id.ToString()[..8];
+    
+    // =========================================================================
+    // BACKGROUND SETTINGS
+    // =========================================================================
+    var bgColor = Model.BackgroundColor?.Value;
+    var bgImage = Model.BackgroundImage?.Value;
+    var overlayColor = Model.BackgroundOverlayColor?.Value ?? "#000000";
+    var overlayOpacity = Model.BackgroundOverlayOpacity?.Value ?? "0";
+    var bgBlur = Model.BackgroundBlur?.Value ?? "0";
+    var bgBrightness = Model.BackgroundBrightness?.Value ?? "1";
+    var parallax = Model.EnableParallax?.IsTrue ?? false;
+    
+    // Background filter style
+    var bgFilterStyle = "";
+    if (!string.IsNullOrWhiteSpace(bgBlur) && bgBlur != "0")
+        bgFilterStyle += $" filter: blur({bgBlur}px);";
+    if (!string.IsNullOrWhiteSpace(bgBrightness) && bgBrightness != "1")
+        bgFilterStyle += $" filter: brightness({bgBrightness});";
+    
+    // =========================================================================
+    // SPACING & SIZING
+    // =========================================================================
+    var paddingY = Model.PaddingY?.Value ?? "3rem";
+    var paddingX = Model.PaddingX?.Value ?? "1.5rem";
+    var paddingTop = Model.PaddingTop?.Value;
+    var paddingBottom = Model.PaddingBottom?.Value;
+    var marginTop = Model.MarginTop?.Value;
+    var marginBottom = Model.MarginBottom?.Value;
+    var minHeight = Model.MinHeight?.Value ?? "auto";
+    var zIndex = Model.ZIndex?.Value;
+    
+    // Build padding style (individual overrides take precbrixce)
+    var paddingStyle = "";
+    if (!string.IsNullOrWhiteSpace(paddingTop) || !string.IsNullOrWhiteSpace(paddingBottom))
+    {
+        paddingStyle = $"padding-top: {paddingTop ?? paddingY}; padding-bottom: {paddingBottom ?? paddingY};";
+        if (!string.IsNullOrWhiteSpace(paddingX))
+            paddingStyle += $" padding-left: {paddingX}; padding-right: {paddingX};";
+    }
+    else
+    {
+        paddingStyle = $"padding: {paddingY} {paddingX};";
+    }
+    
+    // Build margin style
+    var marginStyle = "";
+    if (!string.IsNullOrWhiteSpace(marginTop) || !string.IsNullOrWhiteSpace(marginBottom))
+        marginStyle = $"margin-top: {marginTop ?? "0"}; margin-bottom: {marginBottom ?? "0"};";
+    else
+        marginStyle = $"margin: {Model.BlockMargin?.Value ?? "0"};";
+    
+    // =========================================================================
+    // STYLING (border, shadow, radius)
+    // =========================================================================
+    var borderRadius = Model.BorderRadius?.Value ?? "rounded-none";
+    var shadow = Model.Shadow?.Value ?? "shadow-none";
+    var border = Model.Border?.Value;
+    var customStyles = Model.CustomStyles?.Value;
+    var customClasses = Model.CustomClasses?.Value;
+    
+    // Build background style
+    var bgStyle = "";
+    if (!string.IsNullOrWhiteSpace(bgColor))
+        bgStyle += $"background-color: {bgColor};";
+    if (!string.IsNullOrWhiteSpace(bgImage))
+    {
+        bgStyle += $"background-image: url('{bgImage}');";
+        bgStyle += "background-size: cover;";
+        bgStyle += "background-position: center;";
+        bgStyle += "background-repeat: no-repeat;";
+        if (parallax)
+            bgStyle += "background-attachment: fixed;";
+    }
+    if (!string.IsNullOrWhiteSpace(bgFilterStyle))
+        bgStyle += bgFilterStyle;
+    
+    // =========================================================================
+    // COLUMN LAYOUT & GRID
+    // =========================================================================
+    var columnLayout = Model.ColumnLayout?.Value ?? "auto";
+    var columnCount = children.Count;
+    
+    // Parse responsive column counts
+    var maxCols = int.TryParse(Model.MaxColumns?.Value, out var mc) ? Math.Min(mc, 6) : 3;
+    var tabletCols = int.TryParse(Model.TabletColumns?.Value, out var tc) ? Math.Min(tc, 4) : 2;
+    var mobileCols = int.TryParse(Model.MobileColumns?.Value, out var mobc) ? Math.Min(mobc, 2) : 1;
+    
+    // Build responsive grid classes
+    var gridClass = $"grid grid-cols-{mobileCols} sm:grid-cols-{Math.Min(mobileCols + 1, 2)} md:grid-cols-{tabletCols} lg:grid-cols-{maxCols}";
+    
+    // Gap classes
+    var gapMobile = Model.GapMobile?.Value ?? "gap-4";
+    var gapDesktop = Model.GapDesktop?.Value ?? Model.Gap?.Value ?? "gap-6";
+    var gapClass = $"{gapMobile} md:{gapDesktop}";
+    
+    // Items alignment
+    var itemsAlign = Model.ItemsAlign?.Value ?? "stretch";
+    var alignClass = itemsAlign switch
+    {
+        "start" => "items-start",
+        "center" => "items-center",
+        "end" => "items-end",
+        _ => "items-stretch"
+    };
+    
+    // Reverse on mobile
+    var reverseClass = (Model.ReverseOnMobile?.IsTrue ?? false) ? "flex-col-reverse sm:flex-row" : "";
+    
+    // Determine column width class for non-grid layout (auto/centered/full)
+    string columnClass;
+    if (columnLayout == "centered" && columnCount == 1)
+        columnClass = "max-w-2xl mx-auto w-full";
+    else if (columnLayout == "full" && columnCount == 1)
+        columnClass = "w-full";
+    else if (columnCount == 2 && columnLayout == "auto")
+        columnClass = "w-full md:w-1/2";
+    else if (columnCount == 3 && columnLayout == "auto")
+        columnClass = "w-full md:w-1/3";
+    else if (columnCount == 4 && columnLayout == "auto")
+        columnClass = "w-full md:w-1/4";
+    else
+        columnClass = "flex-1 min-w-0";
+    
+    // Use CSS Grid or Flexbox?
+    var useGrid = (maxCols > 1 || tabletCols > 1 || mobileCols > 1) && columnLayout == "auto";
+    
+    // =========================================================================
+    // HEADER CONTENT (Title, Subtitle, Text, Description)
+    // =========================================================================
+    var headerAlign = Model.HeaderTextAlign?.Value ?? "left";
+    var hasHeaderContent = !string.IsNullOrWhiteSpace(Model.TitleSida?.Value) ||
+                           !string.IsNullOrWhiteSpace(Model.Title?.Value) ||
+                           !string.IsNullOrWhiteSpace(Model.SubTitle?.Value) ||
+                           !string.IsNullOrWhiteSpace(Model.Text?.Value) ||
+                           !string.IsNullOrWhiteSpace(Model.Description?.Value);
+    
+    // =========================================================================
+    // VISIBILITY CLASSES
+    // =========================================================================
+    var hideClasses = "";
+    if (Model.HideOnMobile?.IsTrue ?? false) hideClasses += "hidden sm:block ";
+    if (Model.HideOnTablet?.IsTrue ?? false) hideClasses += "hidden md:block ";
+    if (Model.HideOnDesktop?.IsTrue ?? false) hideClasses += "hidden lg:flex ";
+    
+    // =========================================================================
+    // DATA ATTRIBUTES
+    // =========================================================================
+    var dataAttrs = "";
+    if (!string.IsNullOrWhiteSpace(Model.DataAttributes?.Value))
+    {
+        try
+        {
+            var dataJson = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(Model.DataAttributes.Value);
+            if (dataJson != null)
+            {
+                foreach (var attr in dataJson)
+                    dataAttrs += $" {attr.Key}=\"{attr.Value}\"";
+            }
+        }
+        catch { /* Invalid JSON, ignore */ }
+    }
+    
+    // =========================================================================
+    // STICKY SETTINGS
+    // =========================================================================
+    var stickyClass = (Model.StickySection?.IsTrue ?? false) ? "sticky" : "";
+    var stickyTop = Model.StickyTopOffset?.Value ?? "0";
+    var stickyStyle = (Model.StickySection?.IsTrue ?? false) ? $"top: {stickyTop};" : "";
+    
+    // =========================================================================
+    // SECTION ID
+    // =========================================================================
+    var sectionId = !string.IsNullOrWhiteSpace(Model.SectionId?.Value) ? Model.SectionId.Value : null;
+    
+    // =========================================================================
+    // CONTAINER QUERIES
+    // =========================================================================
+    var useContainerQueries = Model.UseContainerQueries?.IsTrue ?? false;
+}
+
+@if (!string.IsNullOrWhiteSpace(sectionId))
+{
+    <div id="@sectionId"></div>
+}
+
+<section @(sectionId != null ? $"id={sectionId}" : "")
+         class="@hideClasses @stickyClass @borderRadius @shadow @customClasses relative @(useContainerQueries ? "container-query" : "")"
+         style="@marginStyle @(zIndex != null && zIndex != "auto" ? $"z-index: {zIndex};" : "") @stickyStyle @customStyles"
+         @Html.Raw(dataAttrs)>
+    
+    <!-- BACKGROUND WRAPPER (with overlay) -->
+    <div class="w-full h-full relative" style="@bgStyle">
+        
+        <!-- OVERLAY -->
+        @if (decimal.TryParse(overlayOpacity, out var opacity) && opacity > 0)
+        {
+            <div style="position: absolute; inset: 0; background-color: @overlayColor; opacity: @overlayOpacity; pointer-events: none;"></div>
+        }
+        
+        <!-- MAIN CONTENT CONTAINER -->
+        <div class="relative @(Model.FullWidth?.IsTrue == true ? "w-full" : "container mx-auto")" style="@paddingStyle">
+            
+            <!-- SECTION HEADER (Title, Subtitle, etc.) -->
+            @if (hasHeaderContent)
+            {
+                <div class="mb-12 text-@headerAlign">
+                    
+                    @* Header (TitleSida) *@
+                    @if (!string.IsNullOrWhiteSpace(Model.TitleSida?.Value))
+                    {
+                        <div class="@(Model.TitleSidaAlign?.Value ?? "text-left") mb-2"
+                             style="color: @Model.TitleSidaColor?.Value; font-size: @Model.TitleSidaSize?.Value;">
+                            @Model.TitleSida.Value
+                        </div>
+                    }
+                    
+                    @* Main Title *@
+                    @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
+                    {
+                        <h2 class="@(Model.TitleAlignment?.Value ?? "text-left")"
+                            style="color: @Model.TitleColor?.Value; 
+                                   font-size: @Model.TitleSize?.Value;
+                                   font-weight: @Model.TitleWeight?.Value;
+                                   @(!string.IsNullOrWhiteSpace(Model.TitleBorder?.Value) ? $"border: {Model.TitleBorder.Value}; display: inline-block;" : "")">
+                            @Model.Title.Value
+                        </h2>
+                    }
+                    
+                    @* Subtitle *@
+                    @if (!string.IsNullOrWhiteSpace(Model.SubTitle?.Value))
+                    {
+                        <h3 class="@(Model.SubTitleAlignment?.Value ?? "text-left") mt-3"
+                            style="color: @Model.SubTitleColor?.Value;
+                                   font-size: @Model.SubTitleSize?.Value;
+                                   font-weight: @Model.SubTitleWeight?.Value;
+                                   @(!string.IsNullOrWhiteSpace(Model.SubTitleBorder?.Value) ? $"border: {Model.SubTitleBorder.Value};" : "")">
+                            @Model.SubTitle.Value
+                        </h3>
+                    }
+                    
+                    @* Inline Text *@
+                    @if (!string.IsNullOrWhiteSpace(Model.Text?.Value))
+                    {
+                        <p class="@(Model.TextAlignment?.Value ?? "text-left") mt-3"
+                           style="color: @Model.TextColor?.Value;
+                                  font-size: @Model.TextSize?.Value;
+                                  font-weight: @Model.TextWeight?.Value;
+                                  @(!string.IsNullOrWhiteSpace(Model.TextBorder?.Value) ? $"border: {Model.TextBorder.Value};" : "")">
+                            @Model.Text.Value
+                        </p>
+                    }
+                    
+                    @* Rich Text Description *@
+                    @if (!string.IsNullOrWhiteSpace(Model.Description?.Value))
+                    {
+                        <div class="prose max-w-none @(Model.DescriptionAlignment?.Value ?? "text-left") mt-4"
+                             style="color: @Model.DescriptionColor?.Value;
+                                    font-weight: @Model.DescriptionWeight?.Value;
+                                    @(!string.IsNullOrWhiteSpace(Model.DescriptionBorder?.Value) ? $"border: {Model.DescriptionBorder.Value};" : "")">
+                            @Html.Raw(Model.Description.Value)
+                        </div>
+                    }
+                    
+                </div>
+            }
+            
+            <!-- COLUMNS GRID / FLEX CONTAINER -->
+            @if (useGrid)
+            {
+                // CSS GRID APPROACH
+                <div class="@gridClass @gapClass @alignClass @reverseClass">
+                    @foreach (var child in children)
+                    {
+                        var childModel = Registry.CreateModel(child);
+                        var childData = new ViewDataDictionary(ViewData);
+                        childData["RawBlock"] = child;
+                        
+                        <div>
+                            @await Html.PartialAsync(Registry.GetViewPath(child.Type), childModel, childData)
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                // FLEXBOX APPROACH (for auto/centered/full layouts)
+                <div class="flex flex-col md:flex-row @gapClass @alignClass @reverseClass">
+                    @foreach (var child in children)
+                    {
+                        var childModel = Registry.CreateModel(child);
+                        var childData = new ViewDataDictionary(ViewData);
+                        childData["RawBlock"] = child;
+                        
+                        <div class="@columnClass">
+                            @await Html.PartialAsync(Registry.GetViewPath(child.Type), childModel, childData)
+                        </div>
+                    }
+                </div>
+            }
+            
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- CONTAINER QUERIES STYLES -->
+<!-- ========================================================================= -->
+@if (useContainerQueries)
+{
+    <style>
+        .container-query {
+            container-type: inline-size;
+        }
+        
+        @@container (max-width: 640px) {
+            .container-query .grid {
+                gap: 1rem;
+            }
+        }
+        
+        @@container (min-width: 1024px) {
+            .container-query .grid {
+                gap: 2rem;
+            }
+        }
+    </style>
+}
+
+<!-- ========================================================================= -->
+<!-- ANIMATION SCRIPTS (inherited from brixBlockBase) -->
+<!-- ========================================================================= -->
+@{
+    var animate = Model.AnimateOnScroll?.IsTrue ?? false;
+}
+@if (animate && children.Any())
+{
+    <style>
+        #@colId .col-anim-item {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        #@colId .col-anim-item.brix-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @for (int i = 0; i < children.Count; i++)
+        {
+            <text>
+            #@colId .col-anim-item:nth-child(@(i+1)) {
+                transition-delay: @(i * 0.12)s;
+            }
+            </text>
+        }
+    </style>
+    <script>
+        (function(){
+            var container = document.getElementById('@colId');
+            if(!container) return;
+            var items = container.querySelectorAll('.col-anim-item');
+            var io = new IntersectionObserver(function(entries){
+                entries.forEach(function(entry){
+                    if(entry.isIntersecting){
+                        entry.target.classList.add('brix-visible');
+                    }
+                });
+            }, { threshold: 0.15 });
+            items.forEach(function(el){ io.observe(el); });
+        })();
+    </script>
+}

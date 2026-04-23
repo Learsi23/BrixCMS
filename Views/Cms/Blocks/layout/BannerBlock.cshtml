@@ -1,0 +1,52 @@
+@using BrixCMS.Open.Models.Blocks
+@model BannerBlock
+
+@{
+    var bg       = Model.BackgroundColor?.Value ?? "#1f2937";
+    var textClr  = Model.TextColor?.Value ?? "#ffffff";
+    var closeable = Model.Closeable?.IsTrue ?? true;
+    var banId    = "banner-" + Guid.NewGuid().ToString()[..8];
+    var icon     = Model.Icon?.Value ?? "";
+    var isEmoji  = !string.IsNullOrEmpty(icon) && !icon.StartsWith("fas") && !icon.StartsWith("far") && !icon.StartsWith("fab");
+}
+
+<div id="@banId"
+     x-data="{ show: true }"
+     x-show="show"
+     x-cloak
+     class="w-full py-2.5 px-4"
+     style="background-color:@bg;">
+    <div class="max-w-6xl mx-auto flex items-center justify-center gap-3 text-sm relative"
+         style="color:@textClr">
+        @if (!string.IsNullOrEmpty(icon))
+        {
+            if (isEmoji)
+            {
+                <span>@icon</span>
+            }
+            else
+            {
+                <i class="@icon"></i>
+            }
+        }
+        <span>@(Model.Text?.Value ?? "")</span>
+        @if (!string.IsNullOrEmpty(Model.LinkText?.Value))
+        {
+            <a href="@(Model.LinkUrl?.Value ?? "#")"
+               class="font-semibold underline hover:no-underline"
+               style="color:@textClr">
+                @Model.LinkText.Value &#x2192;
+            </a>
+        }
+        @if (closeable)
+        {
+            <button @@click="show=false"
+                    class="absolute right-0 opacity-60 hover:opacity-100 transition-opacity"
+                    style="color:@textClr">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        }
+    </div>
+</div>

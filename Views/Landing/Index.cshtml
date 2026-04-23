@@ -1,0 +1,469 @@
+@using BrixCMS.Open.Models.Blocks
+@using BrixCMS.Open.Data.Fields
+@{
+    Layout = "~/Views/Landing/_LandingLayout.cshtml";
+    ViewData["Title"] = "BrixCMS — Din infrastruktur, dina regler.";
+}
+
+<!-- ═══════════════════════════════════════════════════════
+     NAV  (custom — HeroBlock no soporta sticky nav con logo)
+═══════════════════════════════════════════════════════ -->
+<nav class="nav-sticky">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
+        <a href="/" class="text-xl font-extrabold tracking-tight" style="letter-spacing:-.03em">
+            Brix<span style="color:#5B6EF5">CMS</span>
+        </a>
+        <ul class="hidden md:flex items-center gap-1 list-none m-0 p-0">
+            <li><a href="#funktioner" class="text-sm px-3 py-2 rounded transition-colors" style="color:#9696A6">Funktioner</a></li>
+            <li><a href="#byok"       class="text-sm px-3 py-2 rounded transition-colors" style="color:#9696A6">BYOK</a></li>
+            <li><a href="#guider"     class="text-sm px-3 py-2 rounded transition-colors" style="color:#9696A6">Guider</a></li>
+            <li><a href="#priser"     class="text-sm px-3 py-2 rounded transition-colors" style="color:#9696A6">Prissättning</a></li>
+            <li><a href="#faq"        class="text-sm px-3 py-2 rounded transition-colors" style="color:#9696A6">FAQ</a></li>
+        </ul>
+        <div class="flex items-center gap-2">
+            <a href="/Manager/Login" class="btn-secondary text-sm py-2 px-4">Logga in</a>
+            <a href="#priser"        class="btn-primary  text-sm py-2 px-4">Kom igång gratis</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════
+     HERO  (custom — HeroBlock no soporta glow/grid/badge/two-col)
+═══════════════════════════════════════════════════════ -->
+<section class="relative overflow-hidden flex items-center" style="min-height:92vh; padding:6rem 0; background:#0A0A0B;">
+    <div class="hero-glow"></div>
+    <div class="hero-grid"></div>
+    <div class="max-w-6xl mx-auto px-6 relative z-10 w-full">
+        <div style="max-width:800px">
+            <div class="mb-6">
+                <span class="badge-accent">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block"></span>
+                    Nu i public beta
+                </span>
+            </div>
+            <h1 class="font-extrabold mb-6" style="font-size:clamp(3rem,7vw,5rem);letter-spacing:-.03em;line-height:1.05">
+                Din infrastruktur,<br>
+                <span class="gradient-text">dina regler.</span>
+            </h1>
+            <p class="mb-8 leading-relaxed" style="font-size:1.25rem;color:#9696A6;max-width:580px">
+                Ett multi-tenant CMS där du äger nycklarna. Anslut din egen AI,
+                koppla ditt Stripe-konto och skala utan gränser.
+            </p>
+            <div class="flex flex-wrap items-center gap-4 mb-8">
+                <a href="#priser" class="btn-primary"  style="font-size:1rem;padding:1rem 2rem">Kom igång gratis →</a>
+                <a href="#guider" class="btn-secondary" style="font-size:1rem;padding:1rem 2rem">▶ Se demo</a>
+            </div>
+            <div class="flex flex-wrap gap-6 text-sm" style="color:#56566A">
+                <span>✓ Ingen kreditkortsinformation krävs</span>
+                <span>✓ Gratis i 14 dagar</span>
+                <span>✓ Avsluta när som helst</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="divider-accent"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     STATS  ← bloque StatsBlock reutilizado
+═══════════════════════════════════════════════════════ -->
+@{
+    var statsModel = new StatsBlock
+    {
+        BackgroundColor = new ColorField { Value = "#0A0A0B" },
+        CardBgColor     = new ColorField { Value = "#111113" },
+        NumberColor     = new ColorField { Value = "#5B6EF5" },
+        LabelColor      = new ColorField { Value = "#56566A" },
+        PaddingY        = new StringField { Value = "3rem" },
+        Stat1Number     = new StringField { Value = "0%"  },
+        Stat1Label      = new StringField { Value = "Dold AI-marginal" },
+        Stat2Number     = new StringField { Value = "1%"  },
+        Stat2Label      = new StringField { Value = "Serviceavgift på försäljning" },
+        Stat3Number     = new StringField { Value = "∞"   },
+        Stat3Label      = new StringField { Value = "Tenants på Business-plan" },
+        Stat4Number     = new StringField { Value = "30s" },
+        Stat4Label      = new StringField { Value = "Anslut din AI-nyckel" },
+    };
+}
+@await Html.PartialAsync("~/Views/Cms/Blocks/content/StatsBlock.cshtml", statsModel)
+
+<!-- ═══════════════════════════════════════════════════════
+     BRIX BLOCK DEMO  (custom — no existe bloque para esto)
+═══════════════════════════════════════════════════════ -->
+<section class="py-24" style="background:#111113;" id="funktioner">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div class="p-5 rounded-2xl border" style="background:#0A0A0B;border-color:#2A2A30">
+                <div class="grid gap-2" style="grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,72px)">
+                    <div class="brix-block active col-span-4">Hero Banner</div>
+                    <div class="brix-block col-span-2 row-span-2">Produkt<br>Grid</div>
+                    <div class="brix-block">Bild</div>
+                    <div class="brix-block">Text</div>
+                    <div class="brix-block">CTA</div>
+                    <div class="brix-block">Video</div>
+                    <div class="brix-block col-span-3">Recensioner</div>
+                    <div class="brix-block col-span-4">Footer</div>
+                </div>
+            </div>
+            <div>
+                <span class="section-label">Modularitet</span>
+                <h2 class="font-bold mt-3 mb-4" style="font-size:2.25rem;letter-spacing:-.025em;line-height:1.1">
+                    Bygg med block,<br>inte begränsningar.
+                </h2>
+                <p class="leading-relaxed mb-6" style="font-size:1.125rem;color:#9696A6">
+                    Varje funktion i BrixCMS är ett modulärt block. Behöver du något som inte finns?
+                    Vi utvecklar det som ett Custom Block — en engångsinvestering du äger för alltid.
+                </p>
+                <ul class="space-y-3">
+                    @foreach (var item in new[] { "Drag-and-drop Page Builder", "Custom Blocks (engångsavgift 2 000–5 000 SEK)", "Figma till CMS-import (Pro)" })
+                    {
+                        <li class="flex items-center gap-3" style="color:#9696A6">
+                            <span style="color:#22C55E;font-weight:700">✓</span> @item
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     FEATURES  ← 6 × IconCardBlock reutilizado
+═══════════════════════════════════════════════════════ -->
+<section class="py-24" style="background:#0A0A0B">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <span class="section-label">Plattformsfunktioner</span>
+            <h2 class="font-bold mt-3" style="font-size:2.25rem;letter-spacing:-.025em">
+                Allt du behöver,<br>ingenting du inte behöver.
+            </h2>
+        </div>
+
+        @{
+            var features = new[]
+            {
+                ("fa-solid fa-key",          "BYOK — Egna nycklar",     "Din OpenAI- eller Claude-nyckel. Du betalar direkt till leverantören — ingen dold token-marginal."),
+                ("fa-solid fa-credit-card",  "Stripe Connect + 1%",     "Pengarna flödar direkt till ditt Stripe-konto. BrixCMS drar automatiskt 1 % serviceavgift."),
+                ("fa-solid fa-building",     "Multi-tenant Dashboard",  "Hantera dina kunders sajter från ett enda gränssnitt. Perfekt för digitala byråer."),
+                ("fa-solid fa-robot",        "AI-motor (Gemini/GPT)",   "Inbyggd AI-assistent som svarar på frågor om din sajt och driver konverteringar."),
+                ("fa-solid fa-palette",      "White Label",             "Byt ut BrixCMS-varumärket mot ditt eget. Perfekt för byråer som säljer plattformen vidare."),
+                ("fa-solid fa-pen-to-square","Figma → CMS Import",      "Importera din Figma-design direkt som en CMS-sida. Från design till live på minuter."),
+            };
+        }
+
+        <div class="grid md:grid-cols-3 rounded-2xl overflow-hidden" style="border:1px solid #2A2A30">
+            @foreach (var (icon, title, desc) in features)
+            {
+                var featureCard = new IconCardBlock
+                {
+                    BackgroundColor = new ColorField { Value = "#111113" },
+                    BorderColor     = new ColorField { Value = "#2A2A30" },
+                    BorderWidth     = new StringField { Value = "0" },
+                    BorderRadius    = new StringField { Value = "0" },
+                    Padding         = new StringField { Value = "2rem" },
+                    IconPosition    = new StringField { Value = "top" },
+                    TextAlign       = new StringField { Value = "left" },
+                    LeftIconClass   = new StringField { Value = icon },
+                    LeftIconColor   = new ColorField  { Value = "#5B6EF5" },
+                    LeftIconFaSize  = new StringField { Value = "1.5rem" },
+                    Title           = new StringField { Value = title },
+                    TitleColor      = new ColorField  { Value = "#F0F0F5" },
+                    TitleSize       = new StringField { Value = "1rem" },
+                    Text            = new TextAreaField { Value = desc },
+                    TextColor       = new ColorField  { Value = "#9696A6" },
+                    TextSize        = new StringField { Value = "0.875rem" },
+                };
+                <div style="border:1px solid #2A2A30">
+                    @await Html.PartialAsync("~/Views/Cms/Blocks/content/IconCardBlock.cshtml", featureCard)
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<div class="divider-accent"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     BYOK  (custom — no existe bloque equivalente)
+═══════════════════════════════════════════════════════ -->
+<section class="py-24" style="background:#111113;" id="byok">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+                <span class="section-label">Bring Your Own Key</span>
+                <h2 class="font-bold mt-3 mb-4" style="font-size:2.5rem;letter-spacing:-.025em;line-height:1.1">
+                    Du äger datan.<br>Vi äger infrastrukturen.
+                </h2>
+                <p class="leading-relaxed mb-8" style="font-size:1.125rem;color:#9696A6">
+                    De flesta SaaS-plattformar tar en dold marginal på varje AI-token du förbrukar.
+                    BrixCMS tar ingenting. Din nyckel — din kostnad — din kontroll.
+                </p>
+                @foreach (var (icon, title, desc) in new[] {
+                    ("fa-solid fa-brain",      "OpenAI / Claude (BYOK)",  "Klistra in din nyckel. Betala direkt till OpenAI/Anthropic."),
+                    ("fa-solid fa-money-bill", "Stripe Connect (BYOK)",   "Anslut ditt konto. 1 % serviceavgift dras automatiskt per transaktion."),
+                })
+                {
+                    <div class="brix-card flex items-start gap-4 p-4 mb-3">
+                        <i class="@icon mt-1 flex-shrink-0" style="color:#5B6EF5;width:20px;text-align:center"></i>
+                        <div>
+                            <div class="font-semibold text-sm" style="color:#F0F0F5">@title</div>
+                            <div class="text-sm" style="color:#9696A6">@desc</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- API key mockup -->
+            <div class="rounded-2xl p-6 font-mono text-sm" style="background:#18181C;border:1px solid #2A2A30">
+                <p class="section-label mb-4">API-konfiguration</p>
+                @foreach (var (label, val) in new[] {
+                    ("OpenAI Key", "sk-proj-a8f3...••••••"),
+                    ("Stripe Key", "sk_live_51N...••••••"),
+                    ("Gemini Key", "AIzaSy...••••••"),
+                })
+                {
+                    <div class="key-row">
+                        <span style="color:#56566A;width:110px;flex-shrink:0;font-size:.75rem">@label</span>
+                        <span class="flex-1 rounded px-3 py-1.5 text-xs" style="background:#111113;border:1px solid #2A2A30;color:#A5B4FC">@val</span>
+                        <span class="text-xs px-3 py-1 rounded-full" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#22C55E">✓ Aktiv</span>
+                    </div>
+                }
+                <div class="pt-4 mt-2 space-y-2" style="border-top:1px solid #2A2A30">
+                    <div class="flex justify-between text-xs">
+                        <span style="color:#56566A">Månadens försäljning</span>
+                        <span class="font-semibold" style="color:#F0F0F5">42 850 SEK</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span style="color:#56566A">BrixCMS serviceavgift (1%)</span>
+                        <span class="font-semibold" style="color:#A5B4FC">428 SEK</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     VIDEO LEARNING  (custom — no existe bloque de video cards)
+═══════════════════════════════════════════════════════ -->
+<section class="py-24" style="background:#0A0A0B" id="guider">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <span class="section-label">Video Learning Center</span>
+            <h2 class="font-bold mt-3 mb-3" style="font-size:2.25rem;letter-spacing:-.025em">Kom igång på minuter, inte dagar.</h2>
+            <p style="color:#9696A6;font-size:1.125rem;max-width:520px;margin:0 auto">
+                Korta, fokuserade guider för varje steg. Du behöver aldrig kontakta support.
+            </p>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var (title, desc, dur, grad) in new[] {
+                ("Anslut din AI-nyckel",          "Lägg till OpenAI eller Claude BYOK på 30 sekunder.",        "0:32", "from-indigo-950 to-slate-900"),
+                ("Skapa din första butik",         "Från noll till fungerande e-handel på under 2 minuter.",    "1:15", "from-slate-900 to-blue-950"),
+                ("Stripe Connect-setup",           "Koppla ditt Stripe-konto och börja ta emot betalningar.",  "2:04", "from-violet-950 to-slate-900"),
+                ("Multi-tenant byrå-setup",        "Hantera flera kundkonton från ett och samma dashboard.",    "1:48", "from-slate-900 to-indigo-950"),
+                ("Importera från Figma",           "Gå från Figma-design till live CMS-sida på 3 minuter.",    "3:22", "from-emerald-950 to-slate-900"),
+                ("Custom Block — beställ & driftsätt", "Lägg till ett skräddarsytt block i din instans.",       "2:55", "from-slate-900 to-purple-950"),
+            })
+            {
+                <div class="video-card">
+                    <div class="relative flex items-center justify-center bg-gradient-to-br @grad" style="aspect-ratio:16/9">
+                        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center">
+                            <i class="fa-solid fa-play text-white" style="font-size:.75rem;margin-left:2px"></i>
+                        </div>
+                        <span class="absolute font-semibold font-mono text-white rounded" style="bottom:8px;right:8px;font-size:.7rem;background:rgba(0,0,0,.65);padding:2px 8px">@dur</span>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold mb-1" style="color:#F0F0F5">@title</h4>
+                        <p class="text-sm" style="color:#56566A">@desc</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<div class="divider-accent"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PRICING  (custom — PricingBlock requiere hijos en BD)
+═══════════════════════════════════════════════════════ -->
+<section class="py-24" style="background:#111113" id="priser">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <span class="section-label">Prissättning</span>
+            <h2 class="font-bold mt-3 mb-3" style="font-size:2.25rem;letter-spacing:-.025em">
+                Transparent prissättning.<br>Inga dolda avgifter.
+            </h2>
+            <p style="color:#9696A6">Alla priser exklusive moms. +1 % serviceavgift på försäljning på alla planer.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6 items-start">
+            @{
+                var plans = new[] {
+                    ("Starter",  "$29",  false, new[]{"Max 10 produkter","Stripe Connect","Community-support"}, new[]{"AI-motor (BYOK)","Multi-tenant","White Label"}),
+                    ("Business", "$79",  true,  new[]{"Obegränsat antal produkter","Stripe Connect","Prioriterad support","AI-motor (BYOK)","Multi-tenant dashboard"}, new[]{"White Label","Figma-import"}),
+                    ("Pro",      "$149", false, new[]{"Allt i Business","White Label","Figma → CMS Import","Dedikerad support","SLA-garanti"}, new string[]{}),
+                };
+            }
+            @foreach (var (name, price, hot, included, excluded) in plans)
+            {
+                <div class="relative p-8 rounded-2xl"
+                     style="background:#111113;border:@(hot ? "2px solid #5B6EF5" : "1px solid #2A2A30");
+                            @(hot ? "box-shadow:0 0 40px rgba(91,110,245,.15)" : "")">
+                    @if (hot)
+                    {
+                        <div class="absolute" style="top:-12px;left:50%;transform:translateX(-50%);background:#5B6EF5;color:#fff;font-size:.65rem;font-weight:700;padding:4px 16px;border-radius:9999px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap">
+                            Populärast
+                        </div>
+                    }
+                    <p class="font-bold mb-4" style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#9696A6">@name</p>
+                    <div class="flex items-end gap-2 mb-1">
+                        <span class="font-extrabold" style="font-size:3rem;letter-spacing:-.03em;color:#F0F0F5">@price</span>
+                        <span class="mb-2" style="color:#9696A6">/ mån</span>
+                    </div>
+                    <p class="text-xs mb-6" style="color:#56566A">+ 1% serviceavgift på försäljning</p>
+                    <a href="#" class="@(hot ? "btn-primary" : "btn-secondary") block text-center mb-6" style="justify-content:center">Kom igång</a>
+                    <hr style="border-color:#2A2A30;margin-bottom:1.5rem">
+                    <ul class="space-y-3 text-sm">
+                        @foreach (var f in included)
+                        {
+                            <li class="flex items-start gap-2" style="color:#9696A6">
+                                <span style="color:#22C55E;font-weight:700;flex-shrink:0">✓</span> @f
+                            </li>
+                        }
+                        @foreach (var f in excluded)
+                        {
+                            <li class="flex items-start gap-2" style="color:#56566A">
+                                <span style="flex-shrink:0">—</span> @f
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+
+        <!-- Custom Block add-on -->
+        <div class="brix-card p-6 mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div>
+                <h3 class="font-bold text-lg mb-1" style="color:#F0F0F5">Custom Blocks & Plugins</h3>
+                <p class="text-sm" style="color:#9696A6">Behöver du något som inte finns? Vi bygger det som ett unikt block. Engångspris, ägs av dig för alltid.</p>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="font-extrabold" style="font-size:1.5rem;letter-spacing:-.02em;color:#F0F0F5">2 000 – 5 000 SEK</div>
+                <div class="text-xs mb-3" style="color:#56566A">engångsavgift per block</div>
+                <a href="#" class="btn-secondary text-sm py-2 px-4">Beställ ett Custom Block</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     FAQ  (custom — AccordionBlock requiere hijos en BD)
+═══════════════════════════════════════════════════════ -->
+<section class="py-24" style="background:#0A0A0B" id="faq">
+    <div class="max-w-2xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <span class="section-label">FAQ</span>
+            <h2 class="font-bold mt-3" style="font-size:2.25rem;letter-spacing:-.025em">Vanliga frågor</h2>
+        </div>
+        @{
+            var faqs = new[] {
+                ("Vad är BYOK och varför är det viktigt?",
+                 "BYOK (Bring Your Own Key) innebär att du använder din egna API-nyckel från OpenAI eller Anthropic. Du betalar direkt till leverantören och BrixCMS tar ingen marginal. Din data stannar i din infrastruktur."),
+                ("Hur beräknas 1 %-avgiften?",
+                 "Avgiften dras automatiskt via Stripe Connect på varje lyckad transaktion. Säljer du för 10 000 kr dras 100 kr till BrixCMS. Allt är transparent och synligt i ditt dashboard."),
+                ("Kan jag hantera flera kunders sajter?",
+                 "Ja, på Business och Pro-planerna har du multi-tenant-stöd. Du kan växla mellan klienters instanser från ett och samma admin-konto utan att logga ut."),
+                ("Vad kostar ett Custom Block?",
+                 "Engångspris mellan 2 000–5 000 SEK beroende på komplexitet. När blocket är byggt äger du det för alltid och det kan säljas vidare till andra BrixCMS-kunder."),
+                ("Är det möjligt att använda White Label?",
+                 "Ja, på Pro-planen kan du byta ut BrixCMS-varumärket mot ditt eget — logga, domän och färger. Perfekt för byråer som säljer CMS-tjänsten vidare."),
+            };
+        }
+        <div x-data="{ open: null }">
+            @for (int i = 0; i < faqs.Length; i++)
+            {
+                var idx = i;
+                <div style="border-bottom:1px solid #2A2A30">
+                    <button class="w-full flex items-center justify-between py-5 text-left gap-4"
+                            @@click="open === @idx ? open = null : open = @idx">
+                        <span class="font-semibold" style="color:#F0F0F5">@faqs[idx].Item1</span>
+                        <i class="fa-solid fa-plus flex-shrink-0 transition-transform duration-200"
+                           style="color:#5B6EF5"
+                           :class="open === @idx ? 'rotate-45' : ''"></i>
+                    </button>
+                    <div x-show="open === @idx" x-cloak x-transition
+                         class="pb-5 leading-relaxed text-sm" style="color:#9696A6">
+                        @faqs[idx].Item2
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<div class="divider-accent"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     CTA FINAL  ← bloque CTABannerBlock reutilizado
+═══════════════════════════════════════════════════════ -->
+@{
+    var ctaModel = new CTABannerBlock
+    {
+        BackgroundColor  = new ColorField { Value = "#0A0A0B" },
+        BackgroundColor2 = new ColorField { Value = "#0D0D1A" },
+        Title            = new StringField { Value = "Redo att ta kontrollen?" },
+        TitleColor       = new ColorField  { Value = "#F0F0F5" },
+        TitleSize        = new StringField { Value = "3rem" },
+        Subtitle         = new StringField { Value = "Starta gratis i 14 dagar. Ingen kreditkortsinformation krävs. Avsluta när som helst." },
+        SubtitleColor    = new ColorField  { Value = "#9696A6" },
+        Btn1Text         = new StringField { Value = "Skapa ditt konto gratis →" },
+        Btn1Url          = new StringField { Value = "#priser" },
+        Btn1BgColor      = new ColorField  { Value = "#5B6EF5" },
+        Btn1TextColor    = new ColorField  { Value = "#ffffff" },
+        Btn2Text         = new StringField { Value = "Prata med oss" },
+        Btn2Url          = new StringField { Value = "#" },
+        Btn2Color        = new ColorField  { Value = "#9696A6" },
+        PaddingY         = new StringField { Value = "6rem" },
+        TextAlign        = new StringField { Value = "center" },
+    };
+}
+@await Html.PartialAsync("~/Views/Cms/Blocks/content/CTABannerBlock.cshtml", ctaModel)
+
+<!-- ═══════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════ -->
+<footer style="border-top:1px solid #2A2A30;padding:4rem 0 2rem;background:#111113">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+            <div>
+                <div class="font-extrabold text-xl mb-3" style="letter-spacing:-.03em">
+                    Brix<span style="color:#5B6EF5">CMS</span>
+                </div>
+                <p class="text-sm leading-relaxed" style="color:#9696A6;max-width:240px">
+                    Multi-tenant Headless CMS. Bring Your Own Key — dina nycklar, din data.
+                </p>
+            </div>
+            @foreach (var (col, links) in new[] {
+                ("Produkt",  new[]{ "Funktioner","Prissättning","Custom Blocks","Changelog" }),
+                ("Resurser", new[]{ "Dokumentation","Video Guides","API Reference","Community" }),
+                ("Företag",  new[]{ "Om oss","Kontakt","Integritetspolicy","Användarvillkor" }),
+            })
+            {
+                <div>
+                    <h4 class="font-bold mb-4" style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#9696A6">@col</h4>
+                    <ul class="space-y-2.5">
+                        @foreach (var link in links)
+                        {
+                            <li><a href="#" class="text-sm transition-colors" style="color:#56566A" onmouseover="this.style.color='#F0F0F5'" onmouseout="this.style.color='#56566A'">@link</a></li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6" style="border-top:1px solid #2A2A30">
+            <p class="text-xs" style="color:#56566A">© 2026 BrixCMS. Alla rättigheter förbehållna. Priser exkl. moms.</p>
+            <p class="text-xs" style="color:#56566A">Byggt med ♥ i Sverige</p>
+        </div>
+    </div>
+</footer>

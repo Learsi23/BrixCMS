@@ -1,0 +1,349 @@
+{
+  "_meta": {
+    "name": "BrixCMS Landing Page",
+    "description": "Full landing page with hero, features, BYOK, videos, AI chat, pricing, FAQ and CTA",
+    "tags": ["landing", "saas", "brixcms", "dark-theme"]
+  },
+  "title": "BrixCMS - Din infrastruktur, dina regler",
+  "slug": "brixcms-landing",
+  "blocks": [
+    {
+      "type": "HeroBlock",
+      "data": {
+        "Title": { "Value": "Din infrastruktur,<br><span style=\"background:linear-gradient(135deg, #A5B4FC, #818CF8, #5B6EF5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;\">dina regler.</span>" },
+        "TitleColor": { "Value": "#F0F0F5" },
+        "TitleSize": { "Value": "clamp(3rem, 7vw, 5rem)" },
+        "TitleWeight": { "Value": "800" },
+        "Subtitle": { "Value": "Ett multi-tenant CMS där du äger nycklarna. Anslut din egen AI, koppla ditt Stripe-konto och skala utan gränser." },
+        "SubtitleColor": { "Value": "#9696A6" },
+        "SubtitleSize": { "Value": "1.25rem" },
+        "ButtonText": { "Value": "Kom igång gratis →" },
+        "ButtonUrl": { "Value": "/signup" },
+        "ButtonColor": { "Value": "#5B6EF5" },
+        "ButtonTextColor": { "Value": "#ffffff" },
+        "Height": { "Value": "full-screen" },
+        "TextAlign": { "Value": "center" },
+        "BackgroundColor": { "Value": "#0A0A0B" }
+      }
+    },
+    {
+      "type": "LogoStripBlock",
+      "data": {
+        "Title": { "Value": "Betrodd av byråer och e-handelsföretag" },
+        "LogoCount": { "Value": "5" },
+        "BackgroundColor": { "Value": "#111113" }
+      }
+    },
+    {
+      "type": "StatsBlock",
+      "data": {
+        "Stat1Number": { "Value": "0%" },
+        "Stat1Label": { "Value": "Dold AI-marginal" },
+        "Stat2Number": { "Value": "1%" },
+        "Stat2Label": { "Value": "Serviceavgift på försäljning" },
+        "Stat3Number": { "Value": "∞" },
+        "Stat3Label": { "Value": "Tenants på Business-plan" },
+        "Stat4Number": { "Value": "30s" },
+        "Stat4Label": { "Value": "Anslut din AI-nyckel" },
+        "NumberColor": { "Value": "#5B6EF5" },
+        "LabelColor": { "Value": "#9696A6" },
+        "BackgroundColor": { "Value": "#0A0A0B" }
+      }
+    },
+    {
+      "type": "BrixGridDemoBlock",
+      "data": {
+        "Title": { "Value": "Bygg med block,<br>inte begränsningar." },
+        "Subtitle": { "Value": "Varje funktion i BrixCMS är ett modulärt block. Behöver du något som inte finns? Vi utvecklar det som ett Custom Block — en engångsinvestering du äger för alltid." },
+        "Layout": { "Value": "grid-text" },
+        "GridColumns": { "Value": "4" },
+        "Block1Label": { "Value": "Hero Banner" },
+        "Block1Highlight": { "Value": "true" },
+        "Block2Label": { "Value": "Produkt<br>Grid" },
+        "Block3Label": { "Value": "Bild" },
+        "Block4Label": { "Value": "Text" },
+        "Block5Label": { "Value": "CTA" },
+        "Block6Label": { "Value": "Video" },
+        "Block7Label": { "Value": "Recensioner" },
+        "Block7Span": { "Value": "3" },
+        "Block8Label": { "Value": "Footer" },
+        "ShowFeatures": { "Value": "true" },
+        "Feature1": { "Value": "Drag-and-drop Page Builder" },
+        "Feature2": { "Value": "Custom Blocks (engångsavgift 2 000–5 000 SEK)" },
+        "Feature3": { "Value": "Figma till CMS-import (Pro)" },
+        "AccentColor": { "Value": "#5B6EF5" },
+        "BackgroundColor": { "Value": "#111113" }
+      }
+    },
+    {
+      "type": "FeatureGridBlock",
+      "data": {
+        "Title": { "Value": "Allt du behöver,<br>inget du inte behöver." },
+        "Subtitle": { "Value": "Plattformsfunktioner" },
+        "Columns": { "Value": "3" },
+        "Gap": { "Value": "1px" },
+        "BackgroundColor": { "Value": "#0A0A0B" },
+        "Icon1": { "Value": "fas fa-key" },
+        "Title1": { "Value": "BYOK — Bring Your Own Key" },
+        "Description1": { "Value": "Klistra in din OpenAI- eller Claude-nyckel. Du betalar direkt till leverantören — vi tar ingenting extra per token." },
+        "Icon2": { "Value": "fas fa-credit-card" },
+        "Title2": { "Value": "Stripe Connect + 1%" },
+        "Description2": { "Value": "Pengarna flödar direkt in på ditt Stripe-konto. BrixCMS drar automatiskt 1 % serviceavgift för infrastrukturhållning." },
+        "Icon3": { "Value": "fas fa-building" },
+        "Title3": { "Value": "Multi-tenant Dashboard" },
+        "Description3": { "Value": "Hantera dina kunders sajter från ett enda gränssnitt. Perfekt för digitala byråer." },
+        "Icon4": { "Value": "fas fa-robot" },
+        "Title4": { "Value": "AI-motor (Gemini/GPT)" },
+        "Description4": { "Value": "Inbyggd AI-assistent som svarar på frågor om din sajt, hjälper besökare och driver konverteringar." },
+        "Icon5": { "Value": "fas fa-paint-brush" },
+        "Title5": { "Value": "White Label" },
+        "Description5": { "Value": "Byt ut BrixCMS-varumärket mot ditt eget. Perfekt för byråer som säljer CMS-plattformen vidare." },
+        "Icon6": { "Value": "fas fa-pen-ruler" },
+        "Title6": { "Value": "Figma → CMS Import" },
+        "Description6": { "Value": "Importera din Figma-design direkt som en CMS-sida. Från design till live på minuter." }
+      }
+    },
+    {
+      "type": "BYOKConfigBlock",
+      "data": {
+        "Title": { "Value": "Du äger datan.<br>Vi äger infrastrukturen." },
+        "Subtitle": { "Value": "De flesta SaaS-plattformar tar en dold marginal på varje AI-token du förbrukar. BrixCMS tar ingenting. Din nyckel — din kostnad — din kontroll." },
+        "Layout": { "Value": "left-right" },
+        "Card1Icon": { "Value": "🧠" },
+        "Card1Title": { "Value": "OpenAI / Claude (BYOK)" },
+        "Card1Desc": { "Value": "Klistra in din nyckel. Betala direkt till OpenAI/Anthropic." },
+        "Card2Icon": { "Value": "💰" },
+        "Card2Title": { "Value": "Stripe Connect (BYOK)" },
+        "Card2Desc": { "Value": "Anslut ditt konto. 1 % serviceavgift dras automatiskt per transaktion." },
+        "ShowApiKeys": { "Value": "true" },
+        "OpenAILabel": { "Value": "OpenAI Key" },
+        "OpenAIKey": { "Value": "sk-proj-a8f3...••••••" },
+        "OpenAIStatus": { "Value": "Aktiv" },
+        "StripeLabel": { "Value": "Stripe Key" },
+        "StripeKey": { "Value": "sk_live_51N...••••••" },
+        "StripeStatus": { "Value": "Aktiv" },
+        "GeminiLabel": { "Value": "Gemini Key" },
+        "GeminiKey": { "Value": "AIzaSy...••••••" },
+        "GeminiStatus": { "Value": "Aktiv" },
+        "ShowSalesStats": { "Value": "true" },
+        "SalesLabel": { "Value": "Månadens försäljning" },
+        "SalesValue": { "Value": "42 850 SEK" },
+        "FeeLabel": { "Value": "BrixCMS serviceavgift (1%)" },
+        "FeeValue": { "Value": "428 SEK" },
+        "BackgroundColor": { "Value": "#111113" }
+      }
+    },
+    {
+      "type": "ColumnBlock",
+      "data": { "Gap": { "Value": "gap-4" } },
+      "children": [
+        {
+          "type": "VideoBlock",
+          "data": {
+            "Title": { "Value": "Anslut din AI-nyckel" },
+            "Subtitle": { "Value": "Lägg till OpenAI eller Claude BYOK på 30 sekunder." },
+            "VideoUrl": { "Value": "https://www.youtube.com/watch?v=example1" },
+            "AspectRatio": { "Value": "16/9" },
+            "TextAlign": { "Value": "center" },
+            "BackgroundColor": { "Value": "transparent" },
+            "PaddingY": { "Value": "2rem" }
+          }
+        },
+        {
+          "type": "VideoBlock",
+          "data": {
+            "Title": { "Value": "Skapa din första butik" },
+            "Subtitle": { "Value": "Från noll till fungerande e-handel på under 2 minuter." },
+            "VideoUrl": { "Value": "https://www.youtube.com/watch?v=example2" },
+            "AspectRatio": { "Value": "16/9" },
+            "TextAlign": { "Value": "center" },
+            "BackgroundColor": { "Value": "transparent" }
+          }
+        },
+        {
+          "type": "VideoBlock",
+          "data": {
+            "Title": { "Value": "Stripe Connect-setup" },
+            "Subtitle": { "Value": "Koppla ditt Stripe-konto och börja ta emot betalningar." },
+            "VideoUrl": { "Value": "https://www.youtube.com/watch?v=example3" },
+            "AspectRatio": { "Value": "16/9" },
+            "TextAlign": { "Value": "center" },
+            "BackgroundColor": { "Value": "transparent" }
+          }
+        }
+      ]
+    },
+    {
+      "type": "ColumnBlock",
+      "data": { "Gap": { "Value": "gap-4" } },
+      "children": [
+        {
+          "type": "VideoBlock",
+          "data": {
+            "Title": { "Value": "Multi-tenant byrå-setup" },
+            "Subtitle": { "Value": "Hantera flera kundkonton från ett och samma dashboard." },
+            "VideoUrl": { "Value": "https://www.youtube.com/watch?v=example4" },
+            "AspectRatio": { "Value": "16/9" }
+          }
+        },
+        {
+          "type": "VideoBlock",
+          "data": {
+            "Title": { "Value": "Importera från Figma" },
+            "Subtitle": { "Value": "Gå från Figma-design till live CMS-sida på 3 minuter." },
+            "VideoUrl": { "Value": "https://www.youtube.com/watch?v=example5" },
+            "AspectRatio": { "Value": "16/9" }
+          }
+        }
+      ]
+    },
+    {
+      "type": "ChatBlock",
+      "data": {
+        "Title": { "Value": "BrixCMS Assistent" },
+        "TitleColor": { "Value": "#F0F0F5" },
+        "TitleSize": { "Value": "14px" },
+        "WelcomeMessage": { "Value": "Hej! Hur kan jag hjälpa dig med BrixCMS idag?" },
+        "AiProvider": { "Value": "gemini" },
+        "BackgroundColor": { "Value": "#111113" }
+      }
+    },
+    {
+      "type": "PricingBlock",
+      "data": {
+        "Title": { "Value": "Transparent prissättning.<br>Inga dolda avgifter." },
+        "TitleColor": { "Value": "#F0F0F5" },
+        "Subtitle": { "Value": "Alla priser exklusive moms. 1% serviceavgift på försäljning tillkommer på alla planer." },
+        "Currency": { "Value": "$" },
+        "BackgroundColor": { "Value": "#0A0A0B" }
+      }
+    },
+    {
+      "type": "PricingCardBlock",
+      "data": {
+        "PlanName": { "Value": "Starter" },
+        "Price": { "Value": "29" },
+        "Period": { "Value": "/ mån" },
+        "Description": { "Value": "Max 10 produkter\nGrundläggande Brix-block\nStripe Connect\nCommunity-support" },
+        "ButtonText": { "Value": "Kom igång" },
+        "ButtonUrl": { "Value": "/signup?plan=starter" },
+        "AccentColor": { "Value": "#5B6EF5" },
+        "CardBgColor": { "Value": "#111113" },
+        "IsPopular": { "Value": "false" }
+      }
+    },
+    {
+      "type": "PricingCardBlock",
+      "data": {
+        "PlanName": { "Value": "Business" },
+        "Price": { "Value": "79" },
+        "Period": { "Value": "/ mån" },
+        "Description": { "Value": "Obegränsat antal produkter\nAlla Brix-block\nStripe Connect\nPrioriterad support\nAI-motor (BYOK)\nMulti-tenant dashboard" },
+        "ButtonText": { "Value": "Kom igång" },
+        "ButtonUrl": { "Value": "/signup?plan=business" },
+        "AccentColor": { "Value": "#5B6EF5" },
+        "CardBgColor": { "Value": "#111113" },
+        "IsPopular": { "Value": "true" },
+        "PopularLabel": { "Value": "POPULÄRAST" }
+      }
+    },
+    {
+      "type": "PricingCardBlock",
+      "data": {
+        "PlanName": { "Value": "Pro" },
+        "Price": { "Value": "149" },
+        "Period": { "Value": "/ mån" },
+        "Description": { "Value": "Allt i Business\nWhite Label (eget varumärke)\nFigma till CMS Import\nDedikerad account manager\nCustom Block-prioritet\nSLA-garanti" },
+        "ButtonText": { "Value": "Kom igång" },
+        "ButtonUrl": { "Value": "/signup?plan=pro" },
+        "AccentColor": { "Value": "#5B6EF5" },
+        "CardBgColor": { "Value": "#111113" },
+        "IsPopular": { "Value": "false" }
+      }
+    },
+    {
+      "type": "CardBlock",
+      "data": {
+        "Title": { "Value": "Custom Blocks & Plugins" },
+        "Description": { "Value": "Behöver du något som inte finns? Vi bygger det som ett unikt block. Engångspris, ägs av dig för alltid." },
+        "TitleColor": { "Value": "#F0F0F5" },
+        "DescriptionColor": { "Value": "#9696A6" },
+        "ButtonText": { "Value": "Beställ ett Custom Block" },
+        "ButtonUrl": { "Value": "/custom-blocks" },
+        "AccentColor": { "Value": "#5B6EF5" },
+        "CardBgColor": { "Value": "#111113" },
+        "Border": { "Value": "1px solid #2A2A30" },
+        "BorderRadius": { "Value": "16px" },
+        "Padding": { "Value": "2rem" },
+        "LayoutType": { "Value": "horizontal" }
+      }
+    },
+    {
+      "type": "AccordionBlock",
+      "data": {
+        "Title": { "Value": "Vanliga frågor" },
+        "TitleColor": { "Value": "#F0F0F5" }
+      }
+    },
+    {
+      "type": "AccordionItemBlock",
+      "data": {
+        "Question": { "Value": "Vad är BYOK och varför är det viktigt?" },
+        "Answer": { "Value": "BYOK (Bring Your Own Key) innebär att du använder din egna API-nyckel från OpenAI eller Anthropic. Du betalar direkt till leverantören och BrixCMS tar ingen marginal. Din data stannar i din infrastruktur." },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "AccordionItemBlock",
+      "data": {
+        "Question": { "Value": "Hur beräknas 1%-avgiften?" },
+        "Answer": { "Value": "Avgiften dras automatiskt via Stripe Connect på varje lyckad transaktion. Säljer du för 10 000 kr på en månad dras 100 kr till BrixCMS. Allt är transparent och synligt i ditt dashboard." },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "AccordionItemBlock",
+      "data": {
+        "Question": { "Value": "Kan jag hantera flera kunders sajter?" },
+        "Answer": { "Value": "Ja, på Business och Pro-planerna har du multi-tenant-stöd. Du kan växla mellan klienters instanser från ett och samma admin-konto." },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "AccordionItemBlock",
+      "data": {
+        "Question": { "Value": "Vad kostar ett Custom Block?" },
+        "Answer": { "Value": "Engångspris mellan 2 000–5 000 SEK beroende på komplexitet. När blocket är byggt äger du det för alltid. Blocket kan även erbjudas till andra BrixCMS-kunder." },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "AccordionItemBlock",
+      "data": {
+        "Question": { "Value": "Är det möjligt att använda White Label?" },
+        "Answer": { "Value": "Ja, på Pro-planen kan du byta ut BrixCMS-varumärket mot ditt eget — logga, domän och färger. Perfekt för byråer som säljer CMS-tjänsten vidare till sina kunder." },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "CTABannerBlock",
+      "data": {
+        "Title": { "Value": "Redo att ta kontrollen?" },
+        "TitleColor": { "Value": "#F0F0F5" },
+        "TitleSize": { "Value": "3rem" },
+        "Subtitle": { "Value": "Starta gratis i 14 dagar. Ingen kreditkortsinformation krävs. Avsluta när som helst." },
+        "SubtitleColor": { "Value": "#9696A6" },
+        "Btn1Text": { "Value": "Skapa ditt konto gratis →" },
+        "Btn1Url": { "Value": "/signup" },
+        "Btn1BgColor": { "Value": "#5B6EF5" },
+        "Btn1TextColor": { "Value": "#ffffff" },
+        "Btn2Text": { "Value": "Prata med oss" },
+        "Btn2Url": { "Value": "/contact" },
+        "Btn2Color": { "Value": "#2A2A30" },
+        "BackgroundColor": { "Value": "#0A0A0B" },
+        "TextAlign": { "Value": "center" },
+        "PaddingY": { "Value": "6rem" }
+      }
+    }
+  ]
+}

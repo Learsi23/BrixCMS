@@ -1,0 +1,99 @@
+@using BrixCMS.Open.Components.BlazorBlocks
+@using BrixCMS.Open.Components.BlazorComponents
+@inject BrixCMS.Open.Services.PromptsService _adminPrompts
+@inject BrixCMS.Open.Data.BrixDbContext _adminDb
+@{
+    var _adminDefaultImg = _adminDb.SiteConfig
+        .FirstOrDefault(c => c.Key == "admin-chat-default-image")?.JsonData?.Trim('"');
+    var _adminSystemPrompt = _adminPrompts.GenerateAdminChatSystemPrompt();
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>Brix-CMS </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
+        #main-wrapper {
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-60 bg-slate-900 text-white flex flex-col flex-shrink-0">
+
+            @* Brand *@
+            <div class="px-5 pt-6 pb-4 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white p-1">
+                        <img src="~/images/logo-menu.png" alt="Logo" class="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                        <p class="font-black text-white text-sm leading-none">BrixCMS</p>
+                        <p class="text-slate-500 text-[10px] truncate max-w-[7rem]">
+                            @(Context.Session.GetString("AdminEmail") ?? "admin")
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            @* Nav *@
+            <nav class="flex-1 px-3 py-4 space-y-0.5">
+
+                @{
+                    var path = Context.Request.Path.Value ?? "";
+                    string NavLink(string href, string icon, string label)
+                    {
+                        bool active = href == "/Manager"
+                        ? (path.Equals("/Manager", StringComparison.OrdinalIgnoreCase) || path.Equals("/Manager/", StringComparison.OrdinalIgnoreCase))
+                        : path.StartsWith(href, StringComparison.OrdinalIgnoreCase);
+                        string cls = active
+                            ? "bg-white/10 text-white"
+                            : "text-slate-400 hover:bg-white/5 hover:text-white";
+                        return $"<a href=\"{href}\" class=\"flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {cls}\"><i class=\"{icon} w-4 text-center text-xs\"></i> {label}</a>";
+                    }
+                }
+
+                @Html.Raw(NavLink("/Manager", "fas fa-file-alt", "Pages"))
+                @Html.Raw(NavLink("/Manager/Configuracion", "fas fa-paint-brush", "Navbar &amp; Footer"))
+                @Html.Raw(NavLink("/Manager/Media", "fas fa-images", "Media"))
+                @Html.Raw(NavLink("/Manager/Backup", "fas fa-database", "Backup"))
+                @Html.Raw(NavLink("/Manager/Configuracion", "fas fa-paint-brush", "Navbar &amp; Footer"))
+                @Html.Raw(NavLink("/Manager/Configuracion/AiConfig", "fas fa-cog", "AI Config"))
+
+            </nav>
+
+            @* Logout *@
+            <div class="px-3 py-4 border-t border-white/5">
+                <a href="/Manager/Login/Logout"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition">
+                    <i class="fas fa-sign-out-alt w-4 text-center text-xs"></i>
+                    Logout
+                </a>
+            </div>
+
+        </aside>
+        <main id="main-wrapper" class="flex-1 overflow-y-auto">
+            <div class="flex h-full">
+                <div class="flex-1">
+                    @RenderBody()
+                </div>
+               
+            </div>
+        </main>
+        </div>
+
+        <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="/_framework/blazor.server.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,488 @@
+@using BrixCMS.Open.Models.Blocks
+@using BrixCMS.Open.Extensions
+@model HeroBlock
+
+@{
+    // =========================================================================
+    // BACKGROUND SETTINGS
+    // =========================================================================
+    var bgColor = Model.BackgroundColor?.Value ?? "#0A0A0B";
+    var bgImage = Model.Background?.Value ?? "";
+    var bgGradient = Model.BackgroundGradient?.Value ?? "";
+    var parallax = Model.EnableParallax?.IsTrue ?? false;
+    var bgBlur = Model.BackgroundBlur?.Value ?? "0";
+    var bgBrightness = Model.BackgroundBrightness?.Value ?? "1";
+    var bgSize = Model.BackgroundSize?.Value ?? "cover";
+    var bgPosition = Model.BackgroundPosition?.Value ?? "center";
+    var bgRepeat = Model.BackgroundRepeat?.Value ?? "no-repeat";
+    
+    // Determine which background to use (gradient takes precbrixce)
+    var hasGradient = !string.IsNullOrWhiteSpace(bgGradient);
+    var hasImage = !string.IsNullOrWhiteSpace(bgImage);
+    
+    // Build background style
+    var bgStyle = "";
+    if (hasGradient)
+    {
+        bgStyle = $"background: {bgGradient};";
+    }
+    else if (hasImage)
+    {
+        bgStyle = $"background-color: {bgColor}; background-image: url('{bgImage}'); background-size: {bgSize}; background-position: {bgPosition}; background-repeat: {bgRepeat};";
+        if (parallax)
+            bgStyle += " background-attachment: fixed;";
+    }
+    else
+    {
+        bgStyle = $"background-color: {bgColor};";
+    }
+    
+    // Background filters
+    var bgFilterStyle = "";
+    if (!string.IsNullOrWhiteSpace(bgBlur) && bgBlur != "0")
+        bgFilterStyle += $" backdrop-filter: blur({bgBlur}px);";
+    if (!string.IsNullOrWhiteSpace(bgBrightness) && bgBrightness != "1")
+        bgFilterStyle += $" filter: brightness({bgBrightness});";
+    
+    // =========================================================================
+    // OVERLAY SETTINGS
+    // =========================================================================
+    var overlayColor = Model.OverlayColor?.Value ?? "#000000";
+    var overlayOpacity = Model.OverlayOpacity?.Value ?? "0.3";
+    var overlayGradient = Model.OverlayGradient?.Value ?? "";
+    var overlayBlendMode = Model.OverlayBlendMode?.Value ?? "normal";
+    var showOverlay = (hasImage || hasGradient) && overlayOpacity != "0" && !string.IsNullOrWhiteSpace(overlayOpacity);
+    
+    // =========================================================================
+    // GRID PATTERN SETTINGS
+    // =========================================================================
+    var showGridPattern = Model.ShowGridPattern?.IsTrue ?? true;
+    var gridColor = Model.GridPatternColor?.Value ?? "#2A2A30";
+    var gridOpacity = Model.GridPatternOpacity?.Value ?? "0.3";
+    var gridSize = Model.GridPatternSize?.Value ?? "60px";
+    
+    // =========================================================================
+    // LAYOUT & SPACING
+    // =========================================================================
+    var heightRaw = Model.Height?.Value ?? "half-screen";
+    var minHeight = heightRaw switch
+    {
+        "full-screen" => "100vh",
+        "half-screen" => "60vh",
+        "compact" => "280px",
+        _ => heightRaw
+    };
+    
+    var textAlign = Model.TextAlign?.Value ?? "center"; // Global fallback
+    var verticalAlign = Model.VerticalAlign?.Value ?? "center";
+    var contentMaxWidth = Model.ContentMaxWidth?.Value ?? "4xl";
+    var paddingY = Model.PaddingY?.Value ?? "6rem";
+    var paddingX = Model.PaddingX?.Value ?? "1.5rem";
+    var marginTop = Model.MarginTop?.Value;
+    var marginBottom = Model.MarginBottom?.Value;
+    
+    // Vertical alignment classes
+    var verticalClass = verticalAlign switch
+    {
+        "top" => "justify-start",
+        "center" => "justify-center",
+        "bottom" => "justify-end",
+        _ => "justify-center"
+    };
+    
+    // Build margin style
+    var marginStyle = "";
+    if (!string.IsNullOrWhiteSpace(marginTop) || !string.IsNullOrWhiteSpace(marginBottom))
+        marginStyle = $"margin-top: {marginTop ?? "0"}; margin-bottom: {marginBottom ?? "0"};";
+    
+    // =========================================================================
+    // INDIVIDUAL ALIGNMENT SETTINGS (NEW)
+    // =========================================================================
+    var badgeAlignment = Model.BadgeAlignment?.Value ?? textAlign;
+    var titleAlignment = Model.TitleAlignment?.Value ?? textAlign;
+    var subtitleAlignment = Model.SubtitleAlignment?.Value ?? textAlign;
+    var descriptionAlignment = Model.DescriptionAlignment?.Value ?? textAlign;
+    var buttonsAlignment = Model.ButtonsAlignment?.Value ?? textAlign;
+    var socialProofAlignment = Model.SocialProofAlignment?.Value ?? textAlign;
+    
+    // Helper function to get alignment classes
+    string GetAlignmentClass(string alignment)
+    {
+        return alignment switch
+        {
+            "center" => "mx-auto text-center",
+            "right" => "ml-auto text-right",
+            "left" => "mr-auto text-left",
+            _ => "mx-auto text-center"
+        };
+    }
+    
+    string GetFlexJustifyClass(string alignment)
+    {
+        return alignment switch
+        {
+            "center" => "justify-center",
+            "right" => "justify-end",
+            "left" => "justify-start",
+            _ => "justify-center"
+        };
+    }
+    
+    // =========================================================================
+    // CONTENT SETTINGS
+    // =========================================================================
+    var badgeText = Model.BadgeText?.Value ?? "";
+    var badgeBgColor = Model.BadgeBgColor?.Value ?? "rgba(91,110,245,0.1)";
+    var badgeBorderColor = Model.BadgeBorderColor?.Value ?? "rgba(91,110,245,0.3)";
+    var badgeTextColor = Model.BadgeTextColor?.Value ?? "#A5B4FC";
+    var badgeDotColor = Model.BadgeDotColor?.Value ?? "#22C55E";
+    
+    var title = RichText.ApplyColors(Model.Title?.Value);
+    var titleColor = Model.TitleColor?.Value ?? "#F0F0F5";
+    var titleSize = Model.TitleSize?.Value ?? "3rem";
+    var titleWeight = Model.TitleWeight?.Value ?? "900";
+    var titleLineHeight = Model.TitleLineHeight?.Value ?? "1.2";
+    var titleMaxWidth = Model.TitleMaxWidth?.Value;
+
+    var subtitle = RichText.ApplyColors(Model.Subtitle?.Value);
+    var subtitleColor = Model.SubtitleColor?.Value ?? "#e2e8f0";
+    var subtitleSize = Model.SubtitleSize?.Value ?? "1.2rem";
+    var subtitleWeight = Model.SubtitleWeight?.Value ?? "normal";
+    var subtitleMaxWidth = Model.SubtitleMaxWidth?.Value ?? "2xl";
+
+    var description = RichText.ApplyColors(Model.Description?.Value);
+    var descriptionColor = Model.DescriptionColor?.Value ?? "rgba(255,255,255,0.75)";
+    var descriptionMaxWidth = Model.DescriptionMaxWidth?.Value ?? "xl";
+    
+    // =========================================================================
+    // BUTTON SETTINGS
+    // =========================================================================
+    var hasButton = !string.IsNullOrWhiteSpace(Model.ButtonText?.Value);
+    var btnUrl = Model.ButtonUrl?.Value ?? "#";
+    var btnBg = Model.ButtonColor?.Value ?? "#3b82f6";
+    var btnClr = Model.ButtonTextColor?.Value ?? "#ffffff";
+    var btnBorderRadius = Model.ButtonBorderRadius?.Value ?? "rounded-xl";
+    var btnPadding = Model.ButtonPadding?.Value ?? "px-8 py-3";
+    var btnHoverOpacity = Model.ButtonHoverOpacity?.Value ?? "0.85";
+    
+    var hasButton2 = !string.IsNullOrWhiteSpace(Model.Button2Text?.Value);
+    var btn2Url = Model.Button2Url?.Value ?? "#";
+    var btn2Bg = Model.Button2Color?.Value ?? "transparent";
+    var btn2Clr = Model.Button2TextColor?.Value ?? "#ffffff";
+    var btn2BorderColor = Model.Button2BorderColor?.Value ?? "#2A2A30";
+    var btn2BorderWidth = Model.Button2BorderWidth?.Value ?? "1px";
+    var btn2BorderRadius = Model.Button2BorderRadius?.Value ?? "rounded-xl";
+    var btn2HoverOpacity = Model.Button2HoverOpacity?.Value ?? "0.85";
+    
+    // Helper function to safely convert opacity to percentage
+    double ParseOpacity(string opacityValue)
+    {
+        if (string.IsNullOrWhiteSpace(opacityValue)) return 0.85;
+        opacityValue = opacityValue.Replace(",", ".");
+        if (double.TryParse(opacityValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double result))
+            return result;
+        return 0.85;
+    }
+    
+    var btnOpacityPercent = (int)(ParseOpacity(btnHoverOpacity) * 100);
+    var btn2OpacityPercent = (int)(ParseOpacity(btn2HoverOpacity) * 100);
+    
+    // =========================================================================
+    // SOCIAL PROOF SETTINGS
+    // =========================================================================
+    var showSocialProof = Model.ShowSocialProof?.IsTrue ?? false;
+    var socialProofItems = Model.SocialProofItems?.Value ?? "Ingen kreditkortsinformation krävs,Gratis i 14 dagar,Avsluta när som helst";
+    var socialProofList = socialProofItems.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+    var socialProofColor = Model.SocialProofColor?.Value ?? "#56566A";
+    var socialProofIconColor = Model.SocialProofIconColor?.Value ?? "#22C55E";
+    var socialProofSeparatorColor = Model.SocialProofSeparatorColor?.Value ?? "#2A2A30";
+    
+    // =========================================================================
+    // STYLING SETTINGS
+    // =========================================================================
+    var borderRadius = Model.BorderRadius?.Value ?? "rounded-none";
+    var shadow = Model.Shadow?.Value ?? "shadow-none";
+    var border = Model.Border?.Value;
+    var zIndex = Model.ZIndex?.Value;
+    var sectionId = !string.IsNullOrWhiteSpace(Model.SectionId?.Value) ? Model.SectionId.Value : null;
+    var customClasses = Model.CustomClasses?.Value;
+    var customStyles = Model.CustomStyles?.Value;
+    
+    // =========================================================================
+    // VISIBILITY CLASSES
+    // =========================================================================
+    var hideClasses = "";
+    if (Model.HideOnMobile?.IsTrue ?? false) hideClasses += "hidden sm:block ";
+    if (Model.HideOnTablet?.IsTrue ?? false) hideClasses += "hidden md:block ";
+    if (Model.HideOnDesktop?.IsTrue ?? false) hideClasses += "hidden lg:flex ";
+    
+    // =========================================================================
+    // ANIMATION SETTINGS
+    // =========================================================================
+    var animate = Model.AnimateOnScroll?.IsTrue ?? false;
+    var animationType = Model.AnimationType?.Value ?? "fade-up";
+    var animationDelay = Model.AnimationDelay?.Value ?? "0";
+    var animationDuration = Model.AnimationDuration?.Value ?? "600";
+    
+    // Animation classes
+    var animationClass = "";
+    var animationStyle = "";
+    if (animate)
+    {
+        animationClass = animationType switch
+        {
+            "fade-up" => "animate-fade-up",
+            "fade-in" => "animate-fade-in",
+            "slide-in-left" => "animate-slide-left",
+            "slide-in-right" => "animate-slide-right",
+            "zoom-in" => "animate-zoom-in",
+            _ => "animate-fade-up"
+        };
+        animationStyle = $"animation-delay: {animationDelay}ms; animation-duration: {animationDuration}ms;";
+    }
+    
+    // =========================================================================
+    // DATA ATTRIBUTES
+    // =========================================================================
+    var dataAttrs = "";
+    if (!string.IsNullOrWhiteSpace(Model.DataAttributes?.Value))
+    {
+        try
+        {
+            var dataJson = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(Model.DataAttributes.Value);
+            if (dataJson != null)
+            {
+                foreach (var attr in dataJson)
+                    dataAttrs += $" {attr.Key}=\"{attr.Value}\"";
+            }
+        }
+        catch { /* Invalid JSON, ignore */ }
+    }
+}
+
+@if (!string.IsNullOrWhiteSpace(sectionId))
+{
+    <div id="@sectionId"></div>
+}
+
+<section @(sectionId != null ? $"id={sectionId}" : "")
+         class="@hideClasses @borderRadius @shadow @customClasses relative overflow-hidden"
+         style="@marginStyle @bgStyle @(zIndex != null && zIndex != "auto" ? $"z-index: {zIndex};" : "") @bgFilterStyle @customStyles"
+         @Html.Raw(dataAttrs)>
+    
+    <!-- GRID PATTERN OVERLAY -->
+    @if (showGridPattern)
+    {
+        <div class="absolute inset-0 pointer-events-none"
+             style="background-image: linear-gradient(@gridColor 1px, transparent 1px), linear-gradient(90deg, @gridColor 1px, transparent 1px); 
+                    background-size: @gridSize @gridSize; 
+                    opacity: @gridOpacity;
+                    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
+                    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);">
+        </div>
+    }
+    
+    <!-- BACKGROUND OVERLAY -->
+    @if (showOverlay)
+    {
+        if (!string.IsNullOrWhiteSpace(overlayGradient))
+        {
+            <div class="absolute inset-0 pointer-events-none"
+                 style="background: @overlayGradient; mix-blend-mode: @overlayBlendMode;">
+            </div>
+        }
+        else
+        {
+            <div class="absolute inset-0 pointer-events-none"
+                 style="background-color: @overlayColor; opacity: @overlayOpacity; mix-blend-mode: @overlayBlendMode;">
+            </div>
+        }
+    }
+    
+    <!-- MAIN CONTENT -->
+    <div class="relative z-10 flex flex-col @verticalClass h-full px-4"
+         style="min-height: @minHeight; padding: @paddingY @paddingX;">
+        
+        <div class="max-w-@contentMaxWidth mx-auto w-full flex flex-col gap-5 @animationClass"
+             style="@animationStyle">
+            
+            <!-- BADGE - Individual Alignment -->
+            @if (!string.IsNullOrWhiteSpace(badgeText))
+            {
+                <div class="flex @GetFlexJustifyClass(badgeAlignment)">
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold"
+                          style="background-color: @badgeBgColor; border: 1px solid @badgeBorderColor; color: @badgeTextColor;">
+                        <span class="w-1.5 h-1.5 rounded-full" style="background-color: @badgeDotColor;"></span>
+                        @badgeText
+                    </span>
+                </div>
+            }
+            
+            <!-- TITLE - Individual Alignment -->
+            @if (!string.IsNullOrWhiteSpace(title))
+            {
+                <div class="flex @GetFlexJustifyClass(titleAlignment)">
+                    <h1 class="font-black leading-tight"
+                        style="color: @titleColor; font-size: @titleSize; font-weight: @titleWeight; line-height: @titleLineHeight; @(!string.IsNullOrWhiteSpace(titleMaxWidth) ? $"max-width: {titleMaxWidth};" : "")">
+                        @Html.Raw(title)
+                    </h1>
+                </div>
+            }
+            
+            <!-- SUBTITLE - Individual Alignment -->
+            @if (!string.IsNullOrWhiteSpace(subtitle))
+            {
+                <div class="flex @GetFlexJustifyClass(subtitleAlignment)">
+                    <p class="leading-relaxed"
+                       style="color: @subtitleColor; font-size: @subtitleSize; font-weight: @subtitleWeight; max-width: @(subtitleMaxWidth == "2xl" ? "42rem" : subtitleMaxWidth == "xl" ? "36rem" : subtitleMaxWidth);">
+                        @Html.Raw(subtitle)
+                    </p>
+                </div>
+            }
+            
+            <!-- DESCRIPTION - Individual Alignment -->
+            @if (!string.IsNullOrWhiteSpace(description))
+            {
+                <div class="flex @GetFlexJustifyClass(descriptionAlignment)">
+                    <p class="text-lg leading-relaxed"
+                       style="color: @descriptionColor; max-width: @(descriptionMaxWidth == "xl" ? "36rem" : descriptionMaxWidth);">
+                        @Html.Raw(description)
+                    </p>
+                </div>
+            }
+            
+            <!-- BUTTONS - Individual Alignment -->
+            @if (hasButton || hasButton2)
+            {
+                <div class="flex @GetFlexJustifyClass(buttonsAlignment) mt-2">
+                    <div class="flex flex-wrap gap-4">
+                        @if (hasButton)
+                        {
+                            <a href="@btnUrl"
+                               class="inline-block font-bold text-base transition-all hover:opacity-@btnOpacityPercent @btnBorderRadius @btnPadding"
+                               style="background-color: @btnBg; color: @btnClr;">
+                                @Model.ButtonText.Value
+                            </a>
+                        }
+                        
+                        @if (hasButton2)
+                        {
+                            <a href="@btn2Url"
+                               class="inline-block font-bold text-base transition-all hover:opacity-@btn2OpacityPercent @btn2BorderRadius"
+                               style="background-color: @btn2Bg; color: @btn2Clr; border: @btn2BorderWidth solid @btn2BorderColor;">
+                                @Model.Button2Text.Value
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+            
+            <!-- SOCIAL PROOF - Individual Alignment -->
+            @if (showSocialProof && socialProofList.Any())
+            {
+                <div class="flex @GetFlexJustifyClass(socialProofAlignment) mt-6">
+                    <div class="flex flex-wrap items-center gap-4 text-sm"
+                         style="color: @socialProofColor;">
+                        
+                        @for (int i = 0; i < socialProofList.Count; i++)
+                        {
+                            <div class="flex items-center gap-2">
+                                <span style="color: @socialProofIconColor;">✓</span>
+                                <span>@socialProofList[i]</span>
+                            </div>
+                            
+                            @if (i < socialProofList.Count - 1)
+                            {
+                                <span class="w-px h-4" style="background-color: @socialProofSeparatorColor;"></span>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ANIMATION KEYFRAMES -->
+@if (animate)
+{
+    <style>
+        @@keyframes fade-up {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @@keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @@keyframes slide-left {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @@keyframes slide-right {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @@keyframes zoom-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .animate-fade-up {
+            animation: fade-up 0.6s ease forwards;
+            opacity: 0;
+        }
+        
+        .animate-fade-in {
+            animation: fade-in 0.6s ease forwards;
+            opacity: 0;
+        }
+        
+        .animate-slide-left {
+            animation: slide-left 0.6s ease forwards;
+            opacity: 0;
+        }
+        
+        .animate-slide-right {
+            animation: slide-right 0.6s ease forwards;
+            opacity: 0;
+        }
+        
+        .animate-zoom-in {
+            animation: zoom-in 0.6s ease forwards;
+            opacity: 0;
+        }
+    </style>
+}

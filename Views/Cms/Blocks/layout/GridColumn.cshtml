@@ -1,0 +1,256 @@
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.ColumnBlocks
+@using BrixCMS.Open.Extensions
+@using System.Text.Json
+@model GridColumn
+@inject BrixCMS.Open.Data.BrixDbContext Db
+@inject BlockRegistry Registry
+
+@{
+    var blockData = (BrixCMS.Open.Data.Block)ViewData["RawBlock"];
+
+    var childBlocks = Db.Blocks
+        .Where(b => b.ParentId == blockData.Id)
+        .OrderBy(b => b.SortOrder)
+        .ToList();
+
+    // Pre-load grandchildren so nested blocks (e.g. AccordionBlock) don't need extra DB queries
+    var childIds = childBlocks.Select(b => b.Id).ToList();
+    var grandChildren = Db.Blocks
+        .Where(b => b.ParentId != null && childIds.Contains((Guid)b.ParentId))
+        .OrderBy(b => b.SortOrder)
+        .ToList();
+    var allDescendants = childBlocks.Concat(grandChildren).ToList();
+
+    // ── Grid class helper (mirrors Next.js getColsClass) ─────────────────
+    static string GetSimpleGridClass(int cols) => cols switch
+    {
+        1 => "grid-cols-1",
+        2 => "grid-cols-1 md:grid-cols-2",
+        3 => "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+        4 => "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+        5 => "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5",
+        6 => "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6",
+        _ => "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    };
+
+    // ── Decide rendering mode: MaxColumns (simple) or RowLayoutsJson (advanced) ──
+    var maxColsRaw = Model.MaxColumns?.Value;
+    var hasMaxCols = !string.IsNullOrWhiteSpace(maxColsRaw) && int.TryParse(maxColsRaw, out _);
+    var useSimpleGrid = hasMaxCols || string.IsNullOrWhiteSpace(Model.RowLayoutsJson?.Value);
+
+    string simpleGridClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+    if (int.TryParse(maxColsRaw, out var parsedMax))
+        simpleGridClass = GetSimpleGridClass(parsedMax);
+
+    // ── Advanced row layout parsing (only when RowLayoutsJson is set) ────
+    var rowLayouts = new List<RowLayout>();
+    if (!useSimpleGrid)
+    {
+        try
+        {
+            rowLayouts = JsonSerializer.Deserialize<List<RowLayout>>(Model.RowLayoutsJson!.Value)
+                         ?? new List<RowLayout>();
+        }
+        catch { }
+        if (!rowLayouts.Any())
+            rowLayouts.Add(new RowLayout { Columns = 3, Breakpoint = "lg" });
+    }
+
+    // ── Distribute children into rows (advanced mode only) ───────────────
+    var rows = new List<List<BrixCMS.Open.Data.Block>>();
+    if (!useSimpleGrid)
+    {
+        var idx = 0;
+        foreach (var layout in rowLayouts)
+        {
+            var row = new List<BrixCMS.Open.Data.Block>();
+            for (int i = 0; i < layout.Columns && idx < childBlocks.Count; i++)
+                row.Add(childBlocks[idx++]);
+            if (row.Any()) rows.Add(row);
+            if (idx >= childBlocks.Count) break;
+        }
+        if (idx < childBlocks.Count)
+        {
+            var remaining = childBlocks.Skip(idx).ToList();
+            rows.Add(remaining);
+        }
+    }
+
+    static string GetGridColsClass(int columns, string breakpoint)
+    {
+        var prefix = breakpoint == "md" ? "md:" : "lg:";
+        return columns switch
+        {
+            1 => $"{prefix}grid-cols-1", 2 => $"{prefix}grid-cols-2",
+            3 => $"{prefix}grid-cols-3", 4 => $"{prefix}grid-cols-4",
+            5 => $"{prefix}grid-cols-5", 6 => $"{prefix}grid-cols-6",
+            _ => $"{prefix}grid-cols-3"
+        };
+    }
+
+    // ── Background & Layout ───────────────────────────────────────────────
+    var bgColor    = Model.BackgroundColor?.Value;
+    var bgImage    = Model.BackgroundImage?.Value;
+    var overlayColor   = Model.BackgroundOverlayColor?.Value ?? "#000000";
+    var overlayOpacity = Model.BackgroundOverlayOpacity?.Value ?? "0";
+    var hasOverlay = overlayOpacity != "0" && !string.IsNullOrWhiteSpace(overlayOpacity);
+    var gap    = string.IsNullOrWhiteSpace(Model.Gap?.Value) ? "gap-6" : Model.Gap.Value;
+    var padY   = string.IsNullOrWhiteSpace(Model.PaddingY?.Value) ? "3rem" : Model.PaddingY.Value;
+    var padX   = string.IsNullOrWhiteSpace(Model.PaddingX?.Value) ? "1.5rem" : Model.PaddingX.Value;
+    var alignItems = Model.ItemsAlign?.Value switch
+    {
+        "start" => "start", "center" => "center", "end" => "end", _ => "stretch"
+    };
+    var sectionId = Model.SectionId?.Value;
+    var mobileDefaultCols = int.TryParse(Model.MobileDefaultCols?.Value, out var mc) ? mc : 1;
+    var tabletDefaultCols = int.TryParse(Model.TabletDefaultCols?.Value, out var tc) ? tc : 2;
+
+    // ── Header text styles ────────────────────────────────────────────────
+    var headerAlign  = Model.HeaderTextAlign?.Value ?? "left";
+    var titleSidaStyle = $"color:{Model.TitleSidaColor?.Value}; text-align:{(Model.TitleSidaAlign?.Value ?? "left")};";
+    var titleWeight    = !string.IsNullOrWhiteSpace(Model.TitleWeight?.Value) ? Model.TitleWeight.Value : "900";
+    var titleLineHeight = !string.IsNullOrWhiteSpace(Model.TitleLineHeight?.Value) ? Model.TitleLineHeight.Value : "1.2";
+    var titleStyle     = $"color:{Model.TitleColor?.Value}; font-weight:{titleWeight}; line-height:{titleLineHeight};";
+    var subtitleWeight = !string.IsNullOrWhiteSpace(Model.SubtitleWeight?.Value) ? Model.SubtitleWeight.Value : "normal";
+    var subtitleStyle  = $"color:{Model.SubtitleColor?.Value}; font-weight:{subtitleWeight}; text-transform:uppercase; letter-spacing:0.08em;";
+    var descWeight     = !string.IsNullOrWhiteSpace(Model.DescriptionWeight?.Value) ? Model.DescriptionWeight.Value : "400";
+    var descLineHeight = !string.IsNullOrWhiteSpace(Model.DescriptionLineHeight?.Value) ? Model.DescriptionLineHeight.Value : "1.5";
+    var descStyle      = $"color:{Model.DescriptionColor?.Value ?? "inherit"}; font-weight:{descWeight}; line-height:{descLineHeight};";
+
+    // ── Per-Column Styling ────────────────────────────────────────────────
+    var colBg           = Model.ColumnBackgroundColor?.Value;
+    var colBorderColor  = Model.ColumnBorderColor?.Value;
+    var colBorderWidth  = Model.ColumnBorderWidth?.Value ?? "0";
+    var colBorderRadius = Model.ColumnBorderRadius?.Value ?? "0";
+    var colPadding      = Model.ColumnPadding?.Value ?? "0";
+    var colShadowVal    = Model.ColumnShadow?.Value ?? "none";
+
+    var colStyleParts = new System.Text.StringBuilder();
+    if (!string.IsNullOrWhiteSpace(colBg) && colBg != "transparent")
+        colStyleParts.Append($"background-color:{colBg};");
+    if (colBorderWidth != "0" && !string.IsNullOrWhiteSpace(colBorderColor))
+        colStyleParts.Append($"border:{colBorderWidth} solid {colBorderColor};");
+    if (colBorderRadius != "0")
+        colStyleParts.Append($"border-radius:{colBorderRadius};");
+    if (!string.IsNullOrWhiteSpace(colPadding) && colPadding != "0")
+        colStyleParts.Append($"padding:{colPadding};");
+    var colStyle = colStyleParts.ToString();
+
+    var colShadowClass = colShadowVal switch
+    {
+        "sm" => "shadow-sm", "md" => "shadow-md", "lg" => "shadow-lg", _ => ""
+    };
+
+    var hasHeader = !string.IsNullOrWhiteSpace(Model.TitleSida?.Value)
+                 || !string.IsNullOrWhiteSpace(Model.Title?.Value)
+                 || !string.IsNullOrWhiteSpace(Model.SubTitle?.Value)
+                 || !string.IsNullOrWhiteSpace(Model.Description?.Value);
+}
+
+<section @(string.IsNullOrWhiteSpace(sectionId) ? "" : $"id=\"{sectionId}\"")
+         class="relative overflow-hidden"
+         style="background-color:@bgColor; @(string.IsNullOrWhiteSpace(bgImage) ? "" : $"background-image:url('{bgImage}'); background-size:cover; background-position:center;")">
+
+    @if (hasOverlay)
+    {
+        <div class="absolute inset-0 pointer-events-none"
+             style="background-color:@overlayColor; opacity:@overlayOpacity; z-index:0;"></div>
+    }
+
+    <div class="relative z-10" style="padding:@padY @padX">
+        <div class="container mx-auto max-w-7xl">
+
+            @* ── Section Header (all text BEFORE the grid) ── *@
+            @if (hasHeader)
+            {
+                <div class="mb-8 text-@headerAlign">
+                    @if (!string.IsNullOrWhiteSpace(Model.TitleSida?.Value))
+                    {
+                        <p class="font-bold tracking-widest uppercase mb-4"
+                           style="@titleSidaStyle font-size:0.75rem; letter-spacing:0.1em;">
+                            @RichText.Render(Model.TitleSida.Value)
+                        </p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
+                    {
+                        <h2 class="font-bold mb-4" style="@titleStyle">
+                            @RichText.Render(Model.Title.Value)
+                        </h2>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SubTitle?.Value))
+                    {
+                        <h3 class="mb-3 opacity-80" style="@subtitleStyle">
+                            @RichText.Render(Model.SubTitle.Value)
+                        </h3>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Description?.Value))
+                    {
+                        <p class="mb-8 leading-relaxed" style="@descStyle">
+                            @RichText.Render(Model.Description.Value)
+                        </p>
+                    }
+                </div>
+            }
+
+            @* ── Simple Grid (MaxColumns mode) ── *@
+            @if (useSimpleGrid)
+            {
+                <div class="grid @simpleGridClass @gap brix-grid" style="align-items:@alignItems">
+                    @foreach (var child in childBlocks)
+                    {
+                        var childModel = Registry.CreateModel(child);
+                        var childData = new ViewDataDictionary(ViewData);
+                        childData["RawBlock"] = child;
+                        childData["AllBlocks"] = allDescendants;
+                        <div class="h-full brix-grid-item @colShadowClass" style="@colStyle">
+                            @await Html.PartialAsync(Registry.GetViewPath(child.Type), childModel, childData)
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                @* ── Advanced Row Layout (RowLayoutsJson mode) ── *@
+                <div class="space-y-8">
+                    @for (int rowIdx = 0; rowIdx < rows.Count; rowIdx++)
+                    {
+                        var row = rows[rowIdx];
+                        var layout = rowIdx < rowLayouts.Count ? rowLayouts[rowIdx] : null;
+                        int desktopCols = layout?.Columns ?? (row.Count > 0 ? row.Count : 3);
+                        int tabletCols  = layout?.Breakpoint == "md" ? desktopCols : Math.Min(desktopCols, tabletDefaultCols);
+                        string rowGridClass = $"grid grid-cols-{mobileDefaultCols} md:grid-cols-{tabletCols} lg:grid-cols-{desktopCols} {gap}";
+
+                        <div class="@rowGridClass brix-grid" style="align-items:@alignItems">
+                            @foreach (var child in row)
+                            {
+                                var childModel = Registry.CreateModel(child);
+                                var childData = new ViewDataDictionary(ViewData);
+                                childData["RawBlock"] = child;
+                                childData["AllBlocks"] = allDescendants;
+                                <div class="h-full brix-grid-item @colShadowClass" data-row="@rowIdx" style="@colStyle">
+                                    @await Html.PartialAsync(Registry.GetViewPath(child.Type), childModel, childData)
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+        </div>
+    </div>
+</section>
+
+<style>
+    .brix-grid-item {
+        animation: brixFadeUp 0.5s ease-out forwards;
+        opacity: 0;
+    }
+    @@keyframes brixFadeUp {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @@media (max-width: 640px) {
+        .brix-grid-item { animation-delay: 0s !important; }
+    }
+</style>

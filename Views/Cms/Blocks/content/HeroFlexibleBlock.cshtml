@@ -1,0 +1,217 @@
+@using BrixCMS.Open.Models.Blocks
+@model HeroFlexibleBlock
+
+@{
+    var bgType = Model.BackgroundType?.Value ?? "image";
+    var bgVideo = Model.BackgroundVideo?.Value ?? "";
+    var bgImage = Model.BackgroundImage?.Value ?? "";
+    var bgColor = Model.BackgroundColor?.Value ?? "#1e293b";
+    var bgGradient = Model.BackgroundGradient?.Value ?? "";
+
+    var videoAutoplay = Model.VideoAutoplay?.IsTrue ?? true;
+    var videoMuted = Model.VideoMuted?.IsTrue ?? true;
+    var videoLoop = Model.VideoLoop?.IsTrue ?? true;
+    var videoObjectFit = Model.VideoObjectFit?.Value ?? "cover";
+
+    var overlayOpacity = Model.OverlayOpacity?.Value ?? "0.5";
+    var overlayColor = Model.OverlayColor?.Value ?? "#000000";
+
+    var height = Model.Height?.Value ?? "600px";
+    var contentAlign = Model.ContentAlign?.Value ?? "center";
+    var verticalAlign = Model.VerticalAlign?.Value ?? "center";
+    var contentMaxWidth = Model.ContentMaxWidth?.Value ?? "4xl";
+    var paddingY = Model.PaddingY?.Value ?? "3rem";
+
+    var badgeText = Model.BadgeText?.Value ?? "";
+    var badgeBgColor = Model.BadgeBgColor?.Value ?? "rgba(255,255,255,0.1)";
+    var badgeTextColor = Model.BadgeTextColor?.Value ?? "#ffffff";
+
+    var title = Model.Title?.Value ?? "";
+    var titleColor = Model.TitleColor?.Value ?? "#ffffff";
+    var titleSize = Model.TitleSize?.Value ?? "3rem";
+    var titleWeight = Model.TitleWeight?.Value ?? "800";
+    var titleAlignment = Model.TitleAlignment?.Value ?? "center";
+    var titleMaxWidth = Model.TitleMaxWidth?.Value ?? "";
+
+    var subtitle = Model.Subtitle?.Value ?? "";
+    var subtitleColor = Model.SubtitleColor?.Value ?? "#e2e8f0";
+    var subtitleSize = Model.SubtitleSize?.Value ?? "1.25rem";
+    var subtitleWeight = Model.SubtitleWeight?.Value ?? "normal";
+    var subtitleAlignment = Model.SubtitleAlignment?.Value ?? "center";
+
+    var description = Model.Description?.Value ?? "";
+    var descriptionColor = Model.DescriptionColor?.Value ?? "#cbd5e1";
+    var descriptionSize = Model.DescriptionSize?.Value ?? "1rem";
+    var descriptionWeight = Model.DescriptionWeight?.Value ?? "normal";
+    var descriptionAlignment = Model.DescriptionAlignment?.Value ?? "center";
+    var descriptionMaxWidth = Model.DescriptionMaxWidth?.Value ?? "";
+
+    var button1Text = Model.Button1Text?.Value ?? "";
+    var button1Url = Model.Button1Url?.Value ?? "#";
+    var button1Style = Model.Button1Style?.Value ?? "primary";
+    var button1Color = Model.Button1Color?.Value ?? "#3b82f6";
+    var button1TextColor = Model.Button1TextColor?.Value ?? "#ffffff";
+    var button1BorderRadius = Model.Button1BorderRadius?.Value ?? "rounded-xl";
+    var button1Padding = Model.Button1Padding?.Value ?? "px-6 py-3";
+
+    var button2Text = Model.Button2Text?.Value ?? "";
+    var button2Url = Model.Button2Url?.Value ?? "#";
+    var button2Style = Model.Button2Style?.Value ?? "outline";
+    var button2Color = Model.Button2Color?.Value ?? "#ffffff";
+    var button2TextColor = Model.Button2TextColor?.Value ?? "#ffffff";
+    var button2BorderColor = Model.Button2BorderColor?.Value ?? "#ffffff";
+    var button2BorderRadius = Model.Button2BorderRadius?.Value ?? "rounded-xl";
+    var button2Padding = Model.Button2Padding?.Value ?? "px-6 py-3";
+
+    var button3Text = Model.Button3Text?.Value ?? "";
+    var button3Url = Model.Button3Url?.Value ?? "#";
+    var button3Style = Model.Button3Style?.Value ?? "outline";
+    var button3Color = Model.Button3Color?.Value ?? "#ffffff";
+    var button3TextColor = Model.Button3TextColor?.Value ?? "#ffffff";
+    var button3BorderColor = Model.Button3BorderColor?.Value ?? "#ffffff";
+    var button3BorderRadius = Model.Button3BorderRadius?.Value ?? "rounded-xl";
+    var button3Padding = Model.Button3Padding?.Value ?? "px-6 py-3";
+
+    var buttonsGap = Model.ButtonsGap?.Value ?? "gap-4";
+    var buttonsAlignment = Model.ButtonsAlignment?.Value ?? "center";
+
+    string GetAlignClass(string align) => align switch
+    {
+        "center" => "justify-center text-center",
+        "left" => "justify-start text-left",
+        "right" => "justify-end text-right",
+        _ => "justify-center text-center"
+    };
+
+    string GetJustifyClass(string align) => align switch
+    {
+        "center" => "justify-center",
+        "left" => "justify-start",
+        "right" => "justify-end",
+        _ => "justify-center"
+    };
+
+    string GetVertClass(string align) => align switch
+    {
+        "top" => "justify-start",
+        "center" => "justify-center",
+        "bottom" => "justify-end",
+        _ => "justify-center"
+    };
+}
+
+<section class="relative overflow-hidden" style="min-height: @height; background-color: @bgColor;">
+    
+    <!-- BACKGROUND: Video -->
+    @if (bgType == "video" && !string.IsNullOrWhiteSpace(bgVideo))
+    {
+        <video class="absolute inset-0 w-full h-full object-cover"
+               autoplay="@(videoAutoplay ? "autoplay" : null)"
+               muted="@(videoMuted ? "muted" : null)"
+               loop="@(videoLoop ? "loop" : null)"
+               playsinline>
+            <source src="@bgVideo" type="video/mp4">
+        </video>
+        @if (!string.IsNullOrWhiteSpace(Model.VideoFallbackImage?.Value))
+        {
+            <img src="@Model.VideoFallbackImage.Value" class="absolute inset-0 w-full h-full object-cover" alt="" />
+        }
+    }
+
+    <!-- BACKGROUND: Image -->
+    @if (bgType == "image" && !string.IsNullOrWhiteSpace(bgImage))
+    {
+        <img src="@bgImage" class="absolute inset-0 w-full h-full object-cover" alt="" />
+    }
+
+    <!-- BACKGROUND: Gradient -->
+    @if (!string.IsNullOrWhiteSpace(bgGradient))
+    {
+        <div class="absolute inset-0" style="background: @bgGradient;"></div>
+    }
+
+    <!-- OVERLAY -->
+    @if ((bgType == "video" || bgType == "image" || !string.IsNullOrWhiteSpace(bgGradient)) && overlayOpacity != "0")
+    {
+        <div class="absolute inset-0" style="background-color: @overlayColor; opacity: @overlayOpacity;"></div>
+    }
+
+    <!-- CONTENT -->
+    <div class="relative z-10 flex flex-col @GetVertClass(verticalAlign) h-full px-4" style="padding: @paddingY;">
+        <div class="max-w-@contentMaxWidth mx-auto w-full flex flex-col gap-5 @GetAlignClass(contentAlign)">
+            
+            <!-- Badge -->
+            @if (!string.IsNullOrWhiteSpace(badgeText))
+            {
+                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium"
+                      style="background-color: @badgeBgColor; color: @badgeTextColor;">
+                    @badgeText
+                </span>
+            }
+
+            <!-- Title -->
+            @if (!string.IsNullOrWhiteSpace(title))
+            {
+                <h1 class="font-bold leading-tight @GetAlignClass(titleAlignment)"
+                    style="color: @titleColor; font-size: @titleSize; font-weight: @titleWeight; @(!string.IsNullOrWhiteSpace(titleMaxWidth) ? $"max-width: {titleMaxWidth};" : "")">
+                    @title
+                </h1>
+            }
+
+            <!-- Subtitle -->
+            @if (!string.IsNullOrWhiteSpace(subtitle))
+            {
+                <p class="leading-relaxed @GetAlignClass(subtitleAlignment)"
+                   style="color: @subtitleColor; font-size: @subtitleSize; font-weight: @subtitleWeight;">
+                    @subtitle
+                </p>
+            }
+
+            <!-- Description -->
+            @if (!string.IsNullOrWhiteSpace(description))
+            {
+                <p class="leading-relaxed @GetAlignClass(descriptionAlignment)"
+                   style="color: @descriptionColor; font-size: @descriptionSize; font-weight: @descriptionWeight; @(!string.IsNullOrWhiteSpace(descriptionMaxWidth) ? $"max-width: {descriptionMaxWidth};" : "")">
+                    @description
+                </p>
+            }
+
+            <!-- Buttons -->
+            @if (!string.IsNullOrWhiteSpace(button1Text) || !string.IsNullOrWhiteSpace(button2Text) || !string.IsNullOrWhiteSpace(button3Text))
+            {
+                <div class="flex flex-wrap @GetJustifyClass(buttonsAlignment) @buttonsGap mt-2">
+                    
+                    <!-- Button 1 -->
+                    @if (!string.IsNullOrWhiteSpace(button1Text))
+                    {
+                        <a href="@button1Url"
+                           class="inline-block font-semibold transition-opacity hover:opacity-80 @button1BorderRadius @button1Padding"
+                           style="background-color: @button1Color; color: @button1TextColor;">
+                            @button1Text
+                        </a>
+                    }
+
+                    <!-- Button 2 -->
+                    @if (!string.IsNullOrWhiteSpace(button2Text))
+                    {
+                        <a href="@button2Url"
+                           class="inline-block font-semibold transition-opacity hover:opacity-80 @button2BorderRadius @button2Padding"
+                           style="background-color: transparent; color: @button2TextColor; border: 1px solid @button2BorderColor;">
+                            @button2Text
+                        </a>
+                    }
+
+                    <!-- Button 3 -->
+                    @if (!string.IsNullOrWhiteSpace(button3Text))
+                    {
+                        <a href="@button3Url"
+                           class="inline-block font-semibold transition-opacity hover:opacity-80 @button3BorderRadius @button3Padding"
+                           style="background-color: transparent; color: @button3TextColor; border: 1px solid @button3BorderColor;">
+                            @button3Text
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>

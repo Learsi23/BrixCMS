@@ -1,0 +1,11 @@
+@model BrixCMS.Open.Models.Blocks.DividerBlock
+@{
+    var padY = Model.PaddingY?.Value ?? "2rem";
+    var color = Model.Color?.Value ?? "#e5e7eb";
+    var thickness = Model.Thickness?.Value ?? "1px";
+    var width = Model.Width?.Value ?? "100%";
+    var style = Model.Style?.Value ?? "solid";
+}
+<div style="padding:@padY 0; display:flex; justify-content:center;">
+    <hr style="width:@width; border:none; border-top:@thickness @style @color; margin:0;" />
+</div>

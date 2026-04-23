@@ -1,0 +1,544 @@
+@using BrixCMS.Open.Areas.Manager.Models
+@model MediaViewModel
+@{
+    bool isPicker = ViewBag.PickerMode ?? false;
+    if (isPicker) { Layout = null; }
+    else { Layout = "_ManagerLayout"; }
+
+    var currentFolder = ViewBag.CurrentFolder as string ?? "";
+    var breadcrumbs = ViewBag.Breadcrumbs as List<(string Name, string Path)> ?? new List<(string, string)>();
+}
+
+@if (isPicker) {
+    @:<!DOCTYPE html>
+    @:<html>
+    <head>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>.media-item { transition: all 0.2s ease; } .media-item:hover { transform: translateY(-2px); }</style>
+    </head>
+    @:<body class="bg-gray-50 p-6">
+}
+
+<div class="container mx-auto px-12" x-data="mediaLib()">
+
+    @* Header *@
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-black text-gray-800 tracking-tight">Media Library</h2>
+            <p class="text-xs text-gray-400 font-mono">/uploads/@currentFolder</p>
+        </div>
+        @if (!isPicker)
+        {
+            <a href="/Manager" class="text-sm text-gray-600 hover:text-gray-900">← Back</a>
+        }
+    </div>
+
+    @* Breadcrumb *@
+    <div class="flex items-center gap-2 mb-4 text-sm flex-wrap">
+        <a href="@Url.Action("Index", new { folder = "", picker = isPicker })"
+           class="px-3 py-1 bg-white border rounded-full hover:bg-gray-50 @(string.IsNullOrEmpty(currentFolder) ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "")">
+            📁 Root
+        </a>
+        @foreach (var crumb in breadcrumbs)
+        {
+            <span class="text-gray-400">/</span>
+            <a href="@Url.Action("Index", new { folder = crumb.Path, picker = isPicker })"
+               class="px-3 py-1 bg-white border rounded-full hover:bg-gray-50">
+                📁 @crumb.Name
+            </a>
+        }
+    </div>
+
+    @* Drop zone *@
+    <div @@dragover.prevent="dragging = true"
+         @@dragleave.prevent="dragging = false"
+         @@drop.prevent="dragging = false; $refs.fileInput.files = $event.dataTransfer.files; $refs.uploadForm.submit()"
+         :class="{ 'border-emerald-500 bg-emerald-50': dragging }"
+         class="border-4 border-dashed border-gray-200 rounded-2xl p-8 text-center mb-6 bg-white transition-all">
+        <form id="uploadForm" x-ref="uploadForm" asp-action="Upload" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="folder" value="@currentFolder" />
+            <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+            <input type="file" name="file" x-ref="fileInput" class="hidden" @@change="$refs.uploadForm.submit()" accept="image/*" />
+            <div class="text-gray-400 mb-2"><span class="text-4xl">📸</span></div>
+            <p class="text-gray-600">
+                Drag images or
+                <button type="button" @@click="$refs.fileInput.click()" class="text-emerald-600 font-bold hover:underline">select files</button>
+            </p>
+            <p class="text-xs text-gray-400 mt-2">JPG, PNG, GIF, WEBP, SVG (max 10 MB)</p>
+        </form>
+    </div>
+
+    @* Toolbar *@
+    <div class="flex justify-between items-center mb-4 gap-3 flex-wrap">
+        <div class="flex gap-2 flex-wrap">
+            @if (!isPicker)
+            {
+                <button @@click="showNewFolderModal = true"
+                        class="bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">
+                    📁 New Folder
+                </button>
+                <button @@click="selectMode = !selectMode; if(!selectMode) clearSelection()"
+                        :class="selectMode ? 'bg-violet-500 text-white border-violet-500' : 'bg-white border-gray-200'"
+                        class="border hover:opacity-90 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-colors">
+                    <span x-text="selectMode ? '✓ Select mode ON' : '☐ Select'"></span>
+                </button>
+
+                @* Batch delete button — appears when items are selected *@
+                <button x-show="selectedFiles.length + selectedFolders.length > 0"
+                        @@click="openBatchDelete()"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">
+                    🗑 Delete selected (<span x-text="selectedFiles.length + selectedFolders.length"></span>)
+                </button>
+            }
+        </div>
+        <div class="text-xs text-gray-400">@Model.Files.Count files · @Model.Folders.Count folders</div>
+    </div>
+
+    @* Error message *@
+    @if (TempData["Error"] != null)
+    {
+        <div class="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-4">@TempData["Error"]</div>
+    }
+
+    @* ── Folders grid ── *@
+    @if (Model.Folders.Any())
+    {
+        <div class="mb-8">
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Folders</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                @foreach (var folder in Model.Folders)
+                {
+                    var folderFull = string.IsNullOrEmpty(currentFolder) ? folder : currentFolder + "/" + folder;
+                    <div class="group relative"
+                         :class="isFolderSelected('@folder') ? 'ring-2 ring-violet-400 rounded-xl' : ''">
+
+                        @* Selection checkbox *@
+                        @if (!isPicker)
+                        {
+                            <button x-show="selectMode"
+                                    @@click.stop="toggleFolder('@folder')"
+                                    :class="isFolderSelected('@folder') ? 'bg-violet-500 text-white' : 'bg-white text-gray-400 border border-gray-300'"
+                                    class="absolute -top-2 -left-2 z-20 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow">
+                                ✓
+                            </button>
+                        }
+
+                        <a href="@Url.Action("Index", new { folder = folderFull, picker = isPicker })"
+                           @@click="if(selectMode){ $event.preventDefault(); toggleFolder('@folder'); }"
+                           class="block bg-white border border-gray-200 rounded-xl p-3 text-center hover:border-emerald-500 hover:shadow-md transition-all">
+                            <div class="text-3xl mb-1">📁</div>
+                            <div class="text-xs truncate font-medium">@folder</div>
+                        </a>
+
+                        @if (!isPicker)
+                        {
+                            @* Delete single folder *@
+                            <button x-show="!selectMode"
+                                    @@click.stop="openDeleteModal('folder', '@folder', false)"
+                                    class="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 z-10 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow">
+                                ×
+                            </button>
+                            @* Move folder *@
+                            <button type="button"
+                                    x-show="!selectMode"
+                                    @@click.stop="openMoveFolder('@folder')"
+                                    class="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 z-10 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-blue-600 shadow">
+                                <i class="fas fa-arrows-alt" style="font-size:9px"></i>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @* ── Images grid ── *@
+    @if (Model.Files.Any())
+    {
+        <h3 class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3">Images</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            @foreach (var file in Model.Files)
+            {
+                var folderPath = string.IsNullOrEmpty(currentFolder) ? "" : currentFolder + "/";
+                var fullUrl = "/uploads/" + folderPath + file;
+
+                <div class="group relative media-item"
+                     :class="isFileSelected('@file') ? 'ring-2 ring-violet-400 rounded-xl' : ''">
+
+                    @* Selection checkbox *@
+                    @if (!isPicker)
+                    {
+                        <button x-show="selectMode"
+                                @@click.stop="toggleFile('@file')"
+                                :class="isFileSelected('@file') ? 'bg-violet-500 text-white' : 'bg-white text-gray-400 border border-gray-300'"
+                                class="absolute -top-2 -left-2 z-20 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow">
+                            ✓
+                        </button>
+                    }
+
+                    <div class="bg-white border border-gray-200 rounded-xl p-2 hover:border-emerald-500 hover:shadow-md transition-all">
+                        <img src="@fullUrl"
+                             class="h-36 w-full object-cover rounded-lg mb-2 cursor-zoom-in"
+                             @@click="@(isPicker
+                                ? $"selectMediaItem('{fullUrl}')"
+                                : $"if(selectMode){{ toggleFile('{file}') }} else {{ lightbox = {{ show: true, url: '{fullUrl}', name: '{file}' }} }}")" />
+                        <div class="text-[10px] truncate font-mono text-gray-500 px-1">@file</div>
+                    </div>
+
+                    @if (!isPicker)
+                    {
+                        @* Delete single file *@
+                        <button x-show="!selectMode"
+                                @@click.stop="openDeleteModal('file', '@file', true)"
+                                class="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 z-10 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow">
+                            ×
+                        </button>
+                        @* Move file *@
+                        <button type="button"
+                                x-show="!selectMode"
+                                @@click.stop="openMoveFile('@file')"
+                                class="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 z-10 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-blue-600 shadow">
+                            <i class="fas fa-arrows-alt" style="font-size:9px"></i>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (!Model.Folders.Any() && !Model.Files.Any())
+    {
+        <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+            <div class="text-5xl mb-4">📪</div>
+            <p class="text-gray-400">This folder is empty</p>
+            <p class="text-xs text-gray-300 mt-2">Upload images or create folders to organize</p>
+        </div>
+    }
+
+    @* ══════════════════════════════════════════════════════
+       MODALS
+       ══════════════════════════════════════════════════════ *@
+
+    @* New Folder modal *@
+    <div x-show="showNewFolderModal"
+         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+         x-cloak @@keydown.escape.window="showNewFolderModal = false">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" @@click.outside="showNewFolderModal = false">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">📁</div>
+                <h3 class="text-lg font-black text-gray-800">New Folder</h3>
+            </div>
+            <form asp-action="CreateFolder" method="post">
+                <input type="hidden" name="folder" value="@currentFolder" />
+                <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+                <input type="text" name="newFolderName" x-model="newFolderName"
+                       placeholder="Folder name"
+                       class="w-full px-4 py-3 border border-gray-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                       required />
+                <div class="flex gap-2 justify-end">
+                    <button type="button" @@click="showNewFolderModal = false"
+                            class="px-5 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-medium">Cancel</button>
+                    <button type="submit" :disabled="!newFolderName"
+                            class="px-5 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 text-sm font-bold disabled:opacity-40">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* ── Delete modal (single item) ── *@
+    <div x-show="deleteModal.show"
+         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+         x-cloak @@keydown.escape.window="deleteModal.show = false">
+        <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden" @@click.outside="deleteModal.show = false">
+
+            @* Red header bar *@
+            <div class="bg-red-500 px-6 py-4 flex items-center gap-3">
+                <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white text-lg">🗑</div>
+                <h3 class="text-white font-black text-lg" x-text="deleteModal.type === 'folder' ? 'Delete Folder' : 'Delete Image'"></h3>
+            </div>
+
+            <div class="px-6 py-5">
+                @* Item name *@
+                <p class="text-sm text-gray-500 mb-1">You are about to delete:</p>
+                <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 mb-4">
+                    <span x-text="deleteModal.type === 'folder' ? '📁' : '🖼️'" class="text-xl flex-shrink-0"></span>
+                    <span class="font-mono text-sm text-gray-700 truncate" x-text="deleteModal.name"></span>
+                </div>
+
+                @* Non-empty folder warning *@
+                <div x-show="deleteModal.type === 'folder'"
+                     class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-sm text-amber-700 flex gap-2">
+                    <span class="text-base flex-shrink-0">⚠️</span>
+                    <span>If this folder contains files or subfolders, checking <strong>Force delete</strong> will remove everything inside it.</span>
+                </div>
+
+                @* Force delete checkbox for folders *@
+                <label x-show="deleteModal.type === 'folder'" class="flex items-center gap-3 mb-5 cursor-pointer">
+                    <input type="checkbox" x-model="deleteModal.force"
+                           class="w-4 h-4 rounded accent-red-500" />
+                    <span class="text-sm font-medium text-gray-700">Force delete (including all contents)</span>
+                </label>
+
+                <div class="flex gap-2 justify-end">
+                    <button @@click="deleteModal.show = false"
+                            class="px-5 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-medium">
+                        Cancel
+                    </button>
+                    <button @@click="submitDelete()"
+                            class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-bold">
+                        Delete
+                    </button>
+                </div>
+            </div>
+
+            @* Hidden forms *@
+            <form x-ref="deleteFileForm" asp-action="Delete" method="post" class="hidden">
+                <input type="hidden" name="folder" value="@currentFolder" />
+                <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+                <input type="hidden" name="fileName" x-model="deleteModal.name" />
+            </form>
+            <form x-ref="deleteFolderForm" asp-action="DeleteFolder" method="post" class="hidden">
+                <input type="hidden" name="folder" value="@currentFolder" />
+                <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+                <input type="hidden" name="folderName" x-model="deleteModal.name" />
+                <input type="hidden" name="force" x-model="deleteModal.force" />
+            </form>
+        </div>
+    </div>
+
+    @* ── Batch delete modal ── *@
+    <div x-show="batchModal.show"
+         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+         x-cloak @@keydown.escape.window="batchModal.show = false">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" @@click.outside="batchModal.show = false">
+
+            <div class="bg-red-500 px-6 py-4 flex items-center gap-3">
+                <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white text-lg">🗑</div>
+                <h3 class="text-white font-black text-lg">Delete selected items</h3>
+            </div>
+
+            <div class="px-6 py-5">
+                <p class="text-sm text-gray-500 mb-3">You are about to delete:</p>
+
+                @* Files list *@
+                <template x-if="selectedFiles.length > 0">
+                    <div class="mb-2">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Images (<span x-text="selectedFiles.length"></span>)</p>
+                        <div class="bg-gray-50 rounded-xl px-4 py-2 max-h-32 overflow-y-auto">
+                            <template x-for="f in selectedFiles" :key="f">
+                                <div class="flex items-center gap-2 py-1 text-sm text-gray-700">
+                                    <span class="text-base">🖼️</span>
+                                    <span class="font-mono truncate" x-text="f"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                @* Folders list *@
+                <template x-if="selectedFolders.length > 0">
+                    <div class="mb-4">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 mt-2">Folders (<span x-text="selectedFolders.length"></span>)</p>
+                        <div class="bg-gray-50 rounded-xl px-4 py-2 max-h-32 overflow-y-auto">
+                            <template x-for="f in selectedFolders" :key="f">
+                                <div class="flex items-center gap-2 py-1 text-sm text-gray-700">
+                                    <span class="text-base">📁</span>
+                                    <span class="font-mono truncate" x-text="f"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                @* Force delete option (when folders selected) *@
+                <template x-if="selectedFolders.length > 0">
+                    <div>
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3 text-sm text-amber-700 flex gap-2">
+                            <span class="text-base flex-shrink-0">⚠️</span>
+                            <span>Folders with contents require <strong>Force delete</strong> to be removed.</span>
+                        </div>
+                        <label class="flex items-center gap-3 mb-4 cursor-pointer">
+                            <input type="checkbox" x-model="batchModal.force" class="w-4 h-4 rounded accent-red-500" />
+                            <span class="text-sm font-medium text-gray-700">Force delete all selected folders and their contents</span>
+                        </label>
+                    </div>
+                </template>
+
+                <div class="flex gap-2 justify-end">
+                    <button @@click="batchModal.show = false"
+                            class="px-5 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-medium">
+                        Cancel
+                    </button>
+                    <button @@click="submitBatchDelete()"
+                            class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-bold">
+                        Delete all
+                    </button>
+                </div>
+            </div>
+
+            <form x-ref="batchDeleteForm" asp-action="DeleteMultiple" method="post" class="hidden">
+                <input type="hidden" name="folder" value="@currentFolder" />
+                <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+                <template x-for="f in selectedFiles" :key="f">
+                    <input type="hidden" name="files" :value="f" />
+                </template>
+                <template x-for="f in selectedFolders" :key="f">
+                    <input type="hidden" name="folders" :value="f" />
+                </template>
+                <input type="hidden" name="force" x-model="batchModal.force" />
+            </form>
+        </div>
+    </div>
+
+    @* ── Lightbox ── *@
+    <div x-show="lightbox.show"
+         class="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4"
+         x-cloak @@click="lightbox.show = false" @@keydown.escape.window="lightbox.show = false">
+        <div class="relative max-w-6xl w-full flex flex-col items-center" @@click.stop>
+            <button @@click="lightbox.show = false"
+                    class="absolute -top-10 right-0 text-white/70 hover:text-white text-3xl leading-none font-light">&times;</button>
+            <img :src="lightbox.url" class="max-h-[80vh] max-w-full object-contain rounded-xl shadow-2xl" />
+            <p class="mt-3 text-white/60 text-xs font-mono" x-text="lightbox.name"></p>
+            <a :href="lightbox.url" target="_blank"
+               class="mt-2 text-white/50 hover:text-white text-xs underline" x-text="lightbox.url"></a>
+        </div>
+    </div>
+
+    @* ── Move modal ── *@
+    <div x-show="moveModal.show"
+         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+         x-cloak @@keydown.escape.window="moveModal.show = false">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl" @@click.outside="moveModal.show = false">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center text-lg">📦</div>
+                <h3 class="text-lg font-black" x-text="moveModal.type === 'file' ? 'Move Image' : 'Move Folder'"></h3>
+            </div>
+            <p class="text-sm font-mono text-gray-500 mb-4 truncate" x-text="moveModal.name"></p>
+
+            <form x-show="moveModal.type === 'file'" asp-action="MoveFile" method="post">
+                <input type="hidden" name="sourceFolder" value="@currentFolder" />
+                <input type="hidden" name="fileName" x-model="moveModal.name" />
+                <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Move to folder</label>
+                <select name="targetFolder" x-model="moveModal.targetFolder"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-xl mb-5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    @foreach (var f in Model.AllFolders)
+                    {
+                        <option value="@f">@(string.IsNullOrEmpty(f) ? "📁 / (root)" : "📁 " + f)</option>
+                    }
+                </select>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" @@click="moveModal.show = false"
+                            class="px-4 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600">Move</button>
+                </div>
+            </form>
+
+            <form x-show="moveModal.type === 'folder'" asp-action="MoveFolder" method="post">
+                <input type="hidden" name="parentFolder" value="@currentFolder" />
+                <input type="hidden" name="folderName" x-model="moveModal.name" />
+                <input type="hidden" name="picker" value="@(isPicker ? "true" : "false")" />
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Move into</label>
+                <select name="targetParent" x-model="moveModal.targetFolder"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-xl mb-5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    @foreach (var f in Model.AllFolders)
+                    {
+                        <option value="@f">@(string.IsNullOrEmpty(f) ? "📁 / (root)" : "📁 " + f)</option>
+                    }
+                </select>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" @@click="moveModal.show = false"
+                            class="px-4 py-2 border border-gray-200 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600">Move</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function mediaLib() {
+        return {
+            // UI state
+            dragging: false,
+            showNewFolderModal: false,
+            newFolderName: '',
+            lightbox: { show: false, url: '', name: '' },
+            moveModal: { show: false, type: '', name: '', targetFolder: '' },
+
+            // Delete modal (single item)
+            deleteModal: { show: false, type: '', name: '', force: false },
+
+            // Batch delete modal
+            batchModal: { show: false, force: false },
+
+            // Multi-select
+            selectMode: false,
+            selectedFiles: [],
+            selectedFolders: [],
+
+            // ── Move helpers
+            openMoveFile(name)   { this.moveModal = { show: true, type: 'file',   name, targetFolder: '' }; },
+            openMoveFolder(name) { this.moveModal = { show: true, type: 'folder', name, targetFolder: '' }; },
+
+            // ── Delete single item
+            openDeleteModal(type, name, isEmpty) {
+                this.deleteModal = { show: true, type, name, force: false };
+            },
+            submitDelete() {
+                if (this.deleteModal.type === 'file') {
+                    this.$refs.deleteFileForm.submit();
+                } else {
+                    this.$refs.deleteFolderForm.submit();
+                }
+            },
+
+            // ── Multi-select helpers
+            toggleFile(name) {
+                const i = this.selectedFiles.indexOf(name);
+                if (i === -1) this.selectedFiles.push(name);
+                else this.selectedFiles.splice(i, 1);
+            },
+            toggleFolder(name) {
+                const i = this.selectedFolders.indexOf(name);
+                if (i === -1) this.selectedFolders.push(name);
+                else this.selectedFolders.splice(i, 1);
+            },
+            isFileSelected(name)   { return this.selectedFiles.includes(name); },
+            isFolderSelected(name) { return this.selectedFolders.includes(name); },
+            clearSelection() {
+                this.selectedFiles = [];
+                this.selectedFolders = [];
+            },
+
+            // ── Batch delete
+            openBatchDelete() {
+                this.batchModal = { show: true, force: false };
+            },
+            submitBatchDelete() {
+                this.$refs.batchDeleteForm.submit();
+            },
+        };
+    }
+
+    function selectMediaItem(url) {
+        if (window.self !== window.top) {
+            window.parent.postMessage({ type: 'media-selected', url }, '*');
+        } else if (@Json.Serialize(isPicker)) {
+            if (window.opener) {
+                window.opener.postMessage({ type: 'media-selected', url }, '*');
+                window.close();
+            }
+        }
+    }
+</script>
+
+@if (isPicker) {
+    @:</body>
+    @:</html>
+}

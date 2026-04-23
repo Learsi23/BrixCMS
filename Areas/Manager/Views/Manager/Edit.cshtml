@@ -1,0 +1,520 @@
+@using BrixCMS.Open.Data
+@using BrixCMS.Open.Data.Fields
+@using BrixCMS.Open.Services
+@using System.Reflection
+@using BrixCMS.Open.Models.Base
+@model BrixCMS.Open.Data.Page
+@inject BlockRegistry Registry
+
+@{
+    Layout = "_ManagerLayout";
+    ViewData["Title"] = "Page Editor";
+    var rootBlocks = ViewBag.Blocks as List<BrixCMS.Open.Data.Block> ?? new List<BrixCMS.Open.Data.Block>();
+    var mediaLibrary = ViewBag.MediaLibrary as List<string> ?? new List<string>();
+    var allRegisteredBlocks = Registry.GetAllBlocks();
+
+    var standardPageData = System.Text.Json.JsonSerializer.Deserialize<BrixCMS.Open.Models.Pages.StandardPage>(
+        Model.JsonData ?? "{}",
+        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+    ) ?? new BrixCMS.Open.Models.Pages.StandardPage();
+
+    var bgColor = standardPageData.BackgroundColor?.Value ?? "#f3f4f6";
+
+    var categories = allRegisteredBlocks
+        .Select(b => b.Value.GetCustomAttribute<BlockTypeAttribute>()?.Category ?? "Other")
+        .Distinct()
+        .ToList();
+}
+
+<div style="background-color: @bgColor; min-height: 100vh; width: 100%; transition: background-color 0.3s ease;">
+
+    <div x-data="{
+        showBlockPanel: false,
+        activeTab: 'Content',
+        currentParentId: null,
+        collapsedBlocks: JSON.parse(localStorage.getItem('collapsed_@Model.Id') || '{}'),
+        openSelector(parentId = null) {
+        this.currentParentId = parentId;
+        this.showBlockPanel = true;
+        },
+        toggleBlock(id) {
+        this.collapsedBlocks[id] = !this.collapsedBlocks[id];
+        localStorage.setItem('collapsed_@Model.Id', JSON.stringify(this.collapsedBlocks));
+        },
+        isCollapsed(id) {
+        return this.collapsedBlocks[id] === true;
+        }
+        }" class="max-w-5xl mx-auto p-10" data-page-id="@Model.Id">
+
+        @* -- STICKY HEADER -- *@
+        <div class="sticky top-0 z-40 bg-white/40 backdrop-blur-md py-4 mb-8 border-b border-gray-200/50 flex justify-between items-center px-6 rounded-2xl shadow-sm">
+            <div>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tight">@Model.Title</h2>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">EDIT MODE ACTIVE</p>
+                </div>
+            </div>
+            <div class="flex gap-3 items-center">
+
+                @* ? Publication status *@
+                @if (Model.IsPublished)
+                {
+                    <span class="bg-green-100 text-green-700 border border-green-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
+                        ? Published
+                    </span>
+                    <a href="/@Model.Slug" target="_blank"
+                           class="bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition shadow-sm">
+                        ?? View Public
+                    </a>
+                }
+                else
+                {
+                    <span class="bg-yellow-100 text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
+                        ?? Draft
+                    </span>
+                }
+
+                <a href="/Manager/Manager/Preview/@Model.Id"
+                       target="preview-@Model.Id"
+                       class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold transition text-sm shadow-sm">
+                    ?? Preview
+                </a>
+
+                <a href="/Manager" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl font-bold hover:bg-gray-50 transition text-sm shadow-sm">
+                    Back
+                </a>
+
+                <button @@click="openSelector(null)"
+                    class="bg-emerald-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-200 transition text-sm">
+                    + Add Block
+                </button>
+
+            </div>
+        </div>
+
+        @* -- SEO SETTINGS -- *@
+        <div class="bg-white rounded-2xl p-6 mb-8 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fas fa-search text-indigo-500"></i>
+                <h3 class="text-sm font-bold text-gray-800">SEO Settings</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Meta Description</label>
+                    <textarea id="metaDescription" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Brief description for search engines...">@Model.MetaDescription</textarea>
+                    <p class="text-[10px] text-gray-400 mt-1">@(Model.MetaDescription?.Length ?? 0)/160 recommended</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Open Graph Image (OG Image)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="ogImage" value="@Model.OgImage" placeholder="https://example.com/image.jpg" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                        <button type="button" onclick="openMediaPicker()" class="px-3 py-2 bg-indigo-500 text-white rounded-xl text-sm hover:bg-indigo-600 transition" title="Open Media Library">
+                            <i class="fas fa-images"></i>
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.OgImage))
+                    {
+                        <div class="mt-2 flex items-center gap-2">
+                            <img src="@Model.OgImage" alt="OG Preview" class="w-12 h-12 rounded-lg object-cover border border-gray-200" />
+                            <button type="button" onclick="document.getElementById('ogImage').value = ''" class="text-xs text-red-500 hover:text-red-700">Clear</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* -- PAGE SETTINGS: color + font -- *@
+        @{
+            var pageFontValue = standardPageData.FontFamily?.Value ?? "";
+            var googleFonts = new[] {
+                ("","— Site font (default) —"),
+                ("Inter","Inter"),("Roboto","Roboto"),("Lato","Lato"),
+                ("Open Sans","Open Sans"),("Montserrat","Montserrat"),("Poppins","Poppins"),
+                ("Raleway","Raleway"),("Nunito","Nunito"),("Playfair Display","Playfair Display"),
+                ("Merriweather","Merriweather"),("Oswald","Oswald"),("Source Sans 3","Source Sans 3"),
+                ("PT Sans","PT Sans"),("Ubuntu","Ubuntu"),("Quicksand","Quicksand"),
+                ("DM Sans","DM Sans"),("Josefin Sans","Josefin Sans"),
+                ("Libre Baskerville","Libre Baskerville"),("Space Grotesk","Space Grotesk"),("Sora","Sora"),
+            };
+        }
+        <div class="bg-white/80 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-5 mb-8 shadow-lg shadow-gray-100/50 group hover:border-gray-300 transition-all">
+            <div class="flex flex-wrap items-center gap-4 justify-between">
+
+                @* Color *@
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-700 tracking-tight">Background Color</h3>
+                        <p class="text-[11px] text-gray-400">Page tone</p>
+                    </div>
+                    <div class="relative">
+                        <input type="color" id="pageColorInput" value="@bgColor"
+                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        <div class="w-10 h-10 rounded-xl border-2 border-gray-200 shadow-inner" style="background-color: @bgColor"></div>
+                    </div>
+                </div>
+
+                @* Font *@
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-700 tracking-tight">Page Font</h3>
+                        <p class="text-[11px] text-gray-400">Google Fonts</p>
+                    </div>
+                    <select id="pageFontSelect"
+                            class="px-3 py-2 text-xs border border-gray-200 rounded-xl bg-white cursor-pointer min-w-[160px]"
+                            onchange="previewFont(this.value)">
+                        @foreach (var (val, label) in googleFonts)
+                        {
+                            if (pageFontValue == val)
+                            {
+                                <option value="@val" selected="selected">@label</option>
+                            }
+                            else
+                            {
+                                <option value="@val">@label</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @* Save *@
+                <button onclick="savePageSettings()"
+                        class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all">
+                    ?? Save
+                </button>
+            </div>
+        </div>
+
+        @* -- BLOCK LISTING -- *@
+        <div class="space-y-4">
+            @if (!rootBlocks.Any())
+            {
+                <div class="border-4 border-dashed border-gray-200 rounded-[2.5rem] p-24 text-center bg-white/50">
+                    <button @@click="openSelector(null)" class="group flex flex-col items-center mx-auto focus:outline-none">
+                        <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 group-hover:bg-emerald-500 group-hover:scale-110 transition-all duration-300">
+                            <i class="fas fa-plus text-2xl text-emerald-500 group-hover:text-white"></i>
+                        </div>
+                        <p class="text-gray-400 font-bold text-xl mb-2">The page is empty</p>
+                        <span class="text-emerald-500 font-black uppercase text-xs tracking-[0.2em]">Click to start</span>
+                    </button>
+                </div>
+            }
+            else
+            {
+                @foreach (var b in rootBlocks)
+                {
+                    <div class="group relative">
+                        <div class="absolute -top-4 left-0 right-0 flex justify-center z-30">
+                            <button @@click="openSelector('@b.Id')"
+                                class="bg-emerald-500 hover:bg-emerald-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-xl border-2 border-white hover:scale-110 transition">
+                                <span class="text-lg leading-none">+</span>
+                            </button>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow overflow-hidden relative mt-6 mb-8">
+                            <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">@b.Type</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button @@click="toggleBlock('@b.Id')"
+                                        :class="isCollapsed('@b.Id') ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-600'"
+                                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:opacity-80 transition shadow-sm">
+                                        <span x-text="isCollapsed('@b.Id') ? '?' : '?'">?</span>
+                                    </button>
+                                    <div class="flex bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200">
+                                        <button onclick="executeAction('@Model.Id', '@b.Id', 'up', 'MoveBlock')"
+                                                class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-l-lg">
+                                            ?
+                                        </button>
+                                        <button onclick="executeAction('@Model.Id', '@b.Id', 'down', 'MoveBlock')"
+                                                class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-r-lg">
+                                            ?
+                                        </button>
+                                    </div>
+                                    <button onclick="executeAction('@Model.Id', '@b.Id', '', 'DeleteBlock')"
+                                            class="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-500 rounded-lg text-red-500 hover:text-white transition shadow-sm border border-gray-200">
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-6" x-show="!isCollapsed('@b.Id')" x-transition>
+                                @await Html.PartialAsync("_BlockEditor", b)
+                            </div>
+                            <div x-show="isCollapsed('@b.Id')" class="p-4 text-center text-gray-400 text-sm">
+                                Block collapsed - press ? to expand
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="flex justify-center pt-4 pb-8">
+                    <button @@click="openSelector(null)"
+                        class="group flex items-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105">
+                        <span class="text-xl font-bold">+</span>
+                        <span class="font-black uppercase text-xs tracking-widest">Add final block</span>
+                    </button>
+                </div>
+            }
+        </div>
+
+        @* -- BLOCK LIBRARY PANEL -- *@
+        @{
+            var categoryIcons = new Dictionary<string, string>
+            {
+                ["AI"] = "fas fa-robot",
+                ["Columns"] = "fas fa-columns",
+                ["Content"] = "fas fa-align-left",
+                ["Ecommerce"] = "fas fa-shopping-cart",
+                ["Headers"] = "fas fa-heading",
+                ["Layout"] = "fas fa-layer-group",
+                ["Media"] = "fas fa-photo-video",
+            };
+            var categoryOrder = new[] { "AI", "Columns", "Content", "Ecommerce", "Headers", "Layout", "Media" };
+            var sortedCategories = categoryOrder
+                .Where(c => categories.Contains(c))
+                .Concat(categories.Where(c => !categoryOrder.Contains(c)))
+                .ToList();
+        }
+        <template x-teleport="body">
+            <div x-show="showBlockPanel" class="fixed inset-0 z-[100] flex justify-end" x-cloak>
+                <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @@click="showBlockPanel = false"></div>
+                <div class="relative w-full max-w-sm bg-white shadow-2xl flex flex-col h-full"
+                     x-show="showBlockPanel"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="translate-x-full"
+                     x-transition:enter-end="translate-x-0">
+
+                    <!-- Panel header -->
+                    <div class="px-5 py-4 bg-white border-b flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base font-black uppercase tracking-tighter text-gray-900">Block Library</h3>
+                            <p class="text-[10px] text-gray-400 font-medium">Hover a block to see its description</p>
+                        </div>
+                        <button @@click="showBlockPanel = false"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-xl transition">
+                            &times;
+                        </button>
+                    </div>
+
+                    <!-- Category tabs with icons -->
+                    <div class="flex bg-white border-b px-2 overflow-x-auto gap-0.5 scrollbar-hide">
+                        @foreach (var category in sortedCategories)
+                        {
+                            var categoryKey = category.Replace(" ", "");
+                            var catIcon = categoryIcons.TryGetValue(category, out var ci) ? ci : "fas fa-box";
+                            <button @@click="activeTab = '@categoryKey'"
+                                :class="activeTab === '@categoryKey' ? 'border-emerald-500 text-emerald-600 bg-emerald-50/50' : 'border-transparent text-gray-400 hover:text-gray-600'"
+                                class="flex flex-col items-center gap-1 px-3 py-3 border-b-2 font-bold text-[9px] uppercase tracking-widest transition whitespace-nowrap min-w-[52px]">
+                                <i class="@catIcon text-sm"></i>
+                                <span>@category</span>
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Block grid -->
+                    <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
+                        @foreach (var category in sortedCategories)
+                        {
+                            var categoryKey = category.Replace(" ", "");
+                            var blocksInCategory = allRegisteredBlocks
+                                .Where(b => (b.Value.GetCustomAttribute<BlockTypeAttribute>()?.Category ?? "Other") == category)
+                                .OrderBy(b => b.Value.GetCustomAttribute<BlockTypeAttribute>()?.Name ?? b.Key);
+
+                            <div x-show="activeTab === '@categoryKey'" class="grid grid-cols-2 gap-3">
+                                @foreach (var item in blocksInCategory)
+                                {
+                                    var attr = item.Value.GetCustomAttribute<BlockTypeAttribute>();
+                                    var blockName = attr?.Name ?? item.Key;
+                                    var blockDesc = attr?.Description ?? "";
+                                    var blockIcon = attr?.Icon ?? "fas fa-box";
+                                    <div class="relative group/block">
+                                        <button type="button"
+                                            @@click="executeAddBlock('@Model.Id', '@item.Key', currentParentId)"
+                                                class="w-full bg-white p-4 rounded-2xl border-2 border-transparent hover:border-emerald-500 hover:shadow-md transition-all flex flex-col items-center shadow-sm group">
+                                            <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-200">
+                                                <i class="@blockIcon text-lg"></i>
+                                            </div>
+                                            <span class="text-[10px] font-black uppercase text-gray-600 text-center leading-tight group-hover:text-emerald-700">@blockName</span>
+                                        </button>
+                                        @if (!string.IsNullOrEmpty(blockDesc))
+                                        {
+                                            <!-- Tooltip shown on hover -->
+                                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl
+                                                opacity-0 group-hover/block:opacity-100 pointer-events-none transition-opacity duration-200 z-[9999] text-center">
+                                                @blockDesc
+                                                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </template>
+
+    </div>
+</div>
+
+@* -- MEDIA MODAL -- *@
+<div x-data="{ open: false, targetField: null }"
+    @@open-media-picker.window="open = true; targetField = $event.detail"
+     x-show="open"
+     class="fixed inset-0 z-[200] flex items-center justify-center p-20"
+     x-cloak>
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-md" @@click="open = false"></div>
+    <div class="relative bg-white w-full max-w-5xl h-full rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl">
+        <div class="p-8 border-b flex justify-between items-center">
+            <h3 class="font-black uppercase">Media Library</h3>
+            <button @@click="open = false" class="text-3xl">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-8 grid grid-cols-5 gap-6 bg-gray-50">
+            @foreach (var url in mediaLibrary)
+            {
+                <div class="group relative aspect-square bg-white rounded-2xl border-4 border-white shadow-sm overflow-hidden hover:ring-4 hover:ring-emerald-500 transition-all">
+                    <img src="@url"
+                    @@click="$dispatch('media-selected-final', { url: '@url', target: targetField }); open = false"
+                         class="h-full w-full object-cover cursor-pointer" />
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    // -- Save page settings (color + font + SEO) --
+    function savePageSettings() {
+        const color    = document.getElementById('pageColorInput').value;
+        const font     = document.getElementById('pageFontSelect').value;
+        const pageId   = document.querySelector('[data-page-id]').dataset.pageId;
+        const metaDesc = document.getElementById('metaDescription')?.value || '';
+        const ogImg    = document.getElementById('ogImage')?.value || '';
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Manager/Manager/SavePageSettings';
+
+        const fields = { pageId, backgroundColor: color, fontFamily: font, metaDescription: metaDesc, ogImage: ogImg };
+        for (const [k, v] of Object.entries(fields)) {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = k; input.value = v;
+            form.appendChild(input);
+        }
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            const t = document.createElement('input');
+            t.type = 'hidden'; t.name = '__RequestVerificationToken'; t.value = token;
+            form.appendChild(t);
+        }
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // -- Media picker for OG Image --
+    function openMediaPicker() {
+        const width = 900, height = 600;
+        const left = (window.innerWidth - width) / 2;
+        const top = (window.innerHeight - height) / 2;
+        window.open('/Manager/Media/Index?pickMode=true', 'media', `width=${width},height=${height},left=${left},top=${top}`);
+    }
+
+    // Listen for media selection from popup
+    window.addEventListener('message', function(event) {
+        if (event.data?.type === 'media-selected') {
+            document.getElementById('ogImage').value = event.data.url;
+        }
+    });
+
+    // -- Live font preview --
+    function previewFont(fontName) {
+        if (!fontName) { document.body.style.fontFamily = ''; return; }
+        const slug = fontName.replace(/ /g, '+');
+        if (!document.querySelector('link[data-preview-font]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.setAttribute('data-preview-font', '1');
+            document.head.appendChild(link);
+        }
+        document.querySelector('link[data-preview-font]').href =
+            'https://fonts.googleapis.com/css2?family=' + slug + ':wght@400;700&display=swap';
+        document.body.style.fontFamily = "'" + fontName + "', sans-serif";
+    }
+
+    // -- Live color preview update --
+    document.addEventListener('DOMContentLoaded', () => {
+        const picker = document.getElementById('pageColorInput');
+        if (picker) {
+            picker.addEventListener('input', e => {
+                document.querySelector('[data-page-id]').closest('div').style.backgroundColor = e.target.value;
+                picker.previousElementSibling?.style && (picker.nextElementSibling.style.backgroundColor = e.target.value);
+            });
+        }
+    });
+
+    // -- Add block via form POST --
+    function executeAddBlock(pageId, blockType, parentId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Manager/Manager/AddBlock';
+
+        const fields = { pageId, blockType, parentId: parentId ?? '' };
+        for (const [k, v] of Object.entries(fields)) {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = k; input.value = v;
+            form.appendChild(input);
+        }
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            const t = document.createElement('input');
+            t.type = 'hidden'; t.name = '__RequestVerificationToken'; t.value = token;
+            form.appendChild(t);
+        }
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // -- Move / Delete block --
+    function executeAction(pageId, blockId, direction, action) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/Manager/Manager/${action}`;
+
+        const fields = { pageId, blockId, direction };
+        for (const [k, v] of Object.entries(fields)) {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = k; input.value = v;
+            form.appendChild(input);
+        }
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            const t = document.createElement('input');
+            t.type = 'hidden'; t.name = '__RequestVerificationToken'; t.value = token;
+            form.appendChild(t);
+        }
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // -- Open selector from _BlockEditor (children) --
+    window.openSelectorForParent = function(parentId) {
+        const alpineDiv = document.querySelector('[x-data]');
+        if (alpineDiv && alpineDiv.__x) {
+            alpineDiv.__x.$data.currentParentId = parentId;
+            alpineDiv.__x.$data.showBlockPanel = true;
+        }
+    };
+</script>

@@ -1,0 +1,97 @@
+@using Markdig
+@model BrixCMS.Open.Models.Blocks.MarkdownBlock
+@inject MarkdownPipeline Pipeline
+
+@{
+    var markdownRaw = Model.Content?.Value ?? "";
+    var isManager = Context.Request.Path.Value.Contains("/Manager", StringComparison.OrdinalIgnoreCase);
+    var uniqueId = "editor_" + Guid.NewGuid().ToString().Replace("-", "").Substring(0, 8);
+}
+
+@if (isManager)
+{
+    <div style="background:#f8f9fa; border:1px solid #ddd; border-radius:8px; padding:12px;">
+        <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-2">
+            Contenido (Editor Visual)
+        </label>
+
+        <textarea id="@uniqueId"
+                  name="values[Content].Value"
+                  style="width:100%; min-height:300px;">@markdownRaw</textarea>
+
+        @* ? Usar versión local si existe, CDN como fallback *@
+        <script>
+            (function() {
+                function initTiny() {
+                    if (!window.tinymce) return;
+                    // Si ya está inicializado en este ID, destruir primero
+                    if (tinymce.get('@uniqueId')) {
+                        tinymce.get('@uniqueId').destroy();
+                    }
+                    tinymce.init({
+                        selector: '#@uniqueId',
+                        height: 400,
+                        menubar: true,
+                        language: 'es',
+                        plugins: [
+                            'advlist', 'autolink', 'lists', 'link', 'image',
+                            'charmap', 'preview', 'anchor', 'searchreplace',
+                            'visualblocks', 'code', 'fullscreen', 'insertdatetime',
+                            'media', 'table', 'help', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | blocks | ' +
+                                 'bold italic forecolor | alignleft aligncenter ' +
+                                 'alignright alignjustify | bullist numlist outdent indent | ' +
+                                 'removeformat | link image | code fullscreen | help',
+                        content_style: 'body { font-family: -apple-system, sans-serif; font-size: 14px; }',
+                        setup: function(editor) {
+                            editor.on('change keyup input', function() {
+                                editor.save(); // ? sincroniza con textarea para el POST
+                            });
+                        }
+                    });
+                }
+
+                // ? Cargar TinyMCE local primero
+                if (window.tinymce) {
+                    initTiny();
+                } else {
+                    // Evitar cargar el script dos veces
+                    if (!document.querySelector('script[data-tinymce]')) {
+                        var s = document.createElement('script');
+                        s.setAttribute('data-tinymce', '1');
+                        // ? Intentar local, fallback a CDN
+                        s.src = '/lib/tinymce/js/tinymce/tinymce.min.js';
+                        s.onerror = function() {
+                            // fallback CDN
+                            var s2 = document.createElement('script');
+                            s2.setAttribute('data-tinymce', '1');
+                            s2.src = 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js';
+                            s2.onload = initTiny;
+                            document.head.appendChild(s2);
+                        };
+                        s.onload = initTiny;
+                        document.head.appendChild(s);
+                    } else {
+                        // Script ya en proceso de carga — esperar
+                        var check = setInterval(function() {
+                            if (window.tinymce) {
+                                clearInterval(check);
+                                initTiny();
+                            }
+                        }, 100);
+                    }
+                }
+            })();
+        </script>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(markdownRaw))
+    {
+        <div class="w-full">
+            @Html.Raw(Markdown.ToHtml(markdownRaw, Pipeline))
+        </div>
+    }
+}

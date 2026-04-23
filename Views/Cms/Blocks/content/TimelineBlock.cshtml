@@ -1,0 +1,98 @@
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.Blocks
+@model TimelineBlock
+@inject BrixCMS.Open.Data.BrixDbContext Db
+@inject BlockRegistry Registry
+
+@{
+    var blockData     = (BrixCMS.Open.Data.Block)ViewData["RawBlock"];
+    var allBlocks     = ViewData["AllBlocks"] as List<BrixCMS.Open.Data.Block>;
+    var children      = allBlocks != null
+        ? allBlocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList()
+        : Db.Blocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList();
+
+    var bg         = Model.BackgroundColor?.Value;
+    var connector  = Model.ConnectorColor?.Value ?? "#3b82f6";
+    var isHoriz    = Model.Layout?.Value == "horizontal";
+    var textAlign  = Model.TextAlign?.Value ?? "left";
+}
+
+<section style="@(string.IsNullOrWhiteSpace(bg)||bg=="transparent"?"":$"background-color:{bg};")"
+         class="py-16 px-4">
+    <div class="max-w-4xl mx-auto">
+        @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
+        {
+            <h2 class="text-3xl font-bold mb-3 text-center"
+                style="color:@(Model.TitleColor?.Value ?? "inherit")">@Model.Title.Value</h2>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
+        {
+            <p class="text-center text-gray-500 mb-10">@Model.Subtitle.Value</p>
+        }
+
+        @if (isHoriz)
+        {
+            <div class="flex flex-col md:flex-row gap-0 relative">
+                @{int hi=0; foreach(var child in children){
+                    var item = Registry.CreateModel(child) as TimelineItemBlock;
+                    if(item==null){hi++;continue;}
+                    var accent = item.AccentColor?.Value ?? connector;
+                    <div class="flex-1 relative flex flex-col items-center text-center px-4">
+                        @if(hi < children.Count-1){
+                            <div class="hidden md:block absolute top-8 left-1/2 right-0 h-0.5" style="background-color:@connector; width:50%; margin-left:50%;"></div>
+                        }
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg z-10 shadow-md mb-3"
+                             style="background-color:@accent">
+                            @if(!string.IsNullOrWhiteSpace(item.Icon?.Value)){
+                                <i class="@item.Icon.Value"></i>
+                            } else {
+                                @(item.StepLabel?.Value ?? (hi+1).ToString())
+                            }
+                        </div>
+                        @if(!string.IsNullOrWhiteSpace(item.Date?.Value)){
+                            <span class="text-xs text-gray-400 mb-1">@item.Date.Value</span>
+                        }
+                        <h4 class="font-semibold text-gray-800 text-base">@(item.Title?.Value??"")</h4>
+                        <p class="text-sm text-gray-500 mt-1 leading-relaxed">@(item.Description?.Value??"")</p>
+                    </div>
+                hi++;}}
+            </div>
+        }
+        else
+        {
+            <div class="relative pl-8">
+                <div class="absolute left-3 top-0 bottom-0 w-0.5" style="background-color:@connector"></div>
+                @{int vi=0; foreach(var child in children){
+                    var item = Registry.CreateModel(child) as TimelineItemBlock;
+                    if(item==null){vi++;continue;}
+                    var accent = item.AccentColor?.Value ?? connector;
+                    <div class="relative mb-8 text-@textAlign">
+                        <div class="absolute -left-8 top-1 w-6 h-6 rounded-full border-2 border-white shadow flex items-center justify-center text-white text-xs font-bold"
+                             style="background-color:@accent;">
+                            @if(!string.IsNullOrWhiteSpace(item.Icon?.Value)){
+                                <i class="@item.Icon.Value text-[10px]"></i>
+                            } else {
+                                @(item.StepLabel?.Value ?? (vi+1).ToString())
+                            }
+                        </div>
+                        @if(!string.IsNullOrWhiteSpace(item.Date?.Value)){
+                            <span class="text-xs text-gray-400 mb-0.5 block">@item.Date.Value</span>
+                        }
+                        <h4 class="font-semibold text-gray-800 text-base leading-snug">@(item.Title?.Value??"")</h4>
+                        <p class="text-sm text-gray-500 mt-1 leading-relaxed">@(item.Description?.Value??"")</p>
+                    </div>
+                vi++;}}
+            </div>
+        }
+
+        @if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit"))
+        {
+            <div class="mt-4 text-center">
+                <button type="button" onclick="openSelectorForParent('@blockData.Id')"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                    + Add timeline step
+                </button>
+            </div>
+        }
+    </div>
+</section>

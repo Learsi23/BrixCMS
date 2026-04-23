@@ -1,0 +1,121 @@
+{
+  "_meta": {
+    "name": "FAQ / Help Center Page",
+    "description": "FAQ page with compact hero, multiple accordion questions grouped by topic, and a CTA",
+    "tags": ["faq", "help", "support", "accordion"]
+  },
+  "title": "Frequently Asked Questions",
+  "slug": "faq",
+  "blocks": [
+    {
+      "type": "HeroBlock",
+      "data": {
+        "Title":           { "Value": "How can we help?" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "TitleSize":       { "Value": "48px" },
+        "Subtitle":        { "Value": "Browse the most common questions below — or contact us directly." },
+        "SubtitleColor":   { "Value": "#e2e8f0" },
+        "SubtitleSize":    { "Value": "18px" },
+        "Background":      { "Value": "" },
+        "BackgroundColor": { "Value": "#1e293b" },
+        "Height":          { "Value": "compact" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Title":         { "Value": "General" },
+        "TitleColor":    { "Value": "#1e293b" },
+        "TitleSize":     { "Value": "28px" },
+        "Question":      { "Value": "What is BrixCMS and who is it for?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "BrixCMS is a modern content management platform for businesses of all sizes. It lets you create, manage and publish web content without any technical knowledge." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "true" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Question":      { "Value": "Do I need to know how to code?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "No. BrixCMS is designed for non-technical users. The visual editor lets you build and edit pages using drag-and-drop blocks." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Question":      { "Value": "Is there a free trial available?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "Yes. You can try BrixCMS free for 14 days — no credit card required. After the trial you can choose a plan that suits your needs." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Title":         { "Value": "Billing & Plans" },
+        "TitleColor":    { "Value": "#1e293b" },
+        "TitleSize":     { "Value": "28px" },
+        "Question":      { "Value": "How does billing work?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "We bill monthly or annually. Annual plans come with a 20% discount. You can upgrade, downgrade or cancel at any time." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Question":      { "Value": "Can I change my plan later?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "Absolutely. You can upgrade or downgrade your plan at any time from your account settings. Changes take effect immediately." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Title":         { "Value": "Technical" },
+        "TitleColor":    { "Value": "#1e293b" },
+        "TitleSize":     { "Value": "28px" },
+        "Question":      { "Value": "Can I use my own domain?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "Yes. You can connect any domain you own to your BrixCMS site. We provide step-by-step instructions in the settings panel." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Question":      { "Value": "Is my data backed up?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "Yes. We run automatic daily backups. You can also export your content at any time from the admin panel." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "CTABannerBlock",
+      "data": {
+        "Title":           { "Value": "Still have questions?" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "TitleSize":       { "Value": "36px" },
+        "Subtitle":        { "Value": "Our support team is available Monday – Friday, 9:00 – 18:00." },
+        "SubtitleColor":   { "Value": "#cbd5e1" },
+        "Btn1Text":        { "Value": "Contact support" },
+        "Btn1Url":         { "Value": "/contact" },
+        "Btn1BgColor":     { "Value": "#2563eb" },
+        "Btn1TextColor":   { "Value": "#ffffff" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "PaddingY":        { "Value": "5rem" },
+        "TextAlign":       { "Value": "center" }
+      }
+    }
+  ]
+}

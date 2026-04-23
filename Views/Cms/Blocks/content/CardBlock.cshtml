@@ -1,0 +1,93 @@
+@using BrixCMS.Open.Models.Blocks
+@model CardBlock
+
+@{
+    var layout = Model.LayoutType?.Value?.ToLower() ?? "vertical";
+    var accent = Model.AccentColor?.Value ?? "#3b82f6";
+    var hover = Model.HoverColor?.Value ?? accent;
+    var imageUrl = !string.IsNullOrEmpty(Model.Image?.Value) ? Model.Image.Value : "/images/no-image.png";
+    var targetUrl = Model.TargetUrl?.Value ?? "#";
+
+    var raw = ViewData["RawJson"] as Dictionary<string, System.Text.Json.JsonElement> ?? new();
+    string ImgExtra(string field, string prop, string def = "")
+    {
+        if (raw.TryGetValue(field, out var el) && el.ValueKind == System.Text.Json.JsonValueKind.Object &&
+            el.TryGetProperty(prop, out var v))
+            return v.GetString() ?? def;
+        return def;
+    }
+    var imgW = ImgExtra("Image", "Width", "");
+    var imgH = ImgExtra("Image", "Height", "200");
+    var imgFit = ImgExtra("Image", "ObjectFit", "cover");
+}
+
+<div class="card shadow-md transition-all hover:shadow-xl hover:-translate-y-1"
+     style="background-color:@(Model.CardBgColor?.Value ?? "#ffffff"); 
+            border-radius:12px; 
+            padding:0; 
+            max-width:320px; 
+            margin:0 auto; 
+            display:flex; 
+            flex-direction:column; 
+            overflow:hidden;
+            border:1px solid #f0f0f0;">
+
+    <a href="@targetUrl" class="block" style="text-decoration:none; color:inherit;">
+        @* Imagen destacada *@
+        <div style="overflow:hidden;">
+            <img src="@imageUrl" 
+                 alt="@Model.Title?.Value" 
+                 style="width:100%; height:@(imgH)px; object-fit:@imgFit; transition:transform 0.3s;"
+                 class="hover:scale-105" />
+        </div>
+
+        @* Contenido *@
+        <div style="padding:1rem 1rem 0.75rem 1rem; text-align:center;">
+            @if (!string.IsNullOrEmpty(Model.Badge?.Value))
+            {
+                <span style="display:inline-block; background-color:@accent; color:white; font-size:0.7rem; 
+                             padding:0.2rem 0.6rem; border-radius:20px; margin-bottom:0.5rem;">
+                    @Model.Badge.Value
+                </span>
+            }
+
+            <h3 style="font-size:1.1rem; font-weight:bold; margin:0.5rem 0; color:#1f2937;">
+                @(Model.Title?.Value ?? "Nuevo Producto")
+            </h3>
+
+            @if (!string.IsNullOrEmpty(Model.Description?.Value))
+            {
+                <p style="font-size:0.8rem; color:#6b7280; margin:0.5rem 0; line-height:1.4;
+                          display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                    @Html.Raw(Model.Description.Value.Length > 80 ? Model.Description.Value.Substring(0, 80) + "..." : Model.Description.Value)
+                </p>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.IconClass?.Value))
+            {
+                <i class="@Model.IconClass.Value" style="color:@accent; font-size:0.9rem; margin:0.25rem 0;"></i>
+            }
+        </div>
+    </a>
+
+    @* Botón de acción *@
+    <div style="padding:0 1rem 1rem 1rem;">
+        <button class="w-full py-2.5 rounded-lg font-semibold transition-all"
+                style="background-color:@accent; color:white; border:none; cursor:pointer;"
+                onmouseover="this.style.backgroundColor='@hover'"
+                onmouseout="this.style.backgroundColor='@accent'"
+                onclick="window.location.href='@targetUrl'">
+            <span>@(Model.ButtonText?.Value ?? "Comprar")</span>
+            <i class="fas fa-arrow-right" style="margin-left:0.5rem; font-size:0.75rem;"></i>
+        </button>
+    </div>
+</div>
+
+@* Estilos responsivos *@
+<style>
+    @@media (max-width: 640px) {
+        .card {
+            max-width: 100% !important;
+        }
+    }
+</style>

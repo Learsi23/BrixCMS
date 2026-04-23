@@ -1,0 +1,329 @@
+@using BrixCMS.Open.Models.BlazorBlocks
+@using BrixCMS.Open.Data.Fields
+@inject NavigationManager NavManager
+
+<div class="logo-start-container @(Model.BackgroundWidth?.Value == "full" ? "-mx-[calc(50%-50vw)]" : "") flex flex-col items-center justify-center overflow-hidden"
+     style="background-color:@(Model.BackgroundColor?.Value ?? "#13294B"); min-height:@(Model.MinHeight?.Value ?? "65vh");">
+
+    <div class="relative z-10 flex flex-col items-center justify-center gap-6 px-4 py-8">
+        
+        @if (!string.IsNullOrWhiteSpace(LogoUrl) && LogoUrl != NavManager.BaseUri)
+        {
+            <div class="animate-logo mb-6" style="animation-delay: 0s">
+                <img src="@LogoUrl" alt="Logo" 
+                     class="responsive-logo"
+                     style="width:@(Model.LogoWidth?.Value ?? "200px"); height:@(Model.LogoHeight?.Value ?? "auto");"
+                     data-width-tablet="@(Model.LogoWidthTablet?.Value ?? "150px")"
+                     data-width-mobile="@(Model.LogoWidthMobile?.Value ?? "120px")" />
+            </div>
+        }
+
+        <div class="flex flex-wrap items-center justify-center gap-3 mb-6">
+            @for (int i = 0; i < AnimatedElements.Count; i++)
+            {
+                var element = AnimatedElements[i];
+                var letterDelay = 0.5 + (i * 0.2);
+                
+                @if (element.LineBreak)
+                {
+                    <div class="w-full"></div>
+                }
+
+                @if (element.Type == "text" && !string.IsNullOrWhiteSpace(element.Text))
+                {
+                    <span class="animate-letter font-bold responsive-text"
+                          style="color:@element.Color; font-size:@element.Size; font-weight:@element.Weight; animation-delay: @($"{letterDelay}s")"
+                          data-size-tablet="@element.SizeTablet"
+                          data-size-mobile="@element.SizeMobile">
+                        @element.Text
+                    </span>
+                }
+                else if (element.Type == "image" && !string.IsNullOrWhiteSpace(element.ImageUrl))
+                {
+                    <img src="@element.ImageUrl" 
+                         alt="Animated"
+                         class="animate-letter responsive-img"
+                         style="width:@element.ImageWidth; height:@element.ImageHeight; animation-delay: @($"{letterDelay}s")"
+                         data-width-tablet="@element.ImageWidthTablet"
+                         data-width-mobile="@element.ImageWidthMobile" />
+                }
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.MainText?.Value))
+        {
+            var mainTextDelay = 0.5 + (AnimatedElements.Count * 0.2);
+            <div class="flex items-center gap-3 slide-from-left mt-4"
+                 style="justify-content: @GetMainTextAlignment(); animation-delay: @($"{mainTextDelay}s")">
+                @if (Model.MainTextIconType?.Value == "image" && !string.IsNullOrWhiteSpace(Model.MainTextIconImage?.Value ?? Model.MainTextIconImage?.Value))
+                {
+                    <img src="@ResolveUrl(Model.MainTextIconImage?.Value ?? Model.MainTextIconImage?.Value)" 
+                         alt="Icon" 
+                         class="responsive-icon"
+                         style="width:@(Model.MainTextIconImageWidth?.Value ?? "32px"); height:@(Model.MainTextIconImageHeight?.Value ?? "auto");"
+                         data-width-tablet="@(Model.MainTextIconImageWidthTablet?.Value ?? "24px")"
+                         data-width-mobile="@(Model.MainTextIconImageWidthMobile?.Value ?? "20px")" />
+                }
+                else if (Model.MainTextIconType?.Value == "fontawesome" && !string.IsNullOrWhiteSpace(Model.MainTextIconClass?.Value))
+                {
+                    <i class="@Model.MainTextIconClass.Value responsive-icon-fa"
+                       style="color:@(Model.MainTextIconColor?.Value ?? "#ffffff"); font-size:@(Model.MainTextIconSize?.Value ?? "24px");"
+                       data-size-tablet="@(Model.MainTextIconSizeTablet?.Value ?? "20px")"
+                       data-size-mobile="@(Model.MainTextIconSizeMobile?.Value ?? "16px")"></i>
+                }
+                <p class="font-semibold responsive-text"
+                   style="color:@(Model.MainTextColor?.Value ?? "#ffffff"); font-size:@(Model.MainTextSize?.Value ?? "32px")"
+                   data-size-tablet="@(Model.MainTextSizeTablet?.Value ?? "24px")"
+                   data-size-mobile="@(Model.MainTextSizeMobile?.Value ?? "18px")">
+                    @((MarkupString)Model.MainText.Value)
+                </p>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.ButtonText?.Value))
+        {
+            var buttonDelay = 0.5 + (AnimatedElements.Count * 0.2) + 0.3;
+            <div class="mt-6 animate-fade-in" style="animation-delay: @($"{buttonDelay}s")">
+                <a href="@GetButtonUrl()"
+                   class="inline-block button-link text-center"
+                   style="background-color:@(Model.ButtonColor?.Value ?? "#007bff"); 
+                          color:@(Model.ButtonTextColor?.Value ?? "#ffffff"); 
+                          border-radius:@(Model.ButtonBorderRadius?.Value ?? "8px"); 
+                          padding:@(Model.ButtonPadding?.Value ?? "12px 24px");
+                          text-decoration:none;">
+                    @Model.ButtonText.Value
+                </a>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(LeftImageUrl))
+    {
+        var leftImageDelay = 0.5 + (AnimatedElements.Count * 0.2) + 0.5;
+        var leftVertical = Model.LeftImageVertical?.Value ?? "center";
+        <div class="absolute left-0 @(leftVertical == "top" ? "top-20" : leftVertical == "bottom" ? "bottom-20" : "top-1/2") @(leftVertical != "center" ? "" : "-translate-y-1/2") animate-deco-left z-1"
+             style="width:@(Model.LeftImageWidth?.Value ?? "150px"); height:@(Model.LeftImageHeight?.Value ?? "auto"); left:@(Model.LeftImageLeft?.Value ?? "0px"); animation-delay: @($"{leftImageDelay}s")">
+            <img src="@LeftImageUrl" alt="Left" class="w-full h-auto responsive-deco" 
+                 data-width-tablet="@(Model.LeftImageWidthTablet?.Value ?? "100px")"
+                 data-width-mobile="@(Model.LeftImageWidthMobile?.Value ?? "60px")" />
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(RightImageUrl))
+    {
+        var rightImageDelay = 0.5 + (AnimatedElements.Count * 0.2) + 0.8;
+        var rightVertical = Model.RightImageVertical?.Value ?? "center";
+        <div class="absolute right-0 @(rightVertical == "top" ? "top-20" : rightVertical == "bottom" ? "bottom-20" : "top-1/2") @(rightVertical != "center" ? "" : "-translate-y-1/2") animate-deco-right z-1"
+             style="width:@(Model.RightImageWidth?.Value ?? "150px"); height:@(Model.RightImageHeight?.Value ?? "auto"); right:@(Model.RightImageRight?.Value ?? "0px"); animation-delay: @($"{rightImageDelay}s")">
+            <img src="@RightImageUrl" alt="Right" class="w-full h-auto responsive-deco"
+                 data-width-tablet="@(Model.RightImageWidthTablet?.Value ?? "100px")"
+                 data-width-mobile="@(Model.RightImageWidthMobile?.Value ?? "60px")" />
+        </div>
+    }
+</div>
+
+<style>
+    .logo-start-container {
+        position: relative;
+    }
+
+    .animate-letter {
+        animation: appearFromRight 0.8s ease-out forwards;
+        opacity: 0;
+    }
+
+    @@keyframes appearFromRight {
+        0% { opacity: 0; transform: translateX(150px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .slide-from-left {
+        animation: slideFromLeft 1s ease-out forwards;
+        opacity: 0;
+    }
+
+    @@keyframes slideFromLeft {
+        0% { opacity: 0; transform: translateX(-300px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .animate-deco-left {
+        animation: slideFromLeftDeco 1s ease-out forwards;
+        opacity: 0;
+    }
+
+    @@keyframes slideFromLeftDeco {
+        0% { opacity: 0; transform: translateX(-100px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .animate-deco-right {
+        animation: slideFromRightDeco 1s ease-out forwards;
+        opacity: 0;
+    }
+
+    @@keyframes slideFromRightDeco {
+        0% { opacity: 0; transform: translateX(100px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .animate-logo {
+        animation: scaleIn 1.2s ease-out forwards;
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    @@keyframes scaleIn {
+        0% { opacity: 0; transform: scale(0.5); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease-out forwards;
+        opacity: 0;
+    }
+
+    @@keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .button-link {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .button-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @@media (max-width: 1024px) {
+        .logo-start-container { min-height: 50vh !important; }
+        .responsive-text { font-size: var(--size-tablet, 48px) !important; }
+        .responsive-img { width: var(--width-tablet, 100px) !important; }
+        .responsive-logo { width: var(--logo-width-tablet, 150px) !important; }
+        .responsive-deco { width: var(--deco-width-tablet, 100px) !important; }
+        .responsive-icon { width: var(--icon-width-tablet, 24px) !important; }
+        .responsive-icon-fa { font-size: var(--icon-size-tablet, 20px) !important; }
+    }
+
+    @@media (max-width: 640px) {
+        .logo-start-container { min-height: 50vh !important; }
+        .responsive-text { font-size: var(--size-mobile, 24px) !important; }
+        .responsive-img { width: var(--width-mobile, 60px) !important; }
+        .responsive-logo { width: var(--logo-width-mobile, 120px) !important; }
+        .responsive-deco { width: var(--deco-width-mobile, 60px) !important; }
+        .responsive-icon { width: var(--icon-width-mobile, 20px) !important; }
+        .responsive-icon-fa { font-size: var(--icon-size-mobile, 16px) !important; }
+    }
+</style>
+
+<script>
+    document.querySelectorAll('.responsive-text').forEach(el => {
+        el.style.setProperty('--size-tablet', el.dataset.sizeTablet || '48px');
+        el.style.setProperty('--size-mobile', el.dataset.sizeMobile || '24px');
+    });
+    document.querySelectorAll('.responsive-img').forEach(el => {
+        el.style.setProperty('--width-tablet', el.dataset.widthTablet || '100px');
+        el.style.setProperty('--width-mobile', el.dataset.widthMobile || '60px');
+    });
+    document.querySelectorAll('.responsive-logo').forEach(el => {
+        el.style.setProperty('--logo-width-tablet', el.dataset.widthTablet || '150px');
+        el.style.setProperty('--logo-width-mobile', el.dataset.widthMobile || '120px');
+    });
+    document.querySelectorAll('.responsive-deco').forEach(el => {
+        el.style.setProperty('--deco-width-tablet', el.dataset.widthTablet || '100px');
+        el.style.setProperty('--deco-width-mobile', el.dataset.widthMobile || '60px');
+    });
+    document.querySelectorAll('.responsive-icon').forEach(el => {
+        el.style.setProperty('--icon-width-tablet', el.dataset.widthTablet || '24px');
+        el.style.setProperty('--icon-width-mobile', el.dataset.widthMobile || '20px');
+    });
+    document.querySelectorAll('.responsive-icon-fa').forEach(el => {
+        el.style.setProperty('--icon-size-tablet', el.dataset.sizeTablet || '20px');
+        el.style.setProperty('--icon-size-mobile', el.dataset.sizeMobile || '16px');
+    });
+</script>
+
+@code {
+    [Parameter] public LogoStartBlock Model { get; set; } = new();
+
+    private string LogoUrl => Model.LogoImage?.Value ?? Model.LogoImage?.Value ?? "";
+    private string LeftImageUrl => Model.LeftImage?.Value ?? Model.LeftImage?.Value ?? "";
+    private string RightImageUrl => Model.RightImage?.Value ?? Model.RightImage?.Value ?? "";
+
+    private List<AnimatedElement> _animatedElements;
+    private List<AnimatedElement> AnimatedElements => _animatedElements ??= GetAnimatedElements();
+
+    private class AnimatedElement
+    {
+        public string Type { get; set; } = "text";
+        public string Text { get; set; } = "";
+        public string Color { get; set; } = "#ffffff";
+        public string Size { get; set; } = "48px";
+        public string SizeTablet { get; set; } = "36px";
+        public string SizeMobile { get; set; } = "24px";
+        public string Weight { get; set; } = "700";
+        public bool LineBreak { get; set; }
+        public string ImageUrl { get; set; } = "";
+        public string ImageWidth { get; set; } = "150px";
+        public string ImageWidthTablet { get; set; } = "100px";
+        public string ImageWidthMobile { get; set; } = "60px";
+        public string ImageHeight { get; set; } = "auto";
+    }
+
+    private List<AnimatedElement> GetAnimatedElements()
+    {
+        var list = new List<AnimatedElement>
+        {
+            new() { Type = Model.Element1Type?.Value ?? "image", Text = Model.Word1?.Value ?? "", Color = Model.Word1Color?.Value ?? "#ffffff", Size = Model.Word1Size?.Value ?? "120px", SizeTablet = Model.Word1SizeTablet?.Value ?? "80px", SizeMobile = Model.Word1SizeMobile?.Value ?? "48px", Weight = Model.Word1Weight?.Value ?? "700", LineBreak = Model.LineBreak1?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image1), ImageWidth = Model.Image1Width?.Value ?? "150px", ImageWidthTablet = Model.Image1WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image1WidthMobile?.Value ?? "60px", ImageHeight = Model.Image1Height?.Value ?? "auto" },
+            new() { Type = Model.Element2Type?.Value ?? "image", Text = Model.Word2?.Value ?? "", Color = Model.Word2Color?.Value ?? "#ffffff", Size = Model.Word2Size?.Value ?? "120px", SizeTablet = Model.Word2SizeTablet?.Value ?? "80px", SizeMobile = Model.Word2SizeMobile?.Value ?? "48px", Weight = Model.Word2Weight?.Value ?? "700", LineBreak = Model.LineBreak2?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image2), ImageWidth = Model.Image2Width?.Value ?? "150px", ImageWidthTablet = Model.Image2WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image2WidthMobile?.Value ?? "60px", ImageHeight = Model.Image2Height?.Value ?? "auto" },
+            new() { Type = Model.Element3Type?.Value ?? "image", Text = Model.Word3?.Value ?? "", Color = Model.Word3Color?.Value ?? "#ffffff", Size = Model.Word3Size?.Value ?? "120px", SizeTablet = Model.Word3SizeTablet?.Value ?? "80px", SizeMobile = Model.Word3SizeMobile?.Value ?? "48px", Weight = Model.Word3Weight?.Value ?? "700", LineBreak = Model.LineBreak3?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image3), ImageWidth = Model.Image3Width?.Value ?? "150px", ImageWidthTablet = Model.Image3WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image3WidthMobile?.Value ?? "60px", ImageHeight = Model.Image3Height?.Value ?? "auto" },
+            new() { Type = Model.Element4Type?.Value ?? "image", Text = Model.Word4?.Value ?? "", Color = Model.Word4Color?.Value ?? "#ffffff", Size = Model.Word4Size?.Value ?? "120px", SizeTablet = Model.Word4SizeTablet?.Value ?? "80px", SizeMobile = Model.Word4SizeMobile?.Value ?? "48px", Weight = Model.Word4Weight?.Value ?? "700", LineBreak = Model.LineBreak4?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image4), ImageWidth = Model.Image4Width?.Value ?? "150px", ImageWidthTablet = Model.Image4WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image4WidthMobile?.Value ?? "60px", ImageHeight = Model.Image4Height?.Value ?? "auto" },
+            new() { Type = Model.Element5Type?.Value ?? "image", Text = Model.Word5?.Value ?? "", Color = Model.Word5Color?.Value ?? "#ffffff", Size = Model.Word5Size?.Value ?? "120px", SizeTablet = Model.Word5SizeTablet?.Value ?? "80px", SizeMobile = Model.Word5SizeMobile?.Value ?? "48px", Weight = Model.Word5Weight?.Value ?? "700", LineBreak = Model.LineBreak5?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image5), ImageWidth = Model.Image5Width?.Value ?? "150px", ImageWidthTablet = Model.Image5WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image5WidthMobile?.Value ?? "60px", ImageHeight = Model.Image5Height?.Value ?? "auto" },
+            new() { Type = Model.Element6Type?.Value ?? "image", Text = Model.Word6?.Value ?? "", Color = Model.Word6Color?.Value ?? "#ffffff", Size = Model.Word6Size?.Value ?? "120px", SizeTablet = Model.Word6SizeTablet?.Value ?? "80px", SizeMobile = Model.Word6SizeMobile?.Value ?? "48px", Weight = Model.Word6Weight?.Value ?? "700", LineBreak = Model.LineBreak6?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image6), ImageWidth = Model.Image6Width?.Value ?? "150px", ImageWidthTablet = Model.Image6WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image6WidthMobile?.Value ?? "60px", ImageHeight = Model.Image6Height?.Value ?? "auto" },
+            new() { Type = Model.Element7Type?.Value ?? "image", Text = Model.Word7?.Value ?? "", Color = Model.Word7Color?.Value ?? "#ffffff", Size = Model.Word7Size?.Value ?? "120px", SizeTablet = Model.Word7SizeTablet?.Value ?? "80px", SizeMobile = Model.Word7SizeMobile?.Value ?? "48px", Weight = Model.Word7Weight?.Value ?? "700", LineBreak = Model.LineBreak7?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image7), ImageWidth = Model.Image7Width?.Value ?? "150px", ImageWidthTablet = Model.Image7WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image7WidthMobile?.Value ?? "60px", ImageHeight = Model.Image7Height?.Value ?? "auto" },
+            new() { Type = Model.Element8Type?.Value ?? "text", Text = Model.Word8?.Value ?? "", Color = Model.Word8Color?.Value ?? "#ffffff", Size = Model.Word8Size?.Value ?? "48px", SizeTablet = Model.Word8SizeTablet?.Value ?? "36px", SizeMobile = Model.Word8SizeMobile?.Value ?? "24px", Weight = Model.Word8Weight?.Value ?? "700", LineBreak = Model.LineBreak8?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image8), ImageWidth = Model.Image8Width?.Value ?? "150px", ImageWidthTablet = Model.Image8WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image8WidthMobile?.Value ?? "60px", ImageHeight = Model.Image8Height?.Value ?? "auto" },
+            new() { Type = Model.Element9Type?.Value ?? "text", Text = Model.Word9?.Value ?? "", Color = Model.Word9Color?.Value ?? "#ffffff", Size = Model.Word9Size?.Value ?? "48px", SizeTablet = Model.Word9SizeTablet?.Value ?? "36px", SizeMobile = Model.Word9SizeMobile?.Value ?? "24px", Weight = Model.Word9Weight?.Value ?? "700", LineBreak = Model.LineBreak9?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image9), ImageWidth = Model.Image9Width?.Value ?? "150px", ImageWidthTablet = Model.Image9WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image9WidthMobile?.Value ?? "60px", ImageHeight = Model.Image9Height?.Value ?? "auto" },
+            new() { Type = Model.Element10Type?.Value ?? "text", Text = Model.Word10?.Value ?? "", Color = Model.Word10Color?.Value ?? "#ffffff", Size = Model.Word10Size?.Value ?? "48px", SizeTablet = Model.Word10SizeTablet?.Value ?? "36px", SizeMobile = Model.Word10SizeMobile?.Value ?? "24px", Weight = Model.Word10Weight?.Value ?? "700", LineBreak = Model.LineBreak10?.IsTrue ?? false, ImageUrl = GetImageUrl(Model.Image10), ImageWidth = Model.Image10Width?.Value ?? "150px", ImageWidthTablet = Model.Image10WidthTablet?.Value ?? "100px", ImageWidthMobile = Model.Image10WidthMobile?.Value ?? "60px", ImageHeight = Model.Image10Height?.Value ?? "auto" }
+        };
+
+        return list.Where(e => 
+            (e.Type == "text" && !string.IsNullOrWhiteSpace(e.Text)) || 
+            (e.Type == "image" && !string.IsNullOrWhiteSpace(e.ImageUrl))
+        ).ToList();
+    }
+
+    private string GetImageUrl(ImageField? image)
+    {
+        if (image?.Value != null) return ResolveUrl(image.Value);
+        if (image?.Value == null) return "";
+        return ResolveUrl(image.Value);
+    }
+
+    private string ResolveUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return "";
+        return url.StartsWith("~/") ? NavManager.BaseUri + url.Substring(2) : url;
+    }
+
+    private string GetMainTextAlignment()
+    {
+        return Model.MainTextAlignment?.Value switch
+        {
+            "left" => "flex-start",
+            "center" => "center",
+            "right" => "flex-end",
+            _ => "flex-start"
+        };
+    }
+
+    private string GetButtonUrl()
+    {
+        if (string.IsNullOrWhiteSpace(Model.ButtonUrl?.Value)) return "#";
+        var url = Model.ButtonUrl.Value;
+        if (url.StartsWith("http")) return url;
+        return url.StartsWith("/") ? url : "/" + url;
+    }
+}

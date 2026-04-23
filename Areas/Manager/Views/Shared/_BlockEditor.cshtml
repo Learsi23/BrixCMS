@@ -1,0 +1,771 @@
+@using System.Reflection
+@using BrixCMS.Open.Data.Fields
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.Base
+@using System.Text.Json
+@model BrixCMS.Open.Data.Block
+@inject BlockRegistry Registry
+@inject BrixCMS.Open.Data.BrixDbContext Db
+@inject BrixCMS.Open.Services.SemanticSearch SemanticSearchSvc
+
+@{
+    var type = Registry.GetBlockType(Model.Type);
+
+    if (type == null)
+    {
+        <div class="p-4 bg-red-50 text-red-600 border border-red-200 rounded mb-4 text-xs">
+            <strong>Error:</strong> Block "@Model.Type" is not registered.
+        </div>
+        return;
+    }
+
+    var blockAttr = type.GetCustomAttribute<BlockTypeAttribute>();
+    bool isGroup = typeof(BlockGroupBase).IsAssignableFrom(type);
+
+    var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+    var currentData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(Model.JsonData ?? "{}", jsonOptions)
+                      ?? new Dictionary<string, JsonElement>();
+
+    var childBlocks = Db.Blocks
+        .Where(b => b.ParentId == Model.Id)
+        .OrderBy(b => b.SortOrder)
+        .ToList();
+
+    // ? Instancia por defecto del bloque para obtener opciones de SelectField
+    var defaultInstance = Activator.CreateInstance(type);
+}
+
+<div class="border-l-4 @(isGroup ? "border-purple-500 bg-purple-50/30" : "border-emerald-500 bg-white") p-6 mb-6 rounded-2xl shadow-sm border border-gray-200">
+
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-3">
+            <span class="p-2 rounded-lg @(isGroup ? "bg-purple-100 text-purple-600" : "bg-emerald-100 text-emerald-600")">
+                <i class="@(blockAttr?.Icon ?? "fas fa-box") text-sm"></i>
+            </span>
+            <div>
+                <h4 class="font-black text-gray-800 text-[11px] uppercase tracking-tighter">
+                    @(blockAttr?.Name ?? Model.Type)
+                </h4>
+                <p class="text-[9px] text-gray-400 font-mono">
+                    ID: @Model.Id.ToString().Substring(0, 8)
+                </p>
+            </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="flex items-center gap-2">
+            <button onclick="executeAction('@Model.PageId', '@Model.Id', 'up', 'MoveBlock')"
+                    class="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg border">?</button>
+            <button onclick="executeAction('@Model.PageId', '@Model.Id', 'down', 'MoveBlock')"
+                    class="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg border">?</button>
+            <button onclick="executeAction('@Model.PageId', '@Model.Id', '', 'DeleteBlock')"
+                    class="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-500 text-red-500 hover:text-white rounded-lg border">×</button>
+        </div>
+    </div>
+
+    <!-- FIELD FORM -->
+    <form asp-area="Manager"
+          asp-controller="Manager"
+          asp-action="SaveBlock"
+          method="post"
+          class="space-y-4">
+
+        <input type="hidden" name="blockId" value="@Model.Id" />
+        <input type="hidden" name="pageId" value="@Model.PageId" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/60 p-5 rounded-xl border border-gray-100">
+
+                @foreach (var prop in type.GetProperties().Where(p => typeof(IField).IsAssignableFrom(p.PropertyType)))
+                {
+                    var fieldAttr = prop.GetCustomAttribute<FieldAttribute>();
+                    var label = fieldAttr?.Title ?? prop.Name;
+                    string currentVal = "";
+
+                    if (currentData.TryGetValue(prop.Name, out var element))
+                    {
+                        if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty("Value", out var valProp))
+                            currentVal = valProp.GetString() ?? "";
+                    }
+
+                    var visibleWhen = fieldAttr?.VisibleWhen ?? "";
+                    var showField = true;
+                    if (!string.IsNullOrEmpty(visibleWhen))
+                    {
+                        var parts = visibleWhen.Split(':');
+                        if (parts.Length == 2)
+                        {
+                            var depField = parts[0];
+                            var depValue = parts[1];
+                            if (currentData.TryGetValue(depField, out var depElement))
+                            {
+                                var currentDepValue = "";
+                                if (depElement.ValueKind == JsonValueKind.Object && depElement.TryGetProperty("Value", out var depValProp))
+                                    currentDepValue = depValProp.GetString() ?? "";
+                                showField = currentDepValue == depValue;
+                            }
+                        }
+                    }
+
+                    @if (!showField)
+                    {
+                        continue;
+                    }
+
+                    @* ? MarkdownField ocupa toda la fila — hijo directo del grid *@
+                    @if (prop.PropertyType == typeof(MarkdownField))
+                    {
+                        var uniqueId = "editor_" + Model.Id.ToString().Replace("-", "").Substring(0, 8) + "_" + prop.Name;
+                        <div class="col-span-1 md:col-span-2 flex flex-col gap-1.5">
+                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
+                            <textarea id="@uniqueId"
+                                      name="values[@prop.Name].Value"
+                                      rows="8"
+                                      class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg">@currentVal</textarea>
+                            <script>
+                                (function() {
+                                    var TINY_ID = '@uniqueId';
+                                    var TINY_SRC = '/lib/tinymce/js/tinymce/tinymce.min.js';
+                                    function initTiny() {
+                                        if (!window.tinymce) { console.error('TinyMCE no cargado'); return; }
+                                        if (tinymce.get(TINY_ID)) tinymce.get(TINY_ID).destroy();
+                                        tinymce.init({
+                                            selector: '#' + TINY_ID,
+                                            license_key: 'gpl',
+                                            height: 400,
+                                            menubar: true,
+                                            plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
+                                            toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | link image | code fullscreen',
+                                            content_style: 'body { font-family: -apple-system, sans-serif; font-size: 14px; }',
+                                            setup: function(editor) {
+                                                editor.on('change keyup', function() { editor.save(); });
+                                            }
+                                        });
+                                    }
+                                    if (window.tinymce) {
+                                        initTiny();
+                                    } else if (!document.querySelector('script[data-tinymce]')) {
+                                        var s = document.createElement('script');
+                                        s.setAttribute('data-tinymce', '1');
+                                        s.src = TINY_SRC;
+                                        s.onload = initTiny;
+                                        s.onerror = function() {
+                                            var s2 = document.createElement('script');
+                                            s2.src = 'https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js';
+                                            s2.onload = initTiny;
+                                            document.head.appendChild(s2);
+                                        };
+                                        document.head.appendChild(s);
+                                    } else {
+                                        var check = setInterval(function() {
+                                            if (window.tinymce) { clearInterval(check); initTiny(); }
+                                        }, 100);
+                                    }
+                                })();
+                            </script>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex flex-col gap-1.5">
+                            @* ? No mostrar label para BoolField *@
+                            @if (prop.PropertyType != typeof(BoolField))
+                            {
+                                <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
+                            }
+
+                            @* -- COLOR FIELD -- *@
+                            @if (prop.PropertyType == typeof(ColorField))
+                            {
+                                <div class="flex gap-2">
+                                    <input type="color"
+                                           id="color-@Model.Id-@prop.Name"
+                                           value="@(string.IsNullOrEmpty(currentVal) ? "#000000" : currentVal)"
+                                           onchange="document.getElementById('hidden-@Model.Id-@prop.Name').value = this.value"
+                                           class="h-9 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer" />
+                                    <input type="hidden"
+                                           id="hidden-@Model.Id-@prop.Name"
+                                           name="values[@prop.Name].Value"
+                                           value="@currentVal" />
+                                    <input type="text"
+                                           value="@currentVal"
+                                           oninput="document.getElementById('hidden-@Model.Id-@prop.Name').value = this.value; document.getElementById('color-@Model.Id-@prop.Name').value = this.value"
+                                           class="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg font-mono" />
+                                </div>
+                            }
+                            @* -- IMAGE FIELD -- *@
+                            else if (prop.PropertyType == typeof(ImageField))
+                            {
+                                var imgWrapperId = $"imgwrap-{Model.Id.ToString().Replace("-","").Substring(0,8)}-{prop.Name}";
+                                var imgInputId   = $"img-{Model.Id}-{prop.Name}";
+
+                                // Read saved Width/Height/ObjectFit from JSON
+                                string imgWidth = "", imgHeight = "", imgFit = "cover";
+                                if (currentData.TryGetValue(prop.Name, out var imgEl) && imgEl.ValueKind == JsonValueKind.Object)
+                                {
+                                    if (imgEl.TryGetProperty("Width",     out var wp) && wp.ValueKind != JsonValueKind.Null) imgWidth  = wp.GetString() ?? "";
+                                    if (imgEl.TryGetProperty("Height",    out var hp) && hp.ValueKind != JsonValueKind.Null) imgHeight = hp.GetString() ?? "";
+                                    if (imgEl.TryGetProperty("ObjectFit",out var fp) && fp.ValueKind != JsonValueKind.Null) imgFit    = fp.GetString() ?? "cover";
+                                }
+
+                                <div class="flex gap-2">
+                                    <input type="text"
+                                           id="@imgInputId"
+                                           name="values[@prop.Name].Value"
+                                           value="@currentVal"
+                                           class="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg bg-gray-50 font-mono"
+                                           readonly />
+                                    <button type="button"
+                                            onclick="openMediaPicker('@imgInputId', '@imgWrapperId')"
+                                            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-blue-700">
+                                        <i class="fas fa-image mr-1"></i>Media
+                                    </button>
+                                    <button type="button"
+                                            onclick="clearImageField('@imgInputId', '@imgWrapperId')"
+                                            class="bg-red-100 hover:bg-red-500 text-red-500 hover:text-white w-9 flex items-center justify-center rounded-lg border border-red-200 transition"
+                                            title="Eliminar imagen">
+                                        <i class="fas fa-times text-xs"></i>
+                                    </button>
+                                </div>
+                                @* Size controls *@
+                                <div class="flex gap-2 mt-1.5">
+                                    <div class="flex-1">
+                                        <label class="text-[9px] text-gray-400 uppercase">Ancho (px)</label>
+                                        <input type="number"
+                                               name="values[@prop.Name].Width"
+                                               value="@(string.IsNullOrEmpty(imgWidth) ? "" : imgWidth.Replace("px",""))"
+                                               placeholder="400"
+                                               min="0"
+                                               class="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="text-[9px] text-gray-400 uppercase">Alto (px)</label>
+                                        <input type="number"
+                                               name="values[@prop.Name].Height"
+                                               value="@(string.IsNullOrEmpty(imgHeight) ? "" : imgHeight.Replace("px",""))"
+                                               placeholder="auto"
+                                               min="0"
+                                               class="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="text-[9px] text-gray-400 uppercase">Ajuste</label>
+                                        <select name="values[@prop.Name].ObjectFit"
+                                                class="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white cursor-pointer">
+                                            <option value="cover"   selected="@(imgFit == "cover")">Cover</option>
+                                            <option value="contain"  selected="@(imgFit == "contain")">Contain</option>
+                                            <option value="fill"     selected="@(imgFit == "fill")">Fill</option>
+                                            <option value="none"     selected="@(imgFit == "none")">Original</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="@imgWrapperId" class="mt-2 @(string.IsNullOrEmpty(currentVal) ? "hidden" : "")">
+                                    <div class="relative inline-block">
+                                        <img src="@currentVal"
+                                             id="@(imgWrapperId)-preview"
+                                             class="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                                    </div>
+                                </div>
+                            }
+                            @* -- TEXTAREA FIELD -- *@
+                            else if (prop.PropertyType == typeof(TextAreaField))
+                            {
+                                <textarea name="values[@prop.Name].Value"
+                                          rows="5"
+                                          class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg">@currentVal</textarea>
+                            }
+                            @* -- BOOL FIELD -- *@
+                            else if (prop.PropertyType == typeof(BoolField))
+                            {
+                                var isChecked = currentVal == "true";
+                                <div class="flex items-center gap-2 pt-1">
+                                    <input type="hidden"
+                                           id="hidden-bool-@Model.Id-@prop.Name"
+                                           name="values[@prop.Name].Value"
+                                           value="@(isChecked ? "true" : "false")" />
+                                    <input type="checkbox"
+                                           id="bool-@Model.Id-@prop.Name"
+                                           onchange="document.getElementById('hidden-bool-@Model.Id-@prop.Name').value = this.checked ? 'true' : 'false'"
+                                           @(isChecked ? "checked" : "") />
+                                    <label for="bool-@Model.Id-@prop.Name" class="text-[10px] text-gray-600">@label</label>
+                                </div>
+                            }
+                            @* -- SELECT FIELD -- *@
+                            else if (prop.PropertyType.IsGenericType &&
+                                     prop.PropertyType.GetGenericTypeDefinition() == typeof(SelectField<>))
+                            {
+                                var fieldInstance = defaultInstance != null ? prop.GetValue(defaultInstance) : null;
+                                var optionsList = fieldInstance != null
+                                    ? prop.PropertyType.GetProperty("Options")?.GetValue(fieldInstance) as System.Collections.IEnumerable
+                                    : null;
+                                <select name="values[@prop.Name].Value"
+                                        class="px-3 py-2 text-xs border border-gray-200 rounded-lg w-full bg-white cursor-pointer">
+                                    @if (optionsList != null)
+                                    {
+                                        foreach (var opt in optionsList)
+                                        {
+                                            var optValue = opt.GetType().GetProperty("Value")?.GetValue(opt)?.ToString() ?? "";
+                                            var optLabel = opt.GetType().GetProperty("Label")?.GetValue(opt)?.ToString() ?? optValue;
+                                            var selected = currentVal == optValue ? "selected" : "";
+                                            <option value="@optValue" selected="@(currentVal == optValue ? "selected" : null)">@optLabel</option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            @* -- NUMBER FIELD -- *@
+                            else if (prop.PropertyType == typeof(NumberField))
+                            {
+                                <input type="number"
+                                       name="values[@prop.Name].Value"
+                                       value="@currentVal"
+                                       placeholder="@(fieldAttr?.Placeholder ?? "")"
+                                       class="px-3 py-2 text-xs border border-gray-200 rounded-lg w-full" />
+                            }
+                            @* -- LIST FIELD (Menu Items / Social Media) -- *@
+                            else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(ListField<>))
+                            {
+                                var listUniqueId = "list-" + Model.Id.ToString().Replace("-", "").Substring(0, 8) + "-" + prop.Name;
+                                var innerType = prop.PropertyType.GetGenericArguments()[0];
+                                var isMenuItem = innerType.Name == "MenuItemField";
+                                var isSocialMedia = innerType.Name == "SocialMediaField";
+                                var isProductSelection = innerType.Name == "ProductSelectionField";
+
+                                <div class="col-span-1 md:col-span-2">
+                                    <div class="flex justify-between items-center mb-2">
+                                        @if (!isProductSelection)
+                                        {
+                                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
+                                        }
+                                        <button type="button"
+                                                onclick="addListItem('@listUniqueId', '@innerType.Name')"
+                                                class="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600">
+                                            + Add
+                                        </button>
+                                    </div>
+                                    <div id="@listUniqueId" class="space-y-3">
+                                        @{
+                                            var listData = new List<Dictionary<string, object>>();
+                                            if (!string.IsNullOrEmpty(currentVal) && currentVal != "[]")
+                                            {
+                                                try
+                                                {
+                                                    listData = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, object>>>(currentVal) ?? new();
+                                                }
+                                                catch { listData = new(); }
+                                            }
+                                            var index = 0;
+                                            foreach (var item in listData)
+                                            {
+                                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative group">
+                                                    <button type="button"
+                                                            onclick="this.parentElement.remove()"
+                                                            class="absolute top-2 right-2 text-red-500 hover:text-red-700">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    @if (isMenuItem)
+                                                    {
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <label class="text-[9px] text-gray-400 uppercase">Is Custom URL</label>
+                                                                <input type="checkbox"
+                                                                       name="values[@prop.Name].Items[@index].IsCustomUrl"
+                                                                       value="true"
+                                                                       checked="@(item.ContainsKey("IsCustomUrl") && item["IsCustomUrl"]?.ToString() == "True")"
+                                                                       class="w-4 h-4" />
+                                                            </div>
+                                                            <div>
+                                                                <label class="text-[9px] text-gray-400 uppercase">Custom Text</label>
+                                                                <input type="text"
+                                                                       name="values[@prop.Name].Items[@index].CustomText"
+                                                                       value="@(item.ContainsKey("CustomText") ? item["CustomText"]?.ToString() : "")"
+                                                                       class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />
+                                                            </div>
+                                                            <div class="col-span-2">
+                                                                <label class="text-[9px] text-gray-400 uppercase">Custom URL / Page Slug</label>
+                                                                <input type="text"
+                                                                       name="values[@prop.Name].Items[@index].CustomUrl"
+                                                                       value="@(item.ContainsKey("CustomUrl") ? item["CustomUrl"]?.ToString() : "")"
+                                                                       placeholder="/page-slug or https://..."
+                                                                       class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    else if (isSocialMedia)
+                                                    {
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <label class="text-[9px] text-gray-400 uppercase">Platform</label>
+                                                                <input type="text"
+                                                                       name="values[@prop.Name].Items[@index].Platform"
+                                                                       value="@(item.ContainsKey("Platform") ? item["Platform"]?.ToString() : "")"
+                                                                       placeholder="facebook, instagram, etc."
+                                                                       class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />
+                                                            </div>
+                                                            <div>
+                                                                <label class="text-[9px] text-gray-400 uppercase">URL</label>
+                                                                <input type="text"
+                                                                       name="values[@prop.Name].Items[@index].Url"
+                                                                       value="@(item.ContainsKey("Url") ? item["Url"]?.ToString() : "")"
+                                                                       placeholder="https://..."
+                                                                       class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />
+                                                            </div>
+                                                            <div>
+                                                                <label class="text-[9px] text-gray-400 uppercase">Icon Type</label>
+                                                                <select name="values[@prop.Name].Items[@index].IconType"
+                                                                        class="w-full px-2 py-1 text-xs border border-gray-200 rounded">
+                                                                    <option value="class" selected="@(item.ContainsKey("IconType") && item["IconType"]?.ToString() == "class")">CSS Class</option>
+                                                                    <option value="image" selected="@(item.ContainsKey("IconType") && item["IconType"]?.ToString() == "image")">Image</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label class="text-[9px] text-gray-400 uppercase">Icon Class/URL</label>
+                                                                <input type="text"
+                                                                       name="values[@prop.Name].Items[@index].IconClass"
+                                                                       value="@(item.ContainsKey("IconClass") ? item["IconClass"]?.ToString() : "")"
+                                                                       placeholder="fab fa-facebook or /uploads/..."
+                                                                       class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    else if (isProductSelection)
+                                                    {
+                                                        var prodId = item.ContainsKey("ProductId") ? item["ProductId"]?.ToString() : "";
+                                                        var prodName = item.ContainsKey("ProductName") ? item["ProductName"]?.ToString() : "Producto";
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="flex-1 text-xs text-gray-600 truncate">@prodName</span>
+                                                            <input type="hidden" 
+                                                                   name="values[@prop.Name].Items[@index].ProductId" 
+                                                                   value="@prodId" />
+                                                            <input type="hidden" 
+                                                                   name="values[@prop.Name].Items[@index].ProductName" 
+                                                                   value="@prodName" />
+                                                        </div>
+                                                    }
+                                                </div>
+                                                index++;
+                                            }
+                                        }
+                                    </div>
+                                    <input type="hidden"
+                                           id="@(listUniqueId)-json"
+                                           name="values[@prop.Name].Value" 
+                                           value="@currentVal" />
+                                    <script>
+                                        function addListItem(listId, itemType) {
+                                            const container = document.getElementById(listId);
+                                            const index = container.children.length;
+                                            const types = itemType.toLowerCase();
+                                            
+                                            let html = '<div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative group">' +
+                                                '<button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>';
+                                            
+                                            if (types.includes('menu')) {
+                                                html += '<div class="grid grid-cols-2 gap-2">' +
+                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Is Custom URL</label>' +
+                                                    '<input type="checkbox" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].IsCustomUrl" value="true" class="w-4 h-4" /></div>' +
+                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Custom Text</label>' +
+                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].CustomText" value="" class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                                                    '<div class="col-span-2"><label class="text-[9px] text-gray-400 uppercase">Custom URL / Page Slug</label>' +
+                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].CustomUrl" value="" placeholder="/page-slug or https://..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                                                    '</div>';
+                                            } else if (types.includes('social')) {
+                                                html += '<div class="grid grid-cols-2 gap-2">' +
+                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Platform</label>' +
+                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].Platform" value="" placeholder="facebook, instagram..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                                                    '<div><label class="text-[9px] text-gray-400 uppercase">URL</label>' +
+                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].Url" value="" placeholder="https://..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Icon Type</label>' +
+                                                    '<select name="values[' + listId.replace('list-', '') + '].Items[' + index + '].IconType" class="w-full px-2 py-1 text-xs border border-gray-200 rounded">' +
+                                                    '<option value="class">CSS Class</option><option value="image">Image</option></select></div>' +
+                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Icon Class/URL</label>' +
+                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].IconClass" value="" placeholder="fab fa-facebook or /uploads/..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                                                    '</div>';
+                                            } else if (types.includes('product')) {
+                                                html += '<p class="text-xs text-gray-500 mb-2">Haz clic para seleccionar productos</p>' +
+                                                    '<button type="button" onclick="openProductSelector(\'' + listId + '\')" ' +
+                                                    'class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 w-full">' +
+                                                    '<i class="fas fa-plus mr-1"></i> Seleccionar Productos' +
+                                                    '</button>';
+                                            } else {
+                                                html += '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].Value" value="" class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />';
+                                            }
+                                            
+                                            html += '</div>';
+                                            container.insertAdjacentHTML('beforeend', html);
+                                        }
+                                    </script>
+                                </div>
+                            }
+                            @* -- PDF SELECT FIELD (checkboxes from ingested docs) -- *@
+                            else if (prop.PropertyType == typeof(PdfSelectField))
+                            {
+                                var availablePdfs = await SemanticSearchSvc.GetAllDocumentIdsAsync();
+                                var selectedSet = (currentVal ?? "")
+                                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                                var pdfHiddenId = $"pdfhidden-{Model.Id.ToString().Replace("-","").Substring(0,8)}-{prop.Name}";
+                                <div class="col-span-1 md:col-span-2">
+                                    <input type="hidden"
+                                           id="@pdfHiddenId"
+                                           name="values[@prop.Name].Value"
+                                           value="@currentVal" />
+                                    @if (!availablePdfs.Any())
+                                    {
+                                        <p class="text-[10px] text-gray-400 italic">No PDFs ingested yet. Upload and ingest documents first.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="flex flex-col gap-1.5 mt-1">
+                                            @foreach (var pdf in availablePdfs)
+                                            {
+                                                var chkId = $"{pdfHiddenId}_{pdf.Replace(".", "_").Replace("/", "_")}";
+                                                <label class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-blue-50 hover:border-blue-300 text-[11px]">
+                                                    <input type="checkbox"
+                                                           id="@chkId"
+                                                           value="@pdf"
+                                                           @(selectedSet.Contains(pdf) ? "checked" : "")
+                                                           onchange="updatePdfHidden('@pdfHiddenId', this)"
+                                                           class="rounded border-gray-300 text-blue-600" />
+                                                    <i class="fas fa-file-pdf text-red-400 text-xs"></i>
+                                                    <span class="font-mono text-gray-700 truncate">@pdf</span>
+                                                </label>
+                                            }
+                                        </div>
+                                        <p class="text-[9px] text-gray-400 mt-1">Leave all unchecked to search all documents.</p>
+                                    }
+                                </div>
+                            }
+                            @* -- DEFAULT TEXT FIELD -- *@
+                            else
+                            {
+                                <input type="text"
+                                       name="values[@prop.Name].Value"
+                                       value="@currentVal"
+                                       placeholder="@(fieldAttr?.Placeholder ?? "")"
+                                       class="px-3 py-2 text-xs border border-gray-200 rounded-lg" />
+                            }
+                        </div>
+                    }
+                }
+
+                <div class="md:col-span-2 flex justify-end pt-2">
+                    <button type="submit"
+                            class="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                        Save Changes
+                    </button>
+                </div>
+
+            </div>
+    </form>
+
+    @* CHILD BLOCKS *@
+    @if (isGroup)
+    {
+        <div class="mt-8 pl-6 border-l-2 border-purple-200 space-y-3">
+            @foreach (var child in childBlocks)
+            {
+                var childType = Registry.GetBlockType(child.Type);
+                var childAttr = childType?.GetCustomAttribute<BlockTypeAttribute>();
+                var childIsGroup = childType != null && typeof(BlockGroupBase).IsAssignableFrom(childType);
+                var childCollapseId = $"child-{child.Id.ToString().Replace("-", "")}";
+
+                <div x-data="{ open: false }"
+                     class="rounded-2xl border @(childIsGroup ? "border-purple-200 bg-purple-50/20" : "border-gray-200 bg-white") shadow-sm overflow-hidden">
+
+                    @* -- Header del bloque hijo (siempre visible) -- *@
+                    <div class="flex items-center justify-between px-4 py-3 @(childIsGroup ? "bg-purple-50" : "bg-gray-50") border-b border-gray-100 cursor-pointer"
+                         @@click="open = !open">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="@(childIsGroup ? "text-purple-500" : "text-emerald-500")">
+                                <i class="@(childAttr?.Icon ?? "fas fa-box") text-xs"></i>
+                            </span>
+                            <span class="text-[10px] font-black text-gray-600 uppercase tracking-wider truncate">
+                                @(childAttr?.Name ?? child.Type)
+                            </span>
+                            <span class="text-[9px] text-gray-300 font-mono hidden sm:block">
+                                @child.Id.ToString().Substring(0, 8)
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1.5 ml-2 flex-shrink-0" @@click.stop>
+                            @* Mover *@
+                            <button onclick="executeAction('@child.PageId', '@child.Id', 'up', 'MoveBlock')"
+                                    class="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg border text-gray-500 text-xs transition"
+                                    title="Subir">?</button>
+                            <button onclick="executeAction('@child.PageId', '@child.Id', 'down', 'MoveBlock')"
+                                    class="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg border text-gray-500 text-xs transition"
+                                    title="Bajar">?</button>
+                            @* Borrar *@
+                            <button onclick="if(confirm('¿Eliminar este bloque?')) executeAction('@child.PageId', '@child.Id', '', 'DeleteBlock')"
+                                    class="w-7 h-7 flex items-center justify-center bg-white hover:bg-red-500 text-red-400 hover:text-white rounded-lg border border-red-200 transition"
+                                    title="Eliminar">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                            @* Acordeón toggle *@
+                            <button @@click="open = !open"
+                                    :class="open ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'"
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg transition"
+                                    title="Expandir / Colapsar">
+                                <i class="fas text-xs" :class="open ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    @* -- Contenido colapsable -- *@
+                    <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-1"
+                         class="p-4">
+                        @await Html.PartialAsync("_BlockEditor", child)
+                    </div>
+
+                    @* -- Hint cuando está colapsado -- *@
+                    <div x-show="!open"
+                         @@click="open = true"
+                         class="px-4 py-2 text-center text-[10px] text-gray-400 cursor-pointer hover:bg-gray-50 transition select-none">
+                        Haz clic para expandir
+                    </div>
+                </div>
+            }
+
+            <button type="button"
+                    @@click="openSelector('@Model.Id')"
+                    class="w-full py-4 border-2 border-dashed border-purple-200 text-purple-400 text-[10px] font-black uppercase rounded-2xl hover:bg-purple-50 transition">
+                <i class="fas fa-plus mr-1"></i> Añadir bloque hijo
+            </button>
+        </div>
+    }
+
+</div>
+
+@* -- PDF CHECKBOX HELPER -- *@
+<script>
+    if (typeof updatePdfHidden === 'undefined') {
+        function updatePdfHidden(hiddenId, checkbox) {
+            var hidden = document.getElementById(hiddenId);
+            if (!hidden) return;
+            var container = hidden.parentElement;
+            var checked = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+                              .map(function(cb) { return cb.value; });
+            hidden.value = checked.join(', ');
+        }
+    }
+</script>
+
+@* -- MODAL SELECTOR DE PRODUCTOS -- *@
+<div id="productSelectorModal" class="fixed inset-0 bg-black/50 z-50 hidden" style="display: none;">
+    <div class="bg-white rounded-2xl w-full max-w-2xl mx-auto mt-20 p-6 max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-black text-gray-800">Seleccionar Productos</h3>
+            <button type="button" onclick="closeProductSelector()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <input type="text" id="productSearchInput" 
+               placeholder="Buscar productos..." 
+               class="w-full px-4 py-2 border border-gray-200 rounded-lg mb-4"
+               onkeyup="searchProductsForSelector(this.value)" />
+        
+        <div id="productSelectorList" class="flex-1 overflow-y-auto space-y-2">
+            @* Los productos se cargan aquí *@
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+            <span class="text-xs text-gray-500">Seleccionados: <span id="selectedCount">0</span></span>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeProductSelector()" 
+                        class="px-4 py-2 text-xs font-black uppercase bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmProductSelection()" 
+                        class="px-4 py-2 text-xs font-black uppercase bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSelectorListId = '';
+let selectedProducts = [];
+
+function openProductSelector(listId) {
+
+function openProductSelector(listId) {
+    currentSelectorListId = listId;
+    selectedProducts = [];
+    document.getElementById('productSelectorModal').style.display = 'flex';
+    searchProductsForSelector('');
+}
+
+function closeProductSelector() {
+    document.getElementById('productSelectorModal').style.display = 'none';
+    currentSelectorListId = '';
+    selectedProducts = [];
+}
+
+async function searchProductsForSelector(query) {
+    const container = document.getElementById('productSelectorList');
+    try {
+        const url = query.length >= 2 
+            ? '/Manager/Products/ApiList?search=' + encodeURIComponent(query)
+            : '/Manager/Products/ApiList';
+        const res = await fetch(url);
+        const products = await res.json();
+        
+        if (products.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No se encontraron productos</p>';
+            return;
+        }
+        
+        container.innerHTML = products.map(p => {
+            const isSelected = selectedProducts.some(sp => sp.id === p.id);
+            return '<div class="flex items-center p-3 rounded-lg border ' + 
+                   (isSelected ? 'bg-emerald-50 border-emerald-300' : 'border-gray-200 hover:bg-gray-50') + 
+                   ' cursor-pointer" onclick="toggleProductSelection(\'' + p.id + '\', \'' + p.name.replace(/'/g, "\\'") + '\', ' + p.price + ')">' +
+                   '<input type="checkbox" ' + (isSelected ? 'checked' : '') + ' class="mr-3" />' +
+                   '<img src="' + (p.image || '/images/no-image.png') + '" class="w-10 h-10 object-cover rounded mr-3" />' +
+                   '<div class="flex-1"><p class="text-xs font-black text-gray-800">' + p.name + '</p>' +
+                   '<p class="text-xs text-gray-500">' + p.price + '€' + (p.category ? ' - ' + p.category : '') + '</p></div></div>';
+        }).join('');
+    } catch(e) {
+        console.error(e);
+        container.innerHTML = '<p class="text-xs text-red-500">Error al cargar productos</p>';
+    }
+}
+
+function toggleProductSelection(id, name, price) {
+    const exists = selectedProducts.findIndex(p => p.id === id);
+    if (exists >= 0) {
+        selectedProducts.splice(exists, 1);
+    } else {
+        selectedProducts.push({ id, name, price });
+    }
+    document.getElementById('selectedCount').innerText = selectedProducts.length;
+    searchProductsForSelector(document.getElementById('productSearchInput').value);
+}
+
+function confirmProductSelection() {
+    const container = document.getElementById(currentSelectorListId);
+    if (!container) { closeProductSelector(); return; }
+    
+    container.innerHTML = selectedProducts.map((p, i) => 
+        '<div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative group">' +
+        '<button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700">' +
+        '<i class="fas fa-times"></i></button>' +
+        '<div class="flex items-center gap-2">' +
+        '<span class="flex-1 text-xs text-gray-600 truncate">' + p.name + '</span>' +
+        '<input type="hidden" name="values[' + currentSelectorListId.replace('list-', '') + '.Items[' + i + '].ProductId" value="' + p.id + '" />' +
+        '<input type="hidden" name="values[' + currentSelectorListId.replace('list-', '') + '.Items[' + i + '].ProductName" value="' + p.name.replace(/"/g, '&quot;') + '" />' +
+        '</div></div>'
+    ).join('');
+    
+    document.getElementById(currentSelectorListId + '-json').value = JSON.stringify(selectedProducts.map(p => ({ ProductId: p.id, ProductName: p.name })));
+    
+    closeProductSelector();
+}
+</script>

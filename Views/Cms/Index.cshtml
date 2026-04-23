@@ -1,0 +1,145 @@
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.Base
+@using System.Text.Json
+@model BrixCMS.Open.Data.Page
+@inject BlockRegistry Registry
+@{
+    ViewData["Title"] = Model.Title;
+    var settings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(Model.JsonData ?? "{}") ?? new();
+
+    string bgColor = "#ffffff";
+    if (settings.TryGetValue("BackgroundColor", out var colorEl) &&
+        colorEl.ValueKind == JsonValueKind.Object &&
+        colorEl.TryGetProperty("Value", out var colorVal))
+        bgColor = colorVal.GetString() ?? "#ffffff";
+
+    string pageFont = "";
+    if (settings.TryGetValue("FontFamily", out var fontEl) &&
+        fontEl.ValueKind == JsonValueKind.Object &&
+        fontEl.TryGetProperty("Value", out var fontVal))
+        pageFont = fontVal.GetString() ?? "";
+
+    var allBlocks = Model.Blocks.ToList();
+
+    // Helper: read string field from raw block JSON
+    string RawStr(Dictionary<string, JsonElement> d, string key, string def = "")
+    {
+        if (d.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.Object &&
+            el.TryGetProperty("Value", out var v))
+            return v.GetString() ?? def;
+        return def;
+    }
+    bool RawBool(Dictionary<string, JsonElement> d, string key)
+    {
+        if (d.TryGetValue(key, out var el) && el.ValueKind == JsonValueKind.Object &&
+            el.TryGetProperty("Value", out var v))
+            return v.GetString() == "true";
+        return false;
+    }
+}
+
+@* ── Load page-level Google Font ─────────────────────────────────── *@
+@if (!string.IsNullOrWhiteSpace(pageFont))
+{
+    var pageFontSlug = pageFont.Replace(" ", "+");
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=@pageFontSlug:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>body { font-family: '@Html.Raw(pageFont)', sans-serif; }</style>
+}
+
+<main style="background-color: @bgColor; min-height: 100vh; width: 100%;">
+@foreach (var block in allBlocks.Where(b => b.ParentId == null).OrderBy(b => b.SortOrder))
+{
+    var blockModel = Registry.CreateModel(block);
+
+    var vd = new ViewDataDictionary(ViewData);
+    vd["RawBlock"] = block;
+    vd["AllBlocks"] = allBlocks;
+
+    // Read shared brixBlockBase fields from raw JSON
+    var raw = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(block.JsonData ?? "{}") ?? new();
+
+    var isFullWidth      = RawBool(raw, "FullWidth");
+    var blockPadding     = RawStr(raw, "BlockPadding");
+    var blockMargin      = RawStr(raw, "BlockMargin");
+    var blockVAlign      = RawStr(raw, "BlockVerticalAlign", "top");
+    var animateOnScroll  = RawBool(raw, "AnimateOnScroll");
+    var animationStyle   = RawStr(raw, "AnimationStyle", "fade-up");
+    var animationDur     = RawStr(raw, "AnimationDuration", "600");
+    var blockFont        = RawStr(raw, "BlockFont");
+
+    // Build wrapper style
+    var wrapStyle = new System.Text.StringBuilder();
+    if (!string.IsNullOrWhiteSpace(blockPadding))  wrapStyle.Append($"padding:{blockPadding};");
+    if (!string.IsNullOrWhiteSpace(blockMargin))   wrapStyle.Append($"margin:{blockMargin};");
+    if (!string.IsNullOrWhiteSpace(blockFont))     wrapStyle.Append($"font-family:'{blockFont}',sans-serif;");
+
+    // Vertical align: use flexbox on wrapper
+    var useVAlign = blockVAlign != "top" && blockVAlign != "";
+    string flexAlign = blockVAlign switch { "center" => "center", "bottom" => "flex-end", _ => "flex-start" };
+    if (useVAlign) wrapStyle.Append($"display:flex;flex-direction:column;align-items:stretch;justify-content:{flexAlign};");
+
+    // Animation attrs
+    var animAttrs = animateOnScroll
+        ? $"data-brix-animate=\"{animationStyle}\" data-brix-duration=\"{animationDur}\" style=\"opacity:0;\""
+        : "";
+
+    // Load Google Font for block if different from page font
+    if (!string.IsNullOrWhiteSpace(blockFont) && blockFont != pageFont)
+    {
+        var slug = blockFont.Replace(" ", "+");
+        <link href="https://fonts.googleapis.com/css2?family=@slug:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    }
+
+    // Pass fullwidth flag so blocks can conditionally skip their own internal container
+    vd["BlockFullWidth"] = isFullWidth;
+
+    @* Always render without outer container — blocks own their background width.
+       FullWidth=true  → block should also skip its inner content container.
+       FullWidth=false → block wraps its content in its own container (default). *@
+    <div style="@wrapStyle" @Html.Raw(animAttrs)>
+        @if (blockModel != null) {
+            vd["RawJson"] = raw;
+            @await Html.PartialAsync(Registry.GetViewPath(block.Type), blockModel, vd)
+        }
+    </div>
+}
+</main>
+
+@* ── Scroll animation engine (IntersectionObserver) ────────────────── *@
+<script>
+(function () {
+    var ANIMATIONS = {
+        'fade-up':    ['opacity:0;transform:translateY(40px)', 'opacity:1;transform:translateY(0)'],
+        'fade-down':  ['opacity:0;transform:translateY(-40px)','opacity:1;transform:translateY(0)'],
+        'fade-left':  ['opacity:0;transform:translateX(40px)', 'opacity:1;transform:translateX(0)'],
+        'fade-right': ['opacity:0;transform:translateX(-40px)','opacity:1;transform:translateX(0)'],
+        'zoom-in':    ['opacity:0;transform:scale(.85)',        'opacity:1;transform:scale(1)'],
+        'zoom-out':   ['opacity:0;transform:scale(1.15)',       'opacity:1;transform:scale(1)'],
+    };
+
+    var els = document.querySelectorAll('[data-brix-animate]');
+    if (!els.length) return;
+
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var el   = entry.target;
+            var anim = el.dataset.brixAnimate || 'fade-up';
+            var dur  = parseInt(el.dataset.brixDuration || '600', 10);
+            var frames = ANIMATIONS[anim] || ANIMATIONS['fade-up'];
+
+            el.style.cssText += frames[0] + ';transition:opacity ' + dur + 'ms ease,transform ' + dur + 'ms ease;';
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    el.style.cssText = el.style.cssText.replace(frames[0], frames[1]);
+                });
+            });
+            io.unobserve(el);
+        });
+    }, { threshold: 0.12 });
+
+    els.forEach(function (el) { io.observe(el); });
+})();
+</script>

@@ -1,0 +1,168 @@
+@using BrixCMS.Open.Models.Blocks
+@using BrixCMS.Open.Extensions
+@model TextBlock
+
+@{
+    // Función para construir estilos de texto
+    string BuildTextStyles(string color, string size, string weight, string alignment)
+    {
+        var styles = new List<string>();
+        
+        if (!string.IsNullOrEmpty(color)) styles.Add($"color: {color}");
+        if (!string.IsNullOrEmpty(size)) styles.Add($"font-size: {size}");
+        if (!string.IsNullOrEmpty(weight)) styles.Add($"font-weight: {weight}");
+        if (!string.IsNullOrEmpty(alignment)) styles.Add($"text-align: {alignment}");
+        
+        return string.Join("; ", styles);
+    }
+    
+    // Función para posicionamiento Flex mejorada
+    string GetFlexPositioning()
+    {
+        var vertical = Model.VerticalPosition?.Value?.ToLower() ?? "start";
+        var horizontal = Model.HorizontalPosition?.Value?.ToLower() ?? "start";
+        
+        // Mapeo de valores: start/up -> flex-start, center -> center, end/down -> flex-end
+        var justify = horizontal switch
+        {
+            "center" => "center",
+            "end" or "right" or "down" => "flex-end",
+            _ => "flex-start" // start, left, up
+        };
+        
+        var align = vertical switch
+        {
+            "center" => "center",
+            "end" or "down" or "bottom" => "flex-end",
+            _ => "flex-start" // start, up, top
+        };
+        
+        return $"justify-content: {justify}; align-items: {align};";
+    }
+    
+    // Función para obtener la URL de la imagen de fondo
+    string GetBackgroundImageUrl()
+    {
+        if (Model.BackgroundImage?.Value != null)
+        {
+            var bgImage = Model.BackgroundImage;
+            
+            if (!string.IsNullOrEmpty(bgImage.Value))
+                return $"url('{bgImage.Value}')";
+        }
+        
+        return "none";
+    }
+    
+    // Construir estilos del contenedor
+    string GetContainerStyles()
+    {
+        var styles = new List<string>
+        {
+            $"display: flex",
+            $"padding: {Model.Padding?.Value ?? "1rem"}",
+            $"margin: {Model.Margin?.Value ?? "0"}",
+            $"background-color: {Model.BackgroundColor?.Value ?? "transparent"}",
+            GetFlexPositioning()
+        };
+        
+        // Añadir altura del contenedor si está especificada
+        var containerHeight = Model.ContainerHeight?.Value ?? "auto";
+        if (!string.IsNullOrEmpty(containerHeight) && containerHeight != "auto")
+        {
+            if (containerHeight.StartsWith("min-height:"))
+            {
+                styles.Add(containerHeight); // Usar min-height directamente
+            }
+            else
+            {
+                styles.Add($"height: {containerHeight}");
+            }
+        }
+        else
+        {
+            styles.Add($"min-height: inherit"); // Heredar altura mínima
+        }
+        
+        // Añadir background image si existe
+        var bgImageUrl = GetBackgroundImageUrl();
+        if (bgImageUrl != "none")
+        {
+            styles.Add($"background-image: {bgImageUrl}");
+            styles.Add($"background-size: cover");
+            styles.Add($"background-position: center");
+            styles.Add($"background-repeat: no-repeat");
+        }
+        
+        return string.Join("; ", styles);
+    }
+    
+    // Determinar el ancho máximo del contenido basado en el posicionamiento horizontal
+    string GetContentWidthClass()
+    {
+        var horizontal = Model.HorizontalPosition?.Value?.ToLower() ?? "start";
+        return horizontal == "center" ? "mx-auto" : "w-full";
+    }
+}
+
+<div style="@GetContainerStyles()">
+    <div class="@GetContentWidthClass()" style="max-width: 100%;">
+        
+        @* Título *@
+        @if (!string.IsNullOrEmpty(Model.Title?.Value))
+        {
+            var styles = BuildTextStyles(
+                Model.TitleColor?.Value,
+                Model.TitleSize?.Value,
+                Model.TitleWeight?.Value,
+                Model.TitleAlignment?.Value
+            );
+            <h2 style="@styles">@RichText.Render(Model.Title.Value)</h2>
+        }
+        
+        @* Subtítulo *@
+        @if (!string.IsNullOrEmpty(Model.Subtitle?.Value))
+        {
+            var styles = BuildTextStyles(
+                Model.SubtitleColor?.Value,
+                Model.SubtitleSize?.Value,
+                Model.SubtitleWeight?.Value,
+                Model.SubtitleAlignment?.Value
+            );
+            <h3 style="@styles; margin-top: 0.5rem;">@RichText.Render(Model.Subtitle.Value)</h3>
+        }
+        
+        @* Body *@
+        @if (!string.IsNullOrEmpty(Model.Body?.Value))
+        {
+            var styles = BuildTextStyles(
+                Model.BodyColor?.Value,
+                Model.BodySize?.Value,
+                Model.BodyWeight?.Value,
+                Model.BodyAlignment?.Value
+            );
+            <div style="@styles; margin-top: 1rem;">@Html.Raw(Model.Body.Value)</div>
+        }
+        
+    </div>
+</div>
+
+@* Admin Visual Helper *@
+@if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit"))
+{
+    <div class="mt-2 text-xs text-gray-400 border-t pt-1 italic">
+        <i class="fas fa-font mr-1"></i>Text Block
+        @if (GetBackgroundImageUrl() != "none")
+        {
+            <span>| with background image</span>
+        }
+        @if (Model.VerticalPosition?.Value != "start" || Model.HorizontalPosition?.Value != "start")
+        {
+            <span>| position: @(Model.VerticalPosition?.Value)/@(Model.HorizontalPosition?.Value)</span>
+        }
+        @if (!string.IsNullOrEmpty(Model.ContainerHeight?.Value) && Model.ContainerHeight?.Value != "auto")
+        {
+            <span>| height: @Model.ContainerHeight?.Value</span>
+        }
+    </div>
+}

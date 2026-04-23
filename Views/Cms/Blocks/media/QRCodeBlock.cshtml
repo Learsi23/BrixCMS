@@ -1,0 +1,47 @@
+@using BrixCMS.Open.Models.Blocks
+@model QRCodeBlock
+
+@{
+    var content = Model.Content?.Value ?? "";
+    var size = int.Parse(Model.Size?.Value ?? "200");
+    var fgColor = Model.ForegroundColor?.Value ?? "#000000";
+    var bgColor = Model.BackgroundColor?.Value ?? "#ffffff";
+    var includeLabel = Model.IncludeLabel?.Value ?? "false";
+    var label = Model.Label?.Value ?? "";
+    var labelColor = Model.LabelColor?.Value ?? "#000000";
+    var borderRadius = Model.BorderRadius?.Value ?? "8px";
+    var borderWidth = int.Parse(Model.BorderWidth?.Value ?? "0");
+    var align = Model.Align?.Value ?? "center";
+    var sectionId = Model.SectionId?.Value ?? "";
+    
+    var qrApiUrl = $"https://api.qrserver.com/v1/create-qr-code/?size={size}x{size}&data={Uri.EscapeDataString(content)}&color={fgColor.Replace("#","")}&bgcolor={bgColor.Replace("#","")}";
+    
+    var alignClass = align switch {
+        "left" => "justify-start",
+        "right" => "justify-end",
+        _ => "justify-center"
+    };
+}
+
+<section id="@sectionId" class="py-4 flex @alignClass">
+    @if (string.IsNullOrEmpty(content))
+    {
+        <div class="text-center text-gray-400 py-8">
+            <p>Configure QR content in block settings</p>
+        </div>
+    }
+    else
+    {
+        <div class="text-@align">
+            <div class="overflow-hidden" style="border-radius:@borderRadius;@(borderWidth > 0 ? $"border:{borderWidth}px solid {fgColor};" : "")">
+                <img src="@qrApiUrl" alt="QR Code" width="@size" height="@size" />
+            </div>
+            @if (includeLabel == "true" && !string.IsNullOrEmpty(label))
+            {
+                <p class="mt-2 text-sm" style="color:@labelColor;text-align:@align;">
+                    @label
+                </p>
+            }
+        </div>
+    }
+</section>

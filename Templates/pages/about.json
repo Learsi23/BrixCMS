@@ -1,0 +1,162 @@
+{
+  "_meta": {
+    "name": "About Us / Company Story",
+    "description": "Company history, mission, values, team, and a final CTA",
+    "tags": ["about", "company", "team", "story"]
+  },
+  "title": "About Us",
+  "slug": "about",
+  "blocks": [
+    {
+      "type": "HeroBlock",
+      "data": {
+        "Title":           { "Value": "We are Acme — built on trust" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "TitleSize":       { "Value": "56px" },
+        "Subtitle":        { "Value": "A team of passionate builders helping businesses grow since 2010" },
+        "SubtitleColor":   { "Value": "#e2e8f0" },
+        "SubtitleSize":    { "Value": "20px" },
+        "Background":      { "Value": "" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "Height":          { "Value": "half-screen" }
+      }
+    },
+    {
+      "type": "FlexibleImageTextBlock",
+      "data": {
+        "Layout":           { "Value": "image-right" },
+        "Image":            { "Value": "" },
+        "ImageBorderRadius":{ "Value": "rounded-2xl" },
+        "Title":            { "Value": "Our story" },
+        "TitleColor":       { "Value": "#1e293b" },
+        "TitleSize":        { "Value": "36px" },
+        "TitleWeight":      { "Value": "bold" },
+        "Text":             { "Value": "It started in a small office in 2010 with three people and one big idea: that great software should be accessible to every business, not just the big ones. Today we are a team of 45 specialists working with clients across 20 countries." },
+        "TextColor":        { "Value": "#64748b" },
+        "BackgroundColor":  { "Value": "#ffffff" },
+        "PaddingVertical":  { "Value": "5rem" }
+      }
+    },
+    {
+      "type": "StatsBlock",
+      "data": {
+        "Title":           { "Value": "14 years of building things that work" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "Stat1Number":     { "Value": "2010" },
+        "Stat1Label":      { "Value": "Founded" },
+        "Stat1Icon":       { "Value": "fas fa-flag" },
+        "Stat2Number":     { "Value": "45" },
+        "Stat2Label":      { "Value": "Team members" },
+        "Stat2Icon":       { "Value": "fas fa-users" },
+        "Stat3Number":     { "Value": "800+" },
+        "Stat3Label":      { "Value": "Clients served" },
+        "Stat3Icon":       { "Value": "fas fa-handshake" },
+        "Stat4Number":     { "Value": "20" },
+        "Stat4Label":      { "Value": "Countries" },
+        "Stat4Icon":       { "Value": "fas fa-globe" },
+        "NumberColor":     { "Value": "#10b981" },
+        "LabelColor":      { "Value": "#e2e8f0" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "PaddingY":        { "Value": "5rem" }
+      }
+    },
+    {
+      "type": "TextBlock",
+      "data": {
+        "Title":          { "Value": "Our values" },
+        "TitleColor":     { "Value": "#1e293b" },
+        "TitleSize":      { "Value": "36px" },
+        "TitleAlignment": { "Value": "center" },
+        "PaddingTop":     { "Value": "4rem" },
+        "PaddingBottom":  { "Value": "1rem" }
+      }
+    },
+    {
+      "type": "ColumnBlock",
+      "data": { "Gap": { "Value": "gap-8" } },
+      "children": [
+        {
+          "type": "IconCardBlock",
+          "data": {
+            "Title":          { "Value": "Transparency" },
+            "TitleColor":     { "Value": "#1e293b" },
+            "TitleSize":      { "Value": "20px" },
+            "Text":           { "Value": "No hidden costs, no surprises. We share progress openly and tell you when something changes." },
+            "TextColor":      { "Value": "#64748b" },
+            "LeftIconClass":  { "Value": "fas fa-eye" },
+            "LeftIconColor":  { "Value": "#2563eb" },
+            "LeftIconFaSize": { "Value": "2rem" },
+            "IconPosition":   { "Value": "top" },
+            "TextAlign":      { "Value": "center" }
+          }
+        },
+        {
+          "type": "IconCardBlock",
+          "data": {
+            "Title":          { "Value": "Ownership" },
+            "TitleColor":     { "Value": "#1e293b" },
+            "TitleSize":      { "Value": "20px" },
+            "Text":           { "Value": "We take responsibility for our work. When something is wrong, we fix it — no questions asked." },
+            "TextColor":      { "Value": "#64748b" },
+            "LeftIconClass":  { "Value": "fas fa-shield-alt" },
+            "LeftIconColor":  { "Value": "#7c3aed" },
+            "LeftIconFaSize": { "Value": "2rem" },
+            "IconPosition":   { "Value": "top" },
+            "TextAlign":      { "Value": "center" }
+          }
+        },
+        {
+          "type": "IconCardBlock",
+          "data": {
+            "Title":          { "Value": "Long-term thinking" },
+            "TitleColor":     { "Value": "#1e293b" },
+            "TitleSize":      { "Value": "20px" },
+            "Text":           { "Value": "We build for the future, not just the deadline. 80% of our new business comes from referrals." },
+            "TextColor":      { "Value": "#64748b" },
+            "LeftIconClass":  { "Value": "fas fa-seedling" },
+            "LeftIconColor":  { "Value": "#10b981" },
+            "LeftIconFaSize": { "Value": "2rem" },
+            "IconPosition":   { "Value": "top" },
+            "TextAlign":      { "Value": "center" }
+          }
+        }
+      ]
+    },
+    {
+      "type": "FlexibleImageTextBlock",
+      "data": {
+        "Layout":           { "Value": "image-left" },
+        "Image":            { "Value": "" },
+        "ImageBorderRadius":{ "Value": "rounded-2xl" },
+        "Title":            { "Value": "Meet the team" },
+        "TitleColor":       { "Value": "#1e293b" },
+        "TitleSize":        { "Value": "36px" },
+        "TitleWeight":      { "Value": "bold" },
+        "Text":             { "Value": "Designers, engineers, strategists and project managers — all under one roof. We hire for curiosity first, experience second. Our flat structure means you always talk to the person actually doing the work." },
+        "TextColor":        { "Value": "#64748b" },
+        "BackgroundColor":  { "Value": "#f8fafc" },
+        "PaddingVertical":  { "Value": "5rem" }
+      }
+    },
+    {
+      "type": "CTABannerBlock",
+      "data": {
+        "Title":           { "Value": "Want to work with us?" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "TitleSize":       { "Value": "40px" },
+        "Subtitle":        { "Value": "We are always looking for great people and great projects." },
+        "SubtitleColor":   { "Value": "#cbd5e1" },
+        "Btn1Text":        { "Value": "Start a project" },
+        "Btn1Url":         { "Value": "/contact" },
+        "Btn1BgColor":     { "Value": "#2563eb" },
+        "Btn1TextColor":   { "Value": "#ffffff" },
+        "Btn2Text":        { "Value": "See open positions" },
+        "Btn2Url":         { "Value": "/careers" },
+        "Btn2Color":       { "Value": "#334155" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "PaddingY":        { "Value": "6rem" },
+        "TextAlign":       { "Value": "center" }
+      }
+    }
+  ]
+}

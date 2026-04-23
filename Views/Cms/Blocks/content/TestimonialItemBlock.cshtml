@@ -1,0 +1,8 @@
+@using BrixCMS.Open.Models.Blocks
+@model TestimonialItemBlock
+
+<div class="p-4 border border-gray-200 rounded-xl text-center">
+    <p class="italic text-gray-600 mb-3">"@Html.Raw(Model.ReviewText?.Value ?? "")"</p>
+    <p class="font-semibold text-sm">@(Model.Name?.Value ?? "")</p>
+    <p class="text-xs text-gray-400">@(Model.Role?.Value ?? "")</p>
+</div>

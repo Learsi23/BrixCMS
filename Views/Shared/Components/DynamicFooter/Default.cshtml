@@ -1,0 +1,133 @@
+@model BrixCMS.Open.Models.FooterSettings
+@using BrixCMS.Open.Data
+
+@{
+    var logoUrl = Model.Logo?.TrimStart('~');
+    var currentYear = DateTime.Now.Year.ToString();
+    var publishedPages = ViewContext.HttpContext.RequestServices.GetService<BrixDbContext>()?.Pages.Where(x => x.IsPublished).OrderBy(x => x.Title).ToList() ?? new List<Page>();
+    var pagesList = Model.Pages ?? new List<MenuItemConfig>();
+    var socialMediaList = Model.SocialMedia ?? new List<SocialMediaConfig>();
+
+    var columns = 0;
+    if (!string.IsNullOrEmpty(logoUrl)) columns++;
+    if (Model.ShowPagesColumn) columns++;
+    if (Model.ShowSocialMediaColumn && socialMediaList.Count > 0) columns++;
+
+    var gridClass = columns switch
+    {
+        1 => "grid-cols-1",
+        2 => "grid-cols-1 md:grid-cols-2",
+        3 => "grid-cols-1 md:grid-cols-3",
+        _ => "grid-cols-1"
+    };
+
+    var logoPositionClass = Model.LogoPosition switch
+    {
+        "center" => "text-center",
+        "right" => "text-right",
+        _ => "text-left"
+    };
+}
+
+<footer class="@Model.PaddingVertical" style="background-color: @Model.BackgroundColor; color: @Model.TextColor;">
+    <div class="container mx-auto px-4">
+        <div class="grid @gridClass @Model.ColumnsGap mb-8 justify-items-center text-center">
+            @if (!string.IsNullOrEmpty(logoUrl))
+            {
+                <div class="@logoPositionClass">
+                    <img src="@logoUrl" alt="@Model.LogoAltText" style="width: @Model.LogoWidth;" class="mb-4" />
+                </div>
+            }
+
+            @if (Model.ShowPagesColumn)
+            {
+                <div>
+                    <h4 class="font-bold mb-4">@Model.PagesColumnTitle</h4>
+                    <ul class="space-y-2">
+                        @if (pagesList.Count > 0)
+                        {
+                            @foreach (var item in pagesList)
+                            {
+                                var url = item.IsCustomUrl ? item.CustomUrl : (!string.IsNullOrEmpty(item.PageSlug) ? "/" + item.PageSlug : "#");
+                                var text = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
+                                <li>
+                                    <a href="@url" class="hover:opacity-75 transition-opacity">@text</a>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            @foreach (var p in publishedPages)
+                            {
+                                <li>
+                                    <a href="/@p.Slug" class="hover:opacity-75 transition-opacity">@p.Title</a>
+                                </li>
+                            }
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (Model.ShowSocialMediaColumn && socialMediaList.Count > 0)
+            {
+                <div>
+                    <h4 class="font-bold mb-4">@Model.SocialMediaColumnTitle</h4>
+                    <div class="flex space-x-4">
+                        @foreach (var social in socialMediaList)
+                        {
+                            <a href="@social.Url" target="_blank" class="hover:opacity-75 transition-opacity">
+                                @if (social.IconType == "class" && !string.IsNullOrEmpty(social.IconClass))
+                                {
+                                    <i class="@social.IconClass text-xl"></i>
+                                }
+                                else if (!string.IsNullOrEmpty(social.IconClass))
+                                {
+                                    <img src="@social.IconClass.TrimStart('~')" alt="@social.Platform" class="w-6 h-6" />
+                                }
+                                else
+                                {
+                                    var iconClass = social.Platform?.ToLower() switch
+                                    {
+                                        "facebook" => "fab fa-facebook",
+                                        "instagram" => "fab fa-instagram",
+                                        "twitter" or "x" => "fab fa-x-twitter",
+                                        "linkedin" => "fab fa-linkedin",
+                                        "youtube" => "fab fa-youtube",
+                                        "tiktok" => "fab fa-tiktok",
+                                        "whatsapp" => "fab fa-whatsapp",
+                                        "pinterest" => "fab fa-pinterest",
+                                        "snapchat" => "fab fa-snapchat",
+                                        "reddit" => "fab fa-reddit",
+                                        "discord" => "fab fa-discord",
+                                        "telegram" => "fab fa-telegram",
+                                        _ => "fas fa-link"
+                                    };
+                                    <i class="@iconClass text-xl"></i>
+                                }
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.ShowHorizontalLine)
+        {
+            <hr class="my-6" style="border-color: @Model.TextColor; opacity: 0.3;" />
+        }
+
+        @if (Model.ShowCopyrightRow)
+        {
+            <div class="text-center text-sm opacity-75">
+                <p>
+                    © @currentYear @Model.CompanyName.
+                    @if (!string.IsNullOrEmpty(Model.CompanyNumber))
+                    {
+                        <span> | @Model.CompanyNumber</span>
+                    }
+                    @Model.CopyrightText.
+                </p>
+            </div>
+        }
+    </div>
+</footer>

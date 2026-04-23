@@ -1,0 +1,237 @@
+{
+  "_meta": {
+    "name": "Generic Business Landing / Homepage",
+    "description": "Full homepage for any business: hero, trust logos, 3 features, story section, stats, FAQ, CTA, contact form",
+    "tags": ["homepage", "landing", "generic", "business"]
+  },
+  "title": "Transform Your Business",
+  "slug": "home",
+  "blocks": [
+    {
+      "type": "HeroBlock",
+      "data": {
+        "Title":           { "Value": "Transform Your Business Today" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "TitleSize":       { "Value": "64px" },
+        "Subtitle":        { "Value": "Strategy, design and technology for ambitious brands" },
+        "SubtitleColor":   { "Value": "#e2e8f0" },
+        "SubtitleSize":    { "Value": "20px" },
+        "Background":      { "Value": "" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "OverlayColor":    { "Value": "#000000" },
+        "OverlayOpacity":  { "Value": "0.5" },
+        "Height":          { "Value": "full-screen" },
+        "ButtonText":      { "Value": "Get started" },
+        "ButtonUrl":       { "Value": "/contact" },
+        "ButtonColor":     { "Value": "#2563eb" },
+        "ButtonTextColor": { "Value": "#ffffff" }
+      }
+    },
+    {
+      "type": "LogoStripBlock",
+      "data": {
+        "Heading":         { "Value": "Trusted by leading companies" },
+        "HeadingColor":    { "Value": "#94a3b8" },
+        "Logo1":           { "Value": "" },
+        "Logo2":           { "Value": "" },
+        "Logo3":           { "Value": "" },
+        "Logo4":           { "Value": "" },
+        "LogoHeight":      { "Value": "40px" },
+        "Grayscale":       { "Value": "true" },
+        "BackgroundColor": { "Value": "#f8fafc" },
+        "PaddingY":        { "Value": "2rem" }
+      }
+    },
+    {
+      "type": "TextBlock",
+      "data": {
+        "Title":          { "Value": "Why companies choose us" },
+        "TitleColor":     { "Value": "#1e293b" },
+        "TitleSize":      { "Value": "36px" },
+        "TitleAlignment": { "Value": "center" },
+        "Body":           { "Value": "We combine creative design with technical excellence to deliver digital experiences that convert visitors into loyal customers." },
+        "BodyColor":      { "Value": "#64748b" },
+        "BodySize":       { "Value": "17px" },
+        "BodyAlignment":  { "Value": "center" },
+        "PaddingTop":     { "Value": "4rem" },
+        "PaddingBottom":  { "Value": "1rem" }
+      }
+    },
+    {
+      "type": "ColumnBlock",
+      "data": { "Gap": { "Value": "gap-8" } },
+      "children": [
+        {
+          "type": "IconCardBlock",
+          "data": {
+            "Title":          { "Value": "Fast Delivery" },
+            "TitleColor":     { "Value": "#1e293b" },
+            "TitleSize":      { "Value": "20px" },
+            "Text":           { "Value": "We deliver projects on time, every time. Our agile process keeps you updated at every milestone." },
+            "TextColor":      { "Value": "#64748b" },
+            "LeftIconClass":  { "Value": "fas fa-rocket" },
+            "LeftIconColor":  { "Value": "#2563eb" },
+            "LeftIconFaSize": { "Value": "2rem" },
+            "IconPosition":   { "Value": "top" },
+            "TextAlign":      { "Value": "center" }
+          }
+        },
+        {
+          "type": "IconCardBlock",
+          "data": {
+            "Title":          { "Value": "Expert Team" },
+            "TitleColor":     { "Value": "#1e293b" },
+            "TitleSize":      { "Value": "20px" },
+            "Text":           { "Value": "Senior designers and developers with 10+ years of experience across industries." },
+            "TextColor":      { "Value": "#64748b" },
+            "LeftIconClass":  { "Value": "fas fa-award" },
+            "LeftIconColor":  { "Value": "#7c3aed" },
+            "LeftIconFaSize": { "Value": "2rem" },
+            "IconPosition":   { "Value": "top" },
+            "TextAlign":      { "Value": "center" }
+          }
+        },
+        {
+          "type": "IconCardBlock",
+          "data": {
+            "Title":          { "Value": "Measurable Results" },
+            "TitleColor":     { "Value": "#1e293b" },
+            "TitleSize":      { "Value": "20px" },
+            "Text":           { "Value": "Every project is built with KPIs in mind. We track, measure, and report on what matters." },
+            "TextColor":      { "Value": "#64748b" },
+            "LeftIconClass":  { "Value": "fas fa-chart-line" },
+            "LeftIconColor":  { "Value": "#10b981" },
+            "LeftIconFaSize": { "Value": "2rem" },
+            "IconPosition":   { "Value": "top" },
+            "TextAlign":      { "Value": "center" }
+          }
+        }
+      ]
+    },
+    {
+      "type": "FlexibleImageTextBlock",
+      "data": {
+        "Layout":           { "Value": "image-right" },
+        "Image":            { "Value": "" },
+        "ImageBorderRadius":{ "Value": "rounded-2xl" },
+        "Title":            { "Value": "Our story — built on trust" },
+        "TitleColor":       { "Value": "#1e293b" },
+        "TitleSize":        { "Value": "36px" },
+        "TitleWeight":      { "Value": "bold" },
+        "Text":             { "Value": "Since 2014 we have partnered with over 500 companies. Our process is transparent, our results are measurable, and our team is genuinely invested in your success." },
+        "TextColor":        { "Value": "#64748b" },
+        "ButtonText":       { "Value": "Meet the team" },
+        "ButtonLink":       { "Value": "/about" },
+        "ButtonStyle":      { "Value": "outline" },
+        "BackgroundColor":  { "Value": "#ffffff" },
+        "PaddingVertical":  { "Value": "4rem" }
+      }
+    },
+    {
+      "type": "StatsBlock",
+      "data": {
+        "Title":           { "Value": "Numbers that speak" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "Stat1Number":     { "Value": "500+" },
+        "Stat1Label":      { "Value": "Projects delivered" },
+        "Stat1Icon":       { "Value": "fas fa-rocket" },
+        "Stat2Number":     { "Value": "98%" },
+        "Stat2Label":      { "Value": "Client satisfaction" },
+        "Stat2Icon":       { "Value": "fas fa-star" },
+        "Stat3Number":     { "Value": "10+" },
+        "Stat3Label":      { "Value": "Years of experience" },
+        "Stat3Icon":       { "Value": "fas fa-award" },
+        "Stat4Number":     { "Value": "25" },
+        "Stat4Label":      { "Value": "Countries served" },
+        "Stat4Icon":       { "Value": "fas fa-globe" },
+        "NumberColor":     { "Value": "#10b981" },
+        "LabelColor":      { "Value": "#e2e8f0" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "PaddingY":        { "Value": "5rem" }
+      }
+    },
+    {
+      "type": "FlexibleImageTextBlock",
+      "data": {
+        "Layout":           { "Value": "image-left" },
+        "Image":            { "Value": "" },
+        "ImageBorderRadius":{ "Value": "rounded-2xl" },
+        "Title":            { "Value": "A clear process, zero surprises" },
+        "TitleColor":       { "Value": "#1e293b" },
+        "TitleSize":        { "Value": "36px" },
+        "TitleWeight":      { "Value": "bold" },
+        "Text":             { "Value": "Discovery → Design → Development → Launch → Support. You get weekly updates, milestone reviews and direct access to your project lead at every step." },
+        "TextColor":        { "Value": "#64748b" },
+        "ButtonText":       { "Value": "See our work" },
+        "ButtonLink":       { "Value": "/portfolio" },
+        "ButtonStyle":      { "Value": "primary" },
+        "BackgroundColor":  { "Value": "#f8fafc" },
+        "PaddingVertical":  { "Value": "4rem" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Title":         { "Value": "Frequently Asked Questions" },
+        "TitleColor":    { "Value": "#1e293b" },
+        "TitleSize":     { "Value": "32px" },
+        "Question":      { "Value": "How long does a typical project take?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "Most projects take 6–12 weeks from brief to launch. We agree on a timeline before we begin and stick to it." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "true" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Question":      { "Value": "Do you offer ongoing support after launch?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "Yes. All projects include 30 days of free post-launch support. After that we offer monthly retainer packages." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "DropdownBlock",
+      "data": {
+        "Question":      { "Value": "What is your pricing structure?" },
+        "QuestionColor": { "Value": "#1e293b" },
+        "Answer":        { "Value": "We work on fixed-price project quotes after a discovery call. No hourly billing surprises." },
+        "AnswerColor":   { "Value": "#64748b" },
+        "OpenByDefault": { "Value": "false" }
+      }
+    },
+    {
+      "type": "CTABannerBlock",
+      "data": {
+        "Title":           { "Value": "Ready to start your project?" },
+        "TitleColor":      { "Value": "#ffffff" },
+        "TitleSize":       { "Value": "40px" },
+        "Subtitle":        { "Value": "Free strategy call — no obligations." },
+        "SubtitleColor":   { "Value": "#cbd5e1" },
+        "Btn1Text":        { "Value": "Schedule a free call" },
+        "Btn1Url":         { "Value": "/contact" },
+        "Btn1BgColor":     { "Value": "#10b981" },
+        "Btn1TextColor":   { "Value": "#ffffff" },
+        "Btn2Text":        { "Value": "See our work" },
+        "Btn2Url":         { "Value": "/portfolio" },
+        "Btn2Color":       { "Value": "#334155" },
+        "BackgroundColor": { "Value": "#0f172a" },
+        "PaddingY":        { "Value": "6rem" },
+        "TextAlign":       { "Value": "center" }
+      }
+    },
+    {
+      "type": "ContactFormBlock",
+      "data": {
+        "Title":           { "Value": "Or send us a message" },
+        "RecipientEmail":  { "Value": "" },
+        "ButtonText":      { "Value": "Send message" },
+        "ButtonColor":     { "Value": "#2563eb" },
+        "ButtonTextColor": { "Value": "#ffffff" },
+        "ButtonPosition":  { "Value": "center" }
+      }
+    }
+  ]
+}
