@@ -1,0 +1,29 @@
+@using BrixCMS.Open.Models.BlazorBlocks
+@using BrixCMS.Open.Components.Pages.Chat
+
+<div class="p-6 rounded-2xl shadow-lg"
+     style="background-color: @(Model.BackgroundColor?.Value ?? "white")">
+    @if (!string.IsNullOrEmpty(Model.Title?.Value))
+    {
+        <h2 class="text-center font-bold mb-4"
+            style="color: @(Model.TitleColor?.Value ?? "#333"); font-size: @(Model.TitleSize?.Value ?? "1.5rem")">
+            @Model.Title.Value
+        </h2>
+    }
+    <div class="max-w-full mx-auto border rounded-xl overflow-hidden bg-gray-50">
+        <Chat CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
+              WelcomeMessage="@(Model.WelcomeMessage?.Value)"
+              AiProvider="@(Model.AiProvider?.Value)"
+              PdfFilter="@(Model.PdfFiles?.Value)"
+              Logo="@(Model.Logo?.Value ?? "/images/brix-logo.png")"
+              LogoSize="@(Model.LogoSize?.Value ?? "32px")"
+              AiLogo="@(Model.Ai_Logo?.Value ?? "/images/brix-logo.png")"
+              AiLogoSize="@(Model.Ai_LogoSize?.Value ?? "24px")"
+              Title="@(Model.Title?.Value)" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ChatBlock Model { get; set; } = new();
+}

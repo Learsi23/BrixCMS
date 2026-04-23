@@ -1,0 +1,115 @@
+@using BrixCMS.Open.Models.BlazorBlocks
+@using BrixCMS.Open.Components.Pages.Chat
+@{
+    var pos          = (Model.Position?.Value ?? "right").Trim().ToLowerInvariant();
+    var posClass     = pos == "left" ? "left-6" : "right-6";
+    var panelPos     = pos == "left" ? "left-0"  : "right-0";
+    var btnColor     = Model.ButtonColor?.Value     ?? "#2563EB";
+    var btnTextColor = Model.ButtonTextColor?.Value ?? "#FFFFFF";
+    var btnIcon      = string.IsNullOrEmpty(Model.ButtonIcon?.Value) ? "💬" : Model.ButtonIcon.Value;
+    var btnSize      = Model.ButtonSize?.Value ?? "56px";
+    var logo         = Model.Logo?.Value;
+    var logoSize     = Model.LogoSize?.Value ?? "28px";
+}
+
+<div class="fixed bottom-6 z-50 @posClass">
+
+    @* ── Toggle button ── *@
+    <button @onclick="ToggleChat"
+            style="background-color: @btnColor; color: @btnTextColor; width: @btnSize; height: @btnSize;"
+            class="rounded-full flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 ease-in-out select-none">
+        @if (_showChat)
+        {
+            <span class="text-xl font-bold">✕</span>
+        }
+        else
+        {
+            <span class="text-xl">@btnIcon</span>
+        }
+    </button>
+
+    @* ── Chat panel ── *@
+    @if (_showChat)
+    {
+        <div class="absolute bottom-[calc(100%+0.75rem)] @panelPos w-[400px] max-w-[92vw]
+                    bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden fcb-fade-in
+                    flex flex-col" style="height: 520px;">
+
+            @* Mini header with logo + title + new chat + close *@
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white flex-shrink-0"
+                 style="background-color: @btnColor">
+                <div class="flex items-center gap-2">
+                    @if (!string.IsNullOrEmpty(logo))
+                    {
+                        <img src="@logo" alt="logo" style="height: @logoSize; width: auto;" class="object-contain" />
+                    }
+                    else
+                    {
+                        <span class="text-white text-lg">💬</span>
+                    }
+                    <span class="text-sm font-bold" style="color: @btnTextColor">
+                        @(string.IsNullOrEmpty(Model.WelcomeMessage?.Value) ? "Chat" : "Assistant")
+                    </span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button @onclick="ResetChat"
+                            title="New conversation"
+                            style="color: @btnTextColor"
+                            class="opacity-70 hover:opacity-100 transition p-1.5 rounded-lg hover:bg-white/20 text-xs flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        New
+                    </button>
+                    <button @onclick="ToggleChat"
+                            style="color: @btnTextColor"
+                            class="opacity-70 hover:opacity-100 transition p-1.5 rounded-lg hover:bg-white/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            @* Chat body — fills remaining height *@
+            <div class="flex-1 overflow-hidden">
+                <Chat @ref="_chatRef"
+                      ShowHeader="false"
+                      AiProvider="@(Model.AiProvider?.Value)"
+                      CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
+                      WelcomeMessage="@(Model.WelcomeMessage?.Value)"
+                      PdfFilter="@(Model.PdfFiles?.Value)"
+                      Logo="@logo"
+                      LogoSize="@logoSize"
+                      AiLogo="@(Model.AiLogo?.Value)"
+                      AiLogoSize="@(Model.AiLogoSize?.Value ?? "24px")" />
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .fcb-fade-in {
+        animation: fcbFadeInUp 0.2s ease-out both;
+    }
+    @@keyframes fcbFadeInUp {
+        from { opacity: 0; transform: translateY(12px) scale(0.97); }
+        to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+</style>
+
+@code {
+    [Parameter]
+    public FloatingChatBlock Model { get; set; } = new();
+
+    private bool _showChat;
+    private Chat? _chatRef;
+
+    private void ToggleChat() => _showChat = !_showChat;
+
+    private async Task ResetChat()
+    {
+        if (_chatRef is not null)
+            await _chatRef.ResetConversationAsync();
+    }
+}

@@ -1,0 +1,28 @@
+<!-- ChatHeader.razor -->
+@inject NavigationManager NavigationManager
+
+<header class="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <img src=@Logo alt="BrixCMS Logo" style="height: @LogoSize" />
+            <span class="text-lg font-semibold text-gray-800">@Title</span>
+        </div>
+
+        <div class="flex gap-2">
+            <button @onclick="OnNewChat"
+                    class="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-full text-sm font-medium transition-all active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                New
+            </button>
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter] public string Logo { get; set; }
+    [Parameter] public string LogoSize { get; set; } = "32px";
+    [Parameter] public string Title { get; set; }  // Añade este parámetro
+    [Parameter] public EventCallback OnNewChat { get; set; }
+}

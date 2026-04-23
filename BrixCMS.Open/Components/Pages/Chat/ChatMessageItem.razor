@@ -1,0 +1,52 @@
+@using Microsoft.Extensions.AI
+@using Markdig
+@inject MarkdownPipeline Pipeline
+
+@* Burbuja del USUARIO (derecha, azul) *@
+@if (Message.Role == ChatRole.User && !string.IsNullOrWhiteSpace(Message.Text))
+{
+    <div class="flex justify-end mb-6">
+        <div class="max-w-[85%] bg-blue-600 text-white px-4 py-3 rounded-2xl rounded-br-none shadow-sm">
+            <div class="break-words whitespace-pre-wrap">@Message.Text</div>
+        </div>
+    </div>
+}
+
+@* Burbuja del ASISTENTE (izquierda, blanca) *@
+else if (Message.Role == ChatRole.Assistant && !string.IsNullOrWhiteSpace(Message.Text))
+{
+    <div class="flex justify-start mb-6">
+        <div class="max-w-[85%] bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm">
+            <div class="flex items-center gap-2 mb-2">
+                @*
+                    Logo = avatar del asistente AI, configurable desde el CMS.
+                    Fallback aplicado en Chat.razor: "/images/logo-menu.png"
+                    onerror oculta la imagen si la URL falla.
+                *@
+                <img src="@(Logo ?? "/images/logo-menu.png")"
+                     onerror="this.style.display='none'"
+                     style="width: @AiLogoSize; height: @AiLogoSize;"
+                     class="rounded-full object-cover"
+                     alt="Assistant" />
+                <span class="font-semibold text-gray-700">Assistant</span>
+            </div>
+            <div class="prose prose-sm max-w-none text-gray-800">
+                @((MarkupString)Markdown.ToHtml(Message.Text ?? "", Pipeline))
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public required ChatMessage Message { get; set; }
+
+    [Parameter]
+    public bool InProgress { get; set; }
+
+    [Parameter]
+    public string? Logo { get; set; }
+
+    [Parameter]
+    public string AiLogoSize { get; set; } = "24px";
+}

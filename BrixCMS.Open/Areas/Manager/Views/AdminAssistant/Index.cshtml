@@ -1,0 +1,103 @@
+@using BrixCMS.Open.Components.Pages.Chat
+@{
+    Layout = "_ManagerLayout";
+    ViewData["Title"] = "Admin Assistant";
+    var systemPrompt  = ViewBag.SystemPrompt as string ?? "";
+    var defaultImage  = ViewBag.DefaultImage as string ?? "";
+    var success       = ViewBag.Success      as string;
+}
+
+<div class="p-6 max-w-screen-xl mx-auto space-y-6">
+
+    @* ── Header ───────────────────────────────────────────────────────────── *@
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
+                <i class="fas fa-robot text-white text-base"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-gray-900">Admin Assistant</h1>
+                <p class="text-xs text-gray-400">AI that knows BrixCMS inside out — ask anything</p>
+            </div>
+        </div>
+
+        @* Settings toggle *@
+        <button onclick="document.getElementById('settings-panel').classList.toggle('hidden')"
+                class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition font-medium">
+            <i class="fas fa-sliders-h text-xs"></i> Settings
+        </button>
+    </div>
+
+    @* ── Flash ────────────────────────────────────────────────────────────── *@
+    @if (!string.IsNullOrEmpty(success))
+    {
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
+            <i class="fas fa-check-circle text-emerald-500"></i> @success
+        </div>
+    }
+
+    @* ── Settings panel (hidden by default) ──────────────────────────────── *@
+    <div id="settings-panel" class="hidden bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
+        <h2 class="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
+            <i class="fas fa-image text-indigo-400"></i> Default Product Image
+        </h2>
+        <form asp-action="SaveSettings" method="post" class="flex items-end gap-3">
+            <div class="flex-1">
+                <label class="block text-xs text-gray-500 mb-1">
+                    Image path used when a product has no photo (e.g. <code class="bg-gray-100 px-1 rounded">/images/placeholder.png</code>)
+                </label>
+                <div class="flex gap-2 items-center">
+                    <input type="text" name="defaultImage" value="@defaultImage"
+                           placeholder="/images/placeholder.png"
+                           class="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                    @if (!string.IsNullOrEmpty(defaultImage))
+                    {
+                        <img src="@defaultImage" alt="preview"
+                             class="w-10 h-10 object-cover rounded-lg border border-gray-200" />
+                    }
+                </div>
+            </div>
+            <button type="submit"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition">
+                Save
+            </button>
+        </form>
+        <p class="text-[11px] text-gray-400 mt-3">
+            This image is included in the AI's instructions so it knows what to use when creating product cards without photos.
+        </p>
+    </div>
+
+    @* ── Chat ─────────────────────────────────────────────────────────────── *@
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden" style="height: 72vh;">
+        <component type="typeof(Chat)" render-mode="Server"
+                   param-CustomSystemPrompt="@systemPrompt"
+                   param-ShowHeader="false"
+                   param-WelcomeMessage="@("Hi! I'm your Admin Assistant. I know BrixCMS inside out — blocks, products, pages, AI tools. What do you need?")"
+                   param-AiLogo="@("/images/logo-menu.png")"
+                   param-AiLogoSize="@("28px")" />
+    </div>
+
+    @* ── Quick tips ───────────────────────────────────────────────────────── *@
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        @foreach (var tip in new[] {
+            ("fa-file-import", "Import products from a PDF", "Go to PDF → Products, upload your catalogue, then click Extract Products."),
+            ("fa-cubes",       "Which block should I use?", "Ask me to recommend the right block for any section — hero, products, FAQ, etc."),
+            ("fa-box",         "Check product stock",       "Ask me to show all products in a category, low stock items, or top sellers."),
+            ("fa-robot",       "Generate a page",           "Tell me the page you want and I'll describe the exact blocks for the AI Generator.")
+        })
+        {
+            <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 hover:bg-indigo-50 hover:border-indigo-200 transition cursor-default">
+                <div class="flex items-center gap-2 mb-1 text-indigo-500">
+                    <i class="fas @tip.Item1 text-xs"></i>
+                    <span class="font-bold text-gray-700">@tip.Item2</span>
+                </div>
+                <p class="text-gray-400 leading-relaxed">@tip.Item3</p>
+            </div>
+        }
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="/_framework/blazor.server.js"></script>
+}
