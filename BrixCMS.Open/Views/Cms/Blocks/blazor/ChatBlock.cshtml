@@ -8,6 +8,6 @@
 
     <div class="max-w-full mx-auto border rounded-xl overflow-hidden bg-gray-50">
         @(await Html.RenderComponentAsync<BrixCMS.Open.Components.BlazorBlocks.ChatBlockComponent>(
-            RenderMode.Server,
+            Microsoft.AspNetCore.Mvc.Rendering.RenderMode.ServerPrerendered,
             new { Model = Model }))
     </div>

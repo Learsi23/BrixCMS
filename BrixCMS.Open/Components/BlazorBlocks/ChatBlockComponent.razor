@@ -1,29 +1,95 @@
 @using BrixCMS.Open.Models.BlazorBlocks
 @using BrixCMS.Open.Components.Pages.Chat
 
-<div class="p-6 rounded-2xl shadow-lg"
-     style="background-color: @(Model.BackgroundColor?.Value ?? "white")">
-    @if (!string.IsNullOrEmpty(Model.Title?.Value))
-    {
-        <h2 class="text-center font-bold mb-4"
-            style="color: @(Model.TitleColor?.Value ?? "#333"); font-size: @(Model.TitleSize?.Value ?? "1.5rem")">
-            @Model.Title.Value
-        </h2>
-    }
-    <div class="max-w-full mx-auto border rounded-xl overflow-hidden bg-gray-50">
+@{
+    var bgColor         = SafeColor(Model.BackgroundColor?.Value, "#FFFFFF");
+    var borderColor     = SafeColor(Model.BorderColor?.Value, "#E2E8F0");
+    var borderRadius    = Model.BorderRadius?.Value ?? "16px";
+    var headerBg        = SafeColor(Model.HeaderBgColor?.Value, "#6366F1");
+    var headerGradient  = SafeColor(Model.HeaderGradientColor?.Value, "#8B5CF6");
+    var headerText      = SafeColor(Model.HeaderTextColor?.Value, "#FFFFFF");
+    var titleText       = Model.Title?.Value ?? "AI Assistant";
+    var titleSize       = Model.TitleSize?.Value ?? "18px";
+    var logoUrl         = Model.Logo?.Value;
+    var logoSize        = Model.LogoSize?.Value ?? "28px";
+    var aiLogoUrl       = Model.Ai_Logo?.Value;
+    var aiLogoSize      = Model.Ai_LogoSize?.Value ?? "28px";
+    var chatBg          = SafeColor(Model.ChatBgColor?.Value, "#F8FAFC");
+    var userBubble      = SafeColor(Model.UserBubbleColor?.Value, "#6366F1");
+    var userText        = SafeColor(Model.UserTextColor?.Value, "#FFFFFF");
+    var aiBubble        = SafeColor(Model.AiBubbleColor?.Value, "#FFFFFF");
+    var aiText          = SafeColor(Model.AiTextColor?.Value, "#1E293B");
+    var aiBorder        = SafeColor(Model.AiBubbleBorderColor?.Value, "#E2E8F0");
+    var inputBg         = SafeColor(Model.InputBgColor?.Value, "#FFFFFF");
+    var inputText       = SafeColor(Model.InputTextColor?.Value, "#0F172A");
+    var inputBorder     = SafeColor(Model.InputBorderColor?.Value, "#CBD5E1");
+    var inputPlaceholder = SafeColor(Model.InputPlaceholderColor?.Value, "#94A3B8");
+    var sendBtn         = SafeColor(Model.SendButtonColor?.Value, "#6366F1");
+}
+
+<div class="w-full max-w-2xl mx-auto overflow-hidden"
+     style="background: @bgColor; border: 1px solid @borderColor; border-radius: @borderRadius; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+    
+    @* Header ── *@
+    <div class="px-6 py-5 flex items-center gap-4"
+         style="background: linear-gradient(135deg, @headerBg, @headerGradient);">
+        @if (!string.IsNullOrEmpty(logoUrl))
+        {
+            <img src="@logoUrl" alt="logo" style="height: @logoSize; width: auto;" class="rounded-lg object-contain bg-white/10 p-1.5" />
+        }
+        else
+        {
+            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <span class="text-lg">🤖</span>
+            </div>
+        }
+        <div>
+            <h2 style="color: @headerText; font-size: @titleSize;" class="font-bold">@titleText</h2>
+            <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                <span class="text-[11px] font-medium" style="color: @(headerText + "CC")">Powered by AI</span>
+            </div>
+        </div>
+    </div>
+
+    @* Chat body ── *@
+    <div class="overflow-hidden" style="background: @chatBg;">
         <Chat CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
               WelcomeMessage="@(Model.WelcomeMessage?.Value)"
               AiProvider="@(Model.AiProvider?.Value)"
               PdfFilter="@(Model.PdfFiles?.Value)"
-              Logo="@(Model.Logo?.Value ?? "/images/brix-logo.png")"
-              LogoSize="@(Model.LogoSize?.Value ?? "32px")"
-              AiLogo="@(Model.Ai_Logo?.Value ?? "/images/brix-logo.png")"
-              AiLogoSize="@(Model.Ai_LogoSize?.Value ?? "24px")"
-              Title="@(Model.Title?.Value)" />
+              Logo="@logoUrl"
+              LogoSize="@logoSize"
+              AiLogo="@(aiLogoUrl)"
+              AiLogoSize="@aiLogoSize"
+              Title="@titleText"
+              Theme="@CreateTheme()" />
     </div>
 </div>
 
 @code {
-    [Parameter]
-    public ChatBlock Model { get; set; } = new();
+    [Parameter] public ChatBlock Model { get; set; } = new();
+
+    private ChatTheme CreateTheme() => new()
+    {
+        UserBubbleColor = SafeColor(Model.UserBubbleColor?.Value, "#6366F1"),
+        UserTextColor = SafeColor(Model.UserTextColor?.Value, "#FFFFFF"),
+        AiBubbleColor = SafeColor(Model.AiBubbleColor?.Value, "#FFFFFF"),
+        AiTextColor = SafeColor(Model.AiTextColor?.Value, "#1E293B"),
+        AiBubbleBorderColor = SafeColor(Model.AiBubbleBorderColor?.Value, "#E2E8F0"),
+        InputBgColor = SafeColor(Model.InputBgColor?.Value, "#FFFFFF"),
+        InputTextColor = SafeColor(Model.InputTextColor?.Value, "#0F172A"),
+        InputBorderColor = SafeColor(Model.InputBorderColor?.Value, "#CBD5E1"),
+        InputPlaceholderColor = SafeColor(Model.InputPlaceholderColor?.Value, "#94A3B8"),
+        SendButtonColor = SafeColor(Model.SendButtonColor?.Value, "#6366F1"),
+        ChatBgColor = SafeColor(Model.ChatBgColor?.Value, "#F8FAFC"),
+        AiLogo = Model.Ai_Logo?.Value,
+        AiLogoSize = Model.Ai_LogoSize?.Value ?? "28px"
+    };
+
+    private static string SafeColor(string? hex, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return fallback;
+        return hex.Trim();
+    }
 }

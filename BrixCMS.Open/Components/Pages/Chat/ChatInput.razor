@@ -1,50 +1,54 @@
-<!-- ChatInput.razor -->
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.AI
 @using Microsoft.JSInterop
+@using BrixCMS.Open.Components.Pages.Chat
 
-<div class="flex gap-3 items-end p-1">
-<textarea @ref="textArea"
-          @bind="messageText"
-          @bind:event="oninput"
-          placeholder="Type your message..."
+<div class="flex gap-3 items-end p-1"
+     style="background: @SafeColor(Theme.InputBgColor, "#fff"); border-radius: 14px; border: 1px solid @SafeColor(Theme.InputBorderColor, "#e2e8f0");">
+    <textarea @ref="textArea"
+              @bind="messageText"
+              @bind:event="oninput"
+              placeholder="Type your message..."
               rows="1"
-              class="flex-1 border-0 focus:ring-0 rounded-xl px-4 py-3 resize-none max-h-32 transition-all bg-gray-50 focus:bg-white"
-              style="scrollbar-width: thin;"
+              class="flex-1 border-0 focus:ring-0 rounded-xl px-4 py-3 resize-none max-h-32 transition-all text-sm"
+              style="background: @SafeColor(Theme.InputBgColor, "#fff"); color: @SafeColor(Theme.InputTextColor, "#0f172a");"
               @onkeydown="HandleKeyPress">
     </textarea>
 
     <button @onclick="SendMessageAsync"
-            class="mb-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl w-10 h-10 flex items-center justify-center shadow-md hover:shadow-lg active:scale-95 transition-all"
-            title="Send">
+            class="mb-1 rounded-xl w-10 h-10 flex items-center justify-center shadow-md hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background: @LightenGradient(Theme.SendButtonColor, 20);
+                   color: white;"
+            title="Send"
+            disabled="@string.IsNullOrWhiteSpace(messageText)">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
         </svg>
     </button>
 </div>
 
+<style>
+    textarea::placeholder {
+        color: @SafeColor(Theme.InputPlaceholderColor, "#94a3b8") !important;
+    }
+</style>
+
 @code {
     private ElementReference textArea;
     private string? messageText;
 
-    [Parameter]
-    public EventCallback<ChatMessage> OnSend { get; set; }
+    [Parameter] public EventCallback<ChatMessage> OnSend { get; set; }
+    [Parameter] public ChatTheme Theme { get; set; } = ChatTheme.Default;
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !e.ShiftKey)
-        {
-            await SendMessageAsync();
-        }
+        if (e.Key == "Enter" && !e.ShiftKey) await SendMessageAsync();
     }
 
     public async ValueTask FocusAsync()
     {
-        if (textArea.Context is not null)
-        {
-            await textArea.FocusAsync();
-        }
+        if (textArea.Context is not null) await textArea.FocusAsync();
     }
 
     private async Task SendMessageAsync()
@@ -56,40 +60,43 @@
         }
     }
 
-    // ? Referencia para limpieza (SIN usar import)
     private IJSObjectReference? _textareaResizeInstance;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && textArea.Context is not null)
         {
-            // ? Pequeño delay para asegurar que Script.js (cargado en layout) está disponible
             await Task.Delay(150);
-
-            try
-            {
-                // ? LLAMADA DIRECTA a función global - SIN "import", SIN módulo
-                _textareaResizeInstance = await JS.InvokeAsync<IJSObjectReference>(
-                    "initTextareaAutoResize",
-                    textArea);
-            }
-            catch (JSException)
-            {
-                // ? Fallback: continuar sin auto-resize, no romper la app
-            }
+            try { _textareaResizeInstance = await JS.InvokeAsync<IJSObjectReference>("initTextareaAutoResize", textArea); }
+            catch { }
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        try
-        {
-            if (_textareaResizeInstance is not null)
-            {
-                await _textareaResizeInstance.InvokeVoidAsync("dispose");
-            }
-        }
-        catch { /* Ignorar errores de limpieza */ }
+        try { if (_textareaResizeInstance is not null) await _textareaResizeInstance.InvokeVoidAsync("dispose"); }
+        catch { }
     }
 
+    private static string SafeColor(string? hex, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return fallback;
+        return hex.Trim();
+    }
+
+    private static string LightenGradient(string? hex, int percent)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return "#6366f1";
+        var clean = hex.TrimStart('#');
+        if (clean.Length < 6) return hex;
+        try
+        {
+            var r = Math.Min(255, Convert.ToInt32(clean.Substring(0, 2), 16) + percent);
+            var g = Math.Min(255, Convert.ToInt32(clean.Substring(2, 2), 16) + percent);
+            var b = Math.Min(255, Convert.ToInt32(clean.Substring(4, 2), 16) + percent);
+            var lighter = $"#{r:X2}{g:X2}{b:X2}";
+            return $"linear-gradient(135deg, {hex}, {lighter})";
+        }
+        catch { return hex; }
+    }
 }

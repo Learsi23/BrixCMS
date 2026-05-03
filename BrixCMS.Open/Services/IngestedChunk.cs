@@ -4,7 +4,7 @@ namespace BrixCMS.Open.Services;
 
 public class IngestedChunk
 {
-    private const int VectorDimensions = 384; // 384 is the default vector size for the all-minilm embedding model
+    private const int VectorDimensions = 384;
     private const string VectorDistanceFunction = DistanceFunction.CosineDistance;
 
     [VectorStoreKey]
@@ -20,5 +20,5 @@ public class IngestedChunk
     public required string Text { get; set; }
 
     [VectorStoreVector(VectorDimensions, DistanceFunction = VectorDistanceFunction)]
-    public ReadOnlyMemory<float>? Vector { get; set; } // Cambiar string por ReadOnlyMemory<float>
+    public ReadOnlyMemory<float>? Vector { get; set; }
 }

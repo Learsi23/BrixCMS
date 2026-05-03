@@ -26,14 +26,14 @@ public class DataIngestor(
         await documentsCollection.EnsureCollectionExistsAsync();
 
         var sourceId = source.SourceId;
-        var allDocs = await documentsCollection.GetAsync(_ => true, 1000).ToListAsync();
-        var documentsForSource = allDocs.Where(doc => doc.SourceId == sourceId).ToList();
+        var existingDocs = await GetAllDocsAsync(documentsCollection);
+        var documentsForSource = existingDocs.Where(doc => doc.SourceId == sourceId).ToList();
 
         var deletedDocuments = await source.GetDeletedDocumentsAsync(documentsForSource);
         foreach (var deletedDocument in deletedDocuments)
         {
             logger.LogInformation("Removing ingested data for {documentId}", deletedDocument.DocumentId);
-            await DeleteChunksForDocumentAsync(deletedDocument);
+            await DeleteChunksForDocumentIdAsync(chunksCollection, deletedDocument.DocumentId);
             await documentsCollection.DeleteAsync(deletedDocument.Key);
         }
 
@@ -41,26 +41,15 @@ public class DataIngestor(
         foreach (var modifiedDocument in modifiedDocuments)
         {
             logger.LogInformation("Processing {documentId}", modifiedDocument.DocumentId);
-            await DeleteChunksForDocumentAsync(modifiedDocument);
-
+            await DeleteChunksForDocumentIdAsync(chunksCollection, modifiedDocument.DocumentId);
             await documentsCollection.UpsertAsync(modifiedDocument);
 
             var newRecords = await source.CreateChunksForDocumentAsync(modifiedDocument);
-            await chunksCollection.UpsertAsync(newRecords);
+            foreach (var chunk in newRecords)
+                await chunksCollection.UpsertAsync(chunk);
         }
 
         logger.LogInformation("Ingestion is up-to-date");
-
-        async Task DeleteChunksForDocumentAsync(IngestedDocument document)
-        {
-            var documentId = document.DocumentId;
-            var allChunks = await chunksCollection.GetAsync(_ => true, 1000).ToListAsync();
-            var chunksToDelete = allChunks.Where(r => r.DocumentId == documentId).ToList();
-            if (chunksToDelete.Any())
-            {
-                await chunksCollection.DeleteAsync(chunksToDelete.Select(r => r.Key));
-            }
-        }
     }
 
     public async Task IngestPdfAsync(string filePath)
@@ -71,11 +60,11 @@ public class DataIngestor(
         var documentId = Path.GetFileName(filePath);
         var documentVersion = File.GetLastWriteTimeUtc(filePath).ToString("o");
 
-        var allDocs = await documentsCollection.GetAsync(_ => true, 100).ToListAsync();
-        var existingDoc = allDocs.FirstOrDefault(d => d.DocumentId == documentId);
+        var existingDocs = await GetAllDocsAsync(documentsCollection);
+        var existingDoc = existingDocs.FirstOrDefault(d => d.DocumentId == documentId);
         if (existingDoc != null)
         {
-            await DeleteChunksForDocumentIdAsync(documentId);
+            await DeleteChunksForDocumentIdAsync(chunksCollection, documentId);
             await documentsCollection.DeleteAsync(existingDoc.Key);
         }
 
@@ -91,12 +80,11 @@ public class DataIngestor(
 
         using var pdf = PdfDocument.Open(filePath);
         var paragraphs = pdf.GetPages().SelectMany(GetPageParagraphs).ToList();
-        var chunks = new List<IngestedChunk>();
 
         foreach (var p in paragraphs)
         {
             var embedding = await embeddingGenerator.GenerateAsync(p.Text);
-            chunks.Add(new IngestedChunk
+            await chunksCollection.UpsertAsync(new IngestedChunk
             {
                 Key = Guid.CreateVersion7().ToString(),
                 DocumentId = documentId,
@@ -106,12 +94,28 @@ public class DataIngestor(
             });
         }
 
-        if (chunks.Any())
-        {
-            await chunksCollection.UpsertAsync(chunks);
-        }
+        logger.LogInformation("📄 PDF '{DocumentId}' ingested with {ChunkCount} chunks", documentId, paragraphs.Count);
+    }
 
-        logger.LogInformation("? PDF '{DocumentId}' ingested with {ChunkCount} chunks", documentId, chunks.Count);
+    private static async Task<List<IngestedDocument>> GetAllDocsAsync(VectorStoreCollection<string, IngestedDocument> collection)
+    {
+        var docs = new List<IngestedDocument>();
+        var dummy = new ReadOnlyMemory<float>(new float[2]);
+        await foreach (var result in collection.SearchAsync(dummy, 1000))
+            docs.Add(result.Record);
+        return docs;
+    }
+
+    private static async Task DeleteChunksForDocumentIdAsync(VectorStoreCollection<string, IngestedChunk> collection, string documentId)
+    {
+        var chunks = new List<IngestedChunk>();
+        var dummy = new ReadOnlyMemory<float>(new float[384]);
+        await foreach (var result in collection.SearchAsync(dummy, 10000))
+            chunks.Add(result.Record);
+
+        var toDelete = chunks.Where(r => r.DocumentId == documentId).Select(r => r.Key).ToList();
+        if (toDelete.Any())
+            await collection.DeleteAsync(toDelete);
     }
 
     private static IEnumerable<(int PageNumber, int IndexOnPage, string Text)> GetPageParagraphs(Page pdfPage)
@@ -127,10 +131,8 @@ public class DataIngestor(
             var cleanedText = block.Text.ReplaceLineEndings(" ").Trim();
             if (string.IsNullOrWhiteSpace(cleanedText)) continue;
 
-            foreach (var subParagraph in SplitIntoChunks(cleanedText, 200))
-            {
+            foreach (var subParagraph in SplitIntoChunks(cleanedText, 80))
                 allChunks.Add((pdfPage.Number, chunkIndex++, subParagraph));
-            }
         }
 
         return allChunks;
@@ -157,15 +159,5 @@ public class DataIngestor(
         }
         if (sb.Length > 0) chunks.Add(sb.ToString().TrimEnd());
         return chunks;
-    }
-
-    private async Task DeleteChunksForDocumentIdAsync(string documentId)
-    {
-        var allChunks = await chunksCollection.GetAsync(_ => true, 1000).ToListAsync();
-        var chunksToDelete = allChunks.Where(r => r.DocumentId == documentId).ToList();
-        if (chunksToDelete.Any())
-        {
-            await chunksCollection.DeleteAsync(chunksToDelete.Select(r => r.Key));
-        }
     }
 }

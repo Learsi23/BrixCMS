@@ -168,6 +168,66 @@ public class ConfigurationController : Controller
         return RedirectToAction(nameof(Chatbot));
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetOllamaModels()
+    {
+        try
+        {
+            var url = _apiKeys.GetOllamaUrl();
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var response = await client.GetAsync($"{url}/api/tags");
+            if (!response.IsSuccessStatusCode)
+                return Json(new { ok = false, error = "Ollama not reachable" });
+
+            var json = await response.Content.ReadAsStringAsync();
+            var doc  = JsonDocument.Parse(json);
+            var models = new List<string>();
+
+            if (doc.RootElement.TryGetProperty("models", out var modelsArray))
+            {
+                foreach (var m in modelsArray.EnumerateArray())
+                    if (m.TryGetProperty("name", out var nameProp))
+                        models.Add(nameProp.GetString() ?? "");
+            }
+
+            return Json(new { ok = true, models });
+        }
+        catch
+        {
+            return Json(new { ok = false, error = "Cannot connect to Ollama" });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> PullOllamaModel([FromBody] JsonElement body)
+    {
+        var modelName = body.GetProperty("model").GetString()?.Trim();
+        if (string.IsNullOrWhiteSpace(modelName))
+            return Json(new { ok = false, error = "Model name required" });
+
+        try
+        {
+            var url = _apiKeys.GetOllamaUrl();
+            using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(new { name = modelName, stream = false }),
+                System.Text.Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync($"{url}/api/pull", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errBody = await response.Content.ReadAsStringAsync();
+                return Json(new { ok = false, error = errBody });
+            }
+
+            return Json(new { ok = true, model = modelName });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { ok = false, error = ex.Message });
+        }
+    }
+
     // ── PDFs ──────────────────────────────────────────────────────────────────
 
     [HttpPost]

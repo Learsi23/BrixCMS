@@ -28,12 +28,11 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- AI / VECTOR STORE -->
+  <!-- AI / VECTOR STORE — pin to versions that work together -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.5.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.5.0" />
-    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.5.0" />
-    <!-- InMemory vector store connector (compatible con VectorData 10.x; Sqlite 1.51 solo soporta 9.x) -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.4.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.4.0" />
+    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.1.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.InMemory" Version="1.74.0-preview" />
     <PackageReference Include="OllamaSharp" Version="5.4.25" />
   </ItemGroup>

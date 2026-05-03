@@ -2,5 +2,5 @@
 
 @* Floating chat button — renders at a fixed screen position, no wrapper needed *@
 @(await Html.RenderComponentAsync<BrixCMS.Open.Components.BlazorBlocks.FloatingChatBlockComponent>(
-    RenderMode.Server,
+    Microsoft.AspNetCore.Mvc.Rendering.RenderMode.ServerPrerendered,
     new { Model = Model }))

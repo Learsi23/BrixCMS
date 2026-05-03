@@ -1,36 +1,43 @@
 @using Microsoft.Extensions.AI
 @using Markdig
+@using BrixCMS.Open.Components.Pages.Chat
 @inject MarkdownPipeline Pipeline
 
-@* Burbuja del USUARIO (derecha, azul) *@
+@* USER bubble ── *@
 @if (Message.Role == ChatRole.User && !string.IsNullOrWhiteSpace(Message.Text))
 {
-    <div class="flex justify-end mb-6">
-        <div class="max-w-[85%] bg-blue-600 text-white px-4 py-3 rounded-2xl rounded-br-none shadow-sm">
-            <div class="break-words whitespace-pre-wrap">@Message.Text</div>
+    <div class="flex justify-end mb-5">
+        <div class="max-w-[80%] px-4 py-3 shadow-sm transition-all
+                    @(InProgress ? "animate-pulse" : "")"
+             style="background: @BubbleGradient(Theme.UserBubbleColor, 15);
+                    color: @SafeColor(Theme.UserTextColor, "#fff");
+                    border-radius: 18px 18px 4px 18px;">
+            <div class="break-words whitespace-pre-wrap text-sm leading-relaxed">@Message.Text</div>
         </div>
     </div>
 }
 
-@* Burbuja del ASISTENTE (izquierda, blanca) *@
+@* ASSISTANT bubble ── *@
 else if (Message.Role == ChatRole.Assistant && !string.IsNullOrWhiteSpace(Message.Text))
 {
-    <div class="flex justify-start mb-6">
-        <div class="max-w-[85%] bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm">
-            <div class="flex items-center gap-2 mb-2">
-                @*
-                    Logo = avatar del asistente AI, configurable desde el CMS.
-                    Fallback aplicado en Chat.razor: "/images/logo-menu.png"
-                    onerror oculta la imagen si la URL falla.
-                *@
+    <div class="flex justify-start mb-5">
+        <div class="max-w-[85%] px-4 py-3 shadow-sm transition-all
+                    @(InProgress ? "animate-pulse" : "")"
+             style="background: @SafeColor(Theme.AiBubbleColor, "#fff");
+                    color: @SafeColor(Theme.AiTextColor, "#1e293b");
+                    border: 1px solid @SafeColor(Theme.AiBubbleBorderColor, "#e2e8f0");
+                    border-radius: 18px 18px 18px 4px;">
+            <div class="flex items-center gap-2 mb-2.5 pb-2" style="border-bottom: 1px solid @SafeColor(Theme.AiBubbleBorderColor, "#e2e8f0");">
                 <img src="@(Logo ?? "/images/logo-menu.png")"
                      onerror="this.style.display='none'"
                      style="width: @AiLogoSize; height: @AiLogoSize;"
-                     class="rounded-full object-cover"
-                     alt="Assistant" />
-                <span class="font-semibold text-gray-700">Assistant</span>
+                     class="rounded-full object-cover ring-2"
+                     alt="AI"
+                     loading="lazy" />
+                <span class="font-semibold text-xs tracking-wide" style="color: @SafeColor(Theme.AiTextColor, "#1e293b");">AI Assistant</span>
             </div>
-            <div class="prose prose-sm max-w-none text-gray-800">
+            <div class="prose prose-sm max-w-none text-sm leading-relaxed"
+                 style="color: @SafeColor(Theme.AiTextColor, "#1e293b");">
                 @((MarkupString)Markdown.ToHtml(Message.Text ?? "", Pipeline))
             </div>
         </div>
@@ -38,15 +45,31 @@ else if (Message.Role == ChatRole.Assistant && !string.IsNullOrWhiteSpace(Messag
 }
 
 @code {
-    [Parameter, EditorRequired]
-    public required ChatMessage Message { get; set; }
+    [Parameter, EditorRequired] public required ChatMessage Message { get; set; }
+    [Parameter] public bool InProgress { get; set; }
+    [Parameter] public string? Logo { get; set; }
+    [Parameter] public string AiLogoSize { get; set; } = "28px";
+    [Parameter] public ChatTheme Theme { get; set; } = ChatTheme.Default;
 
-    [Parameter]
-    public bool InProgress { get; set; }
+    private static string SafeColor(string? hex, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return fallback;
+        return hex.Trim();
+    }
 
-    [Parameter]
-    public string? Logo { get; set; }
-
-    [Parameter]
-    public string AiLogoSize { get; set; } = "24px";
+    private static string BubbleGradient(string? hex, int percent)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return "#6366f1";
+        var clean = hex.TrimStart('#');
+        if (clean.Length < 6) return hex;
+        try
+        {
+            var r = Math.Min(255, Convert.ToInt32(clean.Substring(0, 2), 16) + percent);
+            var g = Math.Min(255, Convert.ToInt32(clean.Substring(2, 2), 16) + percent);
+            var b = Math.Min(255, Convert.ToInt32(clean.Substring(4, 2), 16) + percent);
+            var lighter = $"#{r:X2}{g:X2}{b:X2}";
+            return $"linear-gradient(135deg, {hex}, {lighter})";
+        }
+        catch { return hex; }
+    }
 }

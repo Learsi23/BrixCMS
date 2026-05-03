@@ -5,7 +5,9 @@ using BrixCMS.Open.Services.Email;
 using BrixCMS.Open.Services.Ingestion;
 
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.InMemory;
 using OllamaSharp;
 
 using Markdig;
@@ -119,16 +121,12 @@ var embeddingModel = builder.Configuration["Ollama:EmbeddingModel"]!;
 var embeddingGenerator = new OllamaApiClient(new Uri(ollamaUrl), embeddingModel);
 
 // =====================================================
-// VECTOR STORE (InMemory — SK.Connectors.Sqlite 1.51 solo soporta VectorData 9.x)
+// VECTOR STORE (InMemory — SK connector + VectorData 10.1.0)
 // Los datos se reingresan al arranque via la lógica de ingesta existente.
 // =====================================================
 builder.Services.AddInMemoryVectorStore();
-
-builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedChunk>(
-    "data-chatappollama-chunks");
-
-builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedDocument>(
-    "data-chatappollama-documents");
+builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedChunk>("data-chatappollama-chunks");
+builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedDocument>("data-chatappollama-documents");
 
 // =====================================================
 // EMBEDDINGS
@@ -245,14 +243,16 @@ app.MapControllerRoute(
     pattern: "landing",
     defaults: new { controller = "Landing", action = "Index" });
 
-// 5. CMS catch-all (last)
+// 5. Blazor Web App (BEFORE cms catch-all so _framework/ works)
+app.MapRazorComponents<BrixCMS.Open.Components.App>()
+    .AddInteractiveServerRenderMode();
+
+// 6. CMS catch-all (last) — exclude _framework, api, _content paths
 app.MapControllerRoute(
     name: "cms",
     pattern: "{slug?}",
-    defaults: new { controller = "Cms", action = "Index" });
-
-app.MapRazorComponents<BrixCMS.Open.Components.App>()
-    .AddInteractiveServerRenderMode();
+    defaults: new { controller = "Cms", action = "Index" },
+    constraints: new { slug = @"^(?!_framework|api|_content|\.well-known).*$" });
 
 // =====================================================
 // 🔟 INITIALIZATION — DB + PDF INGESTION

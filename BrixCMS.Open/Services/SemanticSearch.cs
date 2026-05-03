@@ -1,17 +1,14 @@
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace BrixCMS.Open.Services;
 
 public class SemanticSearch(
-    VectorStoreCollection<string, IngestedChunk> vectorCollection,
+    VectorStoreCollection<string, IngestedChunk> chunksCollection,
     VectorStoreCollection<string, IngestedDocument> documentsCollection)
 {
     public async Task<IReadOnlyList<IngestedChunk>> SearchAsync(string text, string? documentIdFilter, int maxResults)
     {
-        // Support single filename OR comma-separated list ("manual.pdf, faq.pdf")
         var filters = (documentIdFilter ?? "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(f => f.Length > 0)
@@ -21,47 +18,49 @@ public class SemanticSearch(
         {
             0 => null,
             1 => record => record.DocumentId == documentIdFilter,
-            _ => null   // multi-file: fetch unfiltered then filter in memory below
+            _ => null
         };
 
-        var nearest = vectorCollection.SearchAsync(text, filters.Count > 1 ? maxResults * 3 : maxResults,
-            new VectorSearchOptions<IngestedChunk> { Filter = filterExpr });
+        var options = new VectorSearchOptions<IngestedChunk> { Filter = filterExpr };
 
-        var results = await nearest.Select(r => r.Record).ToListAsync();
+        var results = new List<IngestedChunk>();
+        var searchCount = filters.Count > 1 ? maxResults * 3 : maxResults;
+        await foreach (var result in chunksCollection.SearchAsync(text, searchCount, options))
+            results.Add(result.Record);
 
-        // Apply multi-file filter in memory when more than one file is specified
         if (filters.Count > 1)
             results = results.Where(r => filters.Contains(r.DocumentId)).Take(maxResults).ToList();
 
         return results;
     }
 
-    /// <summary>Returns the distinct DocumentIds of all ingested documents.</summary>
     public async Task<List<string>> GetAllDocumentIdsAsync()
     {
-        var docs = await documentsCollection.GetAsync(_ => true, 500).ToListAsync();
-        return docs
-            .Select(d => d.DocumentId)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToList();
+        var docs = new List<IngestedDocument>();
+        var dummy = new ReadOnlyMemory<float>(new float[2]);
+        await foreach (var result in documentsCollection.SearchAsync(dummy, 1000))
+            docs.Add(result.Record);
+
+        return docs.Select(d => d.DocumentId).Distinct().OrderBy(x => x).ToList();
     }
 
     public async Task DeleteDocumentAsync(string documentId)
     {
-        var chunksToDelete = await vectorCollection.GetAsync(_ => true, 1000).ToListAsync();
-        var filteredChunks = chunksToDelete.Where(r => r.DocumentId == documentId).ToList();
-        
-        if (filteredChunks.Any())
-        {
-            await vectorCollection.DeleteAsync(filteredChunks.Select(r => r.Key));
-        }
+        var chunks = new List<IngestedChunk>();
+        var dummy = new ReadOnlyMemory<float>(new float[384]);
+        await foreach (var result in chunksCollection.SearchAsync(dummy, 10000))
+            chunks.Add(result.Record);
 
-        var docToDelete = await documentsCollection.GetAsync(_ => true, 100).ToListAsync();
-        var filteredDoc = docToDelete.FirstOrDefault(d => d.DocumentId == documentId);
-        if (filteredDoc != null)
-        {
-            await documentsCollection.DeleteAsync(filteredDoc.Key);
-        }
+        var toDelete = chunks.Where(r => r.DocumentId == documentId).Select(r => r.Key).ToList();
+        if (toDelete.Any())
+            await chunksCollection.DeleteAsync(toDelete);
+
+        var docs = new List<IngestedDocument>();
+        await foreach (var result in documentsCollection.SearchAsync(dummy, 1000))
+            docs.Add(result.Record);
+
+        var doc = docs.FirstOrDefault(d => d.DocumentId == documentId);
+        if (doc != null)
+            await documentsCollection.DeleteAsync(doc.Key);
     }
 }

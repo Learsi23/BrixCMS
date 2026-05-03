@@ -21,7 +21,7 @@
     @if (TempData["Success"] != null)
     {
         <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
-            <span>✅</span> @TempData["Success"]
+            <i class="fas fa-check-circle text-emerald-600"></i> @TempData["Success"]
         </div>
     }
 
@@ -354,7 +354,7 @@
             <div class="flex justify-end">
                 <button type="submit"
                         class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg">
-                    💾 Save Settings
+                    <i class="fas fa-save mr-1"></i> Save Settings
                 </button>
             </div>
         </div>

@@ -6,7 +6,7 @@ namespace BrixCMS.Open.Models.BlazorBlocks
         Name = "Floating Chat Button",
         Category = "AI",
         Icon = "fas fa-comment-dots",
-        Description = "A floating chat button (bottom-left or bottom-right) with configurable AI provider, optional PDF document restriction, and product catalogue access.")]
+        Description = "A modern floating chat button with glassmorphism panel, animated gradients, and fully customizable colors.")]
     public class FloatingChatBlock
     {
         [Field(Title = "Position")]
@@ -20,8 +20,12 @@ namespace BrixCMS.Open.Models.BlazorBlocks
             Value = "right"
         };
 
-        [Field(Title = "Button Background Color")]
-        public ColorField ButtonColor { get; set; } = new() { Value = "#2563EB" };
+        // ── Button Colors ───────────────────────────────────────────────────────
+        [Field(Title = "Button Primary Color")]
+        public ColorField ButtonColor { get; set; } = new() { Value = "#6366F1" };
+
+        [Field(Title = "Button Gradient End Color")]
+        public ColorField ButtonGradientColor { get; set; } = new() { Value = "#8B5CF6" };
 
         [Field(Title = "Button Icon Color")]
         public ColorField ButtonTextColor { get; set; } = new() { Value = "#FFFFFF" };
@@ -29,8 +33,53 @@ namespace BrixCMS.Open.Models.BlazorBlocks
         [Field(Title = "Button Icon (emoji or text)", Placeholder = "💬")]
         public StringField ButtonIcon { get; set; } = new() { Value = "💬" };
 
-        [Field(Title = "Button Size (px)", Placeholder = "56px")]
-        public StringField ButtonSize { get; set; } = new() { Value = "56px" };
+        [Field(Title = "Button Size (px)", Placeholder = "60px")]
+        public StringField ButtonSize { get; set; } = new() { Value = "60px" };
+
+        [Field(Title = "Button Glow Effect")]
+        public BoolField ButtonGlow { get; set; } = new() { Value = "true" };
+
+        // ── Panel Colors ────────────────────────────────────────────────────────
+        [Field(Title = "Panel Background Color")]
+        public ColorField PanelBgColor { get; set; } = new() { Value = "#0F172A" };
+
+        [Field(Title = "Panel Header Background Start")]
+        public ColorField HeaderBgColor { get; set; } = new() { Value = "#1E293B" };
+
+        [Field(Title = "Panel Header Gradient End")]
+        public ColorField HeaderGradientColor { get; set; } = new() { Value = "#6366F1" };
+
+        [Field(Title = "Header Text Color")]
+        public ColorField HeaderTextColor { get; set; } = new() { Value = "#F8FAFC" };
+
+        [Field(Title = "Chat Background Color")]
+        public ColorField ChatBgColor { get; set; } = new() { Value = "#0F172A" };
+
+        // ── Message Colors ──────────────────────────────────────────────────────
+        [Field(Title = "User Message Bubble Color")]
+        public ColorField UserBubbleColor { get; set; } = new() { Value = "#6366F1" };
+
+        [Field(Title = "User Message Text Color")]
+        public ColorField UserTextColor { get; set; } = new() { Value = "#FFFFFF" };
+
+        [Field(Title = "AI Message Bubble Color")]
+        public ColorField AiBubbleColor { get; set; } = new() { Value = "#1E293B" };
+
+        [Field(Title = "AI Message Text Color")]
+        public ColorField AiTextColor { get; set; } = new() { Value = "#E2E8F0" };
+
+        // ── Input Colors ────────────────────────────────────────────────────────
+        [Field(Title = "Input Background Color")]
+        public ColorField InputBgColor { get; set; } = new() { Value = "#1E293B" };
+
+        [Field(Title = "Input Text Color")]
+        public ColorField InputTextColor { get; set; } = new() { Value = "#F8FAFC" };
+
+        [Field(Title = "Input Border Color")]
+        public ColorField InputBorderColor { get; set; } = new() { Value = "#334155" };
+
+        [Field(Title = "Send Button Color")]
+        public ColorField SendButtonColor { get; set; } = new() { Value = "#6366F1" };
 
         // ── AI provider ───────────────────────────────────────────────────────────
         [Field(Title = "AI Provider")]
@@ -61,13 +110,13 @@ namespace BrixCMS.Open.Models.BlazorBlocks
         [Field(Title = "Chat Logo")]
         public ImageField Logo { get; set; } = new();
 
-        [Field(Title = "Logo Size", Placeholder = "32px")]
-        public StringField LogoSize { get; set; } = new() { Value = "32px" };
+        [Field(Title = "Logo Size", Placeholder = "28px")]
+        public StringField LogoSize { get; set; } = new() { Value = "28px" };
 
         [Field(Title = "AI Avatar Logo")]
         public ImageField AiLogo { get; set; } = new();
 
-        [Field(Title = "AI Avatar Size", Placeholder = "24px")]
-        public StringField AiLogoSize { get; set; } = new() { Value = "24px" };
+        [Field(Title = "AI Avatar Size", Placeholder = "28px")]
+        public StringField AiLogoSize { get; set; } = new() { Value = "28px" };
     }
 }

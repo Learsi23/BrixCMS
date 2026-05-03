@@ -16,8 +16,8 @@
                    class="px-4 py-2 border rounded-lg outline-none" required />
             <select name="pageType"
                     class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-white cursor-pointer">
-                <option value="standard">?? Standard</option>
-                <option value="product">??? Product</option>
+                <option value="standard"><i class="fas fa-file mr-1"></i> Standard</option>
+                <option value="product"><i class="fas fa-box mr-1"></i> Product</option>
             </select>
 
             <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
@@ -55,7 +55,7 @@
                                             <input type="hidden" name="direction" value="up" />
                                             <button type="submit"
                                                     class="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded text-xs">
-                                                ?
+                                                <i class="fas fa-arrow-up text-[10px]"></i>
                                             </button>
                                         </form>
                                     }
@@ -67,7 +67,7 @@
                                             <input type="hidden" name="direction" value="down" />
                                             <button type="submit"
                                                     class="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded text-xs">
-                                                ?
+                                                <i class="fas fa-arrow-down text-[10px]"></i>
                                             </button>
                                         </form>
                                     }
@@ -78,7 +78,7 @@
                                 @if (i == pages.FindIndex(x => x.IsPublished))
                                 {
                                     <span class="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                                        ?? Home
+                                        <i class="fas fa-home mr-1"></i> Home
                                     </span>
                                 }
                                 @p.Title
@@ -88,13 +88,13 @@
                                 @if (p.PageType == "product")
                                 {
                                     <span class="bg-blue-100 text-blue-700 text-[9px] font-black uppercase px-2 py-1 rounded-full">
-                                        ??? Product
+                                        <i class="fas fa-box mr-1"></i> Product
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="bg-gray-100 text-gray-500 text-[9px] font-black uppercase px-2 py-1 rounded-full">
-                                        ?? Standard
+                                        <i class="fas fa-file mr-1"></i> Standard
                                     </span>
                                 }
                             </td>
@@ -105,13 +105,13 @@
                                 @if (p.IsPublished)
                                 {
                                     <span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full">
-                                        ? Published
+                                        <i class="fas fa-check-circle mr-1"></i> Published
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-full">
-                                        ?? Draft
+                                        <i class="fas fa-pencil mr-1"></i> Draft
                                     </span>
                                 }
                             </td>
@@ -120,8 +120,8 @@
                                 @if (p.IsPublished)
                                 {
                                     <a href="/@p.Slug" target="_blank"
-                                           class="text-emerald-600 hover:underline text-sm">
-                                        ?? View
+                                            class="text-emerald-600 hover:underline text-sm">
+                                        <i class="fas fa-eye mr-1"></i> View
                                     </a>
                                 }
                                 <a asp-area="Manager" asp-controller="Manager"

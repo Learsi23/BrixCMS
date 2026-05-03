@@ -51,30 +51,30 @@
 
     @* -- Preview Banner -- *@
     <div class="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-3 z-50 shadow-lg flex items-center justify-center gap-4">
-        <span>?? PREVIEW MODE</span>
+        <span><i class="fas fa-eye mr-1"></i> PREVIEW MODE</span>
 
         @* Publication status *@
         @if (Model.IsPublished)
         {
             <span class="bg-green-600 px-3 py-1 rounded-full text-xs font-bold">
-                ? Published — @Model.PublishedAt?.ToString("MM/dd/yyyy HH:mm")
+                <i class="fas fa-check-circle mr-1"></i> Published â€” @Model.PublishedAt?.ToString("MM/dd/yyyy HH:mm")
             </span>
         }
         else
         {
             <span class="bg-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-                ?? Draft
+                <i class="fas fa-pencil mr-1"></i> Draft
             </span>
         }
 
         <a href="/Manager/Manager/Edit/@Model.Id"
-               class="underline font-bold text-sm">
-            ? Back to Editor
+                class="underline font-bold text-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Editor
         </a>
 
         <button onclick="publishFromPreview()"
                 class="bg-green-600 px-4 py-1.5 rounded text-sm hover:bg-green-700 font-bold transition-colors">
-            ?? Publish
+            <i class="fas fa-globe mr-1"></i> Publish
         </button>
     </div>
     <div style="padding-top:60px"></div>
@@ -86,8 +86,8 @@
             @if (!allBlocks.Any(b => b.ParentId == null))
             {
                 <div class="text-center py-20 text-gray-500">
-                    <p>?? No blocks to display</p>
-                    <a href="/Manager/Manager/Edit/@Model.Id" class="text-indigo-600">? Back to editor</a>
+                    <p><i class="fas fa-cube mr-1"></i> No blocks to display</p>
+                    <a href="/Manager/Manager/Edit/@Model.Id" class="text-indigo-600"><i class="fas fa-arrow-left mr-1"></i> Back to editor</a>
                 </div>
             }
             else
@@ -159,9 +159,13 @@
         window.location.href = '/Manager/Manager/Edit/' + pageId;
         }, 1000);
         } else {
-        alert('? Error publishing: ' + result.error);
+        alert('Error publishing: ' + result.error);
         btn.disabled = false;
-        btn.textContent = '?? Publish';
+        btn.textContent = 'Publish';
+        } catch (e) {
+        alert('Network error: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = 'Publish';
         }
         } catch (e) {
         alert('? Network error: ' + e.message);

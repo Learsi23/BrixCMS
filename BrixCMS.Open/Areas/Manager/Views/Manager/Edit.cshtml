@@ -1,4 +1,4 @@
-@using BrixCMS.Open.Data
+ï»¿@using BrixCMS.Open.Data
 @using BrixCMS.Open.Data.Fields
 @using BrixCMS.Open.Services
 @using System.Reflection
@@ -57,28 +57,28 @@
             </div>
             <div class="flex gap-3 items-center">
 
-                @* ? Publication status *@
+                @* Publication status *@
                 @if (Model.IsPublished)
                 {
                     <span class="bg-green-100 text-green-700 border border-green-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
-                        ? Published
+                        <i class="fas fa-check-circle mr-1"></i> Published
                     </span>
                     <a href="/@Model.Slug" target="_blank"
-                           class="bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition shadow-sm">
-                        ?? View Public
+                            class="bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition shadow-sm">
+                        <i class="fas fa-external-link-alt mr-1"></i> View Public
                     </a>
                 }
                 else
                 {
                     <span class="bg-yellow-100 text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
-                        ?? Draft
+                        <i class="fas fa-pencil mr-1"></i> Draft
                     </span>
                 }
 
                 <a href="/Manager/Manager/Preview/@Model.Id"
-                       target="preview-@Model.Id"
-                       class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold transition text-sm shadow-sm">
-                    ?? Preview
+                        target="preview-@Model.Id"
+                        class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold transition text-sm shadow-sm">
+                    <i class="fas fa-eye mr-1"></i> Preview
                 </a>
 
                 <a href="/Manager" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl font-bold hover:bg-gray-50 transition text-sm shadow-sm">
@@ -128,7 +128,7 @@
         @{
             var pageFontValue = standardPageData.FontFamily?.Value ?? "";
             var googleFonts = new[] {
-                ("","— Site font (default) —"),
+                ("","â€” Site font (default) â€”"),
                 ("Inter","Inter"),("Roboto","Roboto"),("Lato","Lato"),
                 ("Open Sans","Open Sans"),("Montserrat","Montserrat"),("Poppins","Poppins"),
                 ("Raleway","Raleway"),("Nunito","Nunito"),("Playfair Display","Playfair Display"),
@@ -190,7 +190,7 @@
                 @* Save *@
                 <button onclick="savePageSettings()"
                         class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all">
-                    ?? Save
+                    <i class="fas fa-save mr-1"></i> Save
                 </button>
             </div>
         </div>
@@ -229,21 +229,21 @@
                                     <button @@click="toggleBlock('@b.Id')"
                                         :class="isCollapsed('@b.Id') ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-600'"
                                         class="w-8 h-8 flex items-center justify-center rounded-lg hover:opacity-80 transition shadow-sm">
-                                        <span x-text="isCollapsed('@b.Id') ? '?' : '?'">?</span>
+                                        <i :class="isCollapsed('@b.Id') ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
                                     </button>
                                     <div class="flex bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200">
                                         <button onclick="executeAction('@Model.Id', '@b.Id', 'up', 'MoveBlock')"
                                                 class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-l-lg">
-                                            ?
+                                            <i class="fas fa-arrow-up text-xs"></i>
                                         </button>
                                         <button onclick="executeAction('@Model.Id', '@b.Id', 'down', 'MoveBlock')"
                                                 class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-r-lg">
-                                            ?
+                                            <i class="fas fa-arrow-down text-xs"></i>
                                         </button>
                                     </div>
                                     <button onclick="executeAction('@Model.Id', '@b.Id', '', 'DeleteBlock')"
                                             class="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-500 rounded-lg text-red-500 hover:text-white transition shadow-sm border border-gray-200">
-                                        ×
+                                        <i class="fas fa-trash text-xs"></i>
                                     </button>
                                 </div>
                             </div>
@@ -251,7 +251,7 @@
                                 @await Html.PartialAsync("_BlockEditor", b)
                             </div>
                             <div x-show="isCollapsed('@b.Id')" class="p-4 text-center text-gray-400 text-sm">
-                                Block collapsed - press ? to expand
+                                Block collapsed - press <i class="fas fa-chevron-down"></i> to expand
                             </div>
                         </div>
                     </div>
@@ -322,7 +322,7 @@
                     </div>
 
                     <!-- Block grid -->
-                    <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
+                    <div class="flex-1 overflow-y-auto p-4 pb-32 bg-gray-50">
                         @foreach (var category in sortedCategories)
                         {
                             var categoryKey = category.Replace(" ", "");
@@ -340,21 +340,21 @@
                                     <div class="relative group/block">
                                         <button type="button"
                                             @@click="executeAddBlock('@Model.Id', '@item.Key', currentParentId)"
-                                                class="w-full bg-white p-4 rounded-2xl border-2 border-transparent hover:border-emerald-500 hover:shadow-md transition-all flex flex-col items-center shadow-sm group">
+                                                class="w-full bg-white p-4 rounded-2xl border-2 border-transparent hover:border-emerald-500 hover:shadow-md transition-all flex flex-col items-center shadow-sm relative group">
                                             <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-200">
                                                 <i class="@blockIcon text-lg"></i>
                                             </div>
                                             <span class="text-[10px] font-black uppercase text-gray-600 text-center leading-tight group-hover:text-emerald-700">@blockName</span>
+                                            @if (!string.IsNullOrEmpty(blockDesc))
+                                            {
+                                                <!-- Tooltip shown on hover (appears below) -->
+                                                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-gray-900 text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl
+                                                    opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-[100] text-center">
+                                                    @blockDesc
+                                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
+                                                </div>
+                                            }
                                         </button>
-                                        @if (!string.IsNullOrEmpty(blockDesc))
-                                        {
-                                            <!-- Tooltip shown on hover -->
-                                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl
-                                                opacity-0 group-hover/block:opacity-100 pointer-events-none transition-opacity duration-200 z-[9999] text-center">
-                                                @blockDesc
-                                                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                            </div>
-                                        }
                                     </div>
                                 }
                             </div>

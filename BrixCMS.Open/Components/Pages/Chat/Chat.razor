@@ -1,6 +1,7 @@
 @using System.ComponentModel
 @using Microsoft.Extensions.AI
 @using BrixCMS.Open.Services
+@using BrixCMS.Open.Components.Pages.Chat
 @using OllamaSharp
 @using OpenAI
 @using System.ClientModel
@@ -8,14 +9,12 @@
 @inject IChatClient ChatClient
 @inject NavigationManager Nav
 @inject SemanticSearch Search
-@inject ILogger Logger
+@inject ILogger<Chat> Logger
 @inject PromptsService Prompts
 @inject ApiKeyService ApiKeys
 @inject ILoggerFactory LoggerFactory
 @inject IConfiguration Config
 @implements IDisposable
-
-Chat AI - BrixCMS
 
 @if (ShowHeader)
 {
@@ -25,32 +24,40 @@ Chat AI - BrixCMS
                 LogoSize="@(LogoSize ?? "32px")" />
 }
 
-<div class="flex-1 overflow-y-auto p-4">
-    <div class="max-w-3xl mx-auto">
-        <ChatMessageList Messages="@messages"
-                         InProgressMessage="@inProgressMessage"
-                         Logo="@(Logo ?? "/images/logo-menu.png")"
-                         AiLogo="@(AiLogo ?? "/images/logo-menu.png")"
-                         AiLogoSize="@(AiLogoSize ?? "24px")">
-            <NoMessagesContent>
-                <div class="text-center py-10">
-                    <ChatCitation File="BrixCMS.pdf" />
-                </div>
-            </NoMessagesContent>
-        </ChatMessageList>
+<!-- Usamos height: 100% en lugar de h-full de Tailwind -->
+<div style="display: flex; flex-direction: column; height: 100%; background: @Theme.ChatBgColor;">
+    <!-- Mensajes: scrollable -->
+    <div style="flex: 1; overflow-y: auto; min-height: 0; padding: 1rem;">
+        <div style="max-width: 48rem; margin: 0 auto;">
+            <ChatMessageList Messages="@messages"
+                             InProgressMessage="@inProgressMessage"
+                             Logo="@(Logo ?? "/images/logo-menu.png")"
+                             AiLogo="@(Theme.AiLogo ?? AiLogo ?? "/images/logo-menu.png")"
+                             AiLogoSize="@(Theme.AiLogoSize)"
+                             Theme="Theme">
+                <NoMessagesContent>
+                    <div style="text-align: center; padding: 3rem 0;">
+                        <div style="width: 4rem; height: 4rem; margin: 0 auto 1rem auto; border-radius: 1rem; background: linear-gradient(135deg, #6366f1, #9333ea); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                            <span style="font-size: 2rem;">🤖</span>
+                        </div>
+                        <p style="font-size: 0.875rem; margin: 0; color: @HexToRgba(Theme.InputTextColor, "60");">
+                            Send a message to start the conversation
+                        </p>
+                    </div>
+                </NoMessagesContent>
+            </ChatMessageList>
+        </div>
+    </div>
+
+    <!-- Input: fijo abajo -->
+    <div style="flex-shrink: 0; padding: 0.75rem 1rem; background: @Theme.ChatBgColor; border-top: 1px solid @HexToRgba(Theme.InputBorderColor, "50");">
+        <div style="max-width: 48rem; margin: 0 auto;">
+            <ChatInput OnSend="@AddUserMessageAsync" @ref="@chatInput" Theme="Theme" />
+        </div>
     </div>
 </div>
-
-<div class="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-4 shadow-sm">
-    <div class="max-w-3xl mx-auto">
-        <ChatInput OnSend="@AddUserMessageAsync" @ref="@chatInput" />
-    </div>
-</div>
-
-
 
 @code {
-    // ==================== PARAMETERS ====================
     [Parameter] public string? CustomSystemPrompt { get; set; }
     [Parameter] public string? WelcomeMessage { get; set; }
     [Parameter] public string? Title { get; set; }
@@ -58,226 +65,168 @@ Chat AI - BrixCMS
     [Parameter] public string? LogoSize { get; set; }
     [Parameter] public string? AiLogo { get; set; }
     [Parameter] public string? AiLogoSize { get; set; }
+    [Parameter] public string? AiProvider { get; set; }
+    [Parameter] public string? PdfFilter { get; set; }
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public ChatTheme Theme { get; set; } = ChatTheme.Default;
 
-/// <summary>Provider to use: auto / ollama / gemini / deepseek / mistral (default: auto)</summary>
-[Parameter] public string? AiProvider { get; set; }
+    private readonly ChatOptions chatOptions = new();
+    private readonly List<ChatMessage> messages = new();
+    private ChatMessage? inProgressMessage;
+    private CancellationTokenSource? responseCts;
+    private string? accumulatedResponse;
+    private string systemPrompt = string.Empty;
+    private IChatClient? _ownedClient;
+    private ChatInput? chatInput;
 
-/// <summary>Comma-separated PDF filenames to restrict semantic search (empty = all docs)</summary>
-[Parameter] public string? PdfFilter { get; set; }
-
-/// <summary>Set false when embedded inside a floating panel to hide the header bar.</summary>
-[Parameter] public bool ShowHeader { get; set; } = true;
-
-// ==================== STATE ====================
-private readonly ChatOptions chatOptions = new();
-private readonly List<ChatMessage> messages = new();
-private ChatMessage? inProgressMessage;
-private CancellationTokenSource? responseCts;
-private string? accumulatedResponse;
-private string systemPrompt = string.Empty;
-
-// ==================== CLIENT MANAGEMENT ====================
-// When AiProvider != "auto" / null we build a dedicated client; otherwise use the DI default.
-private IChatClient? _ownedClient;
-
-// ==================== REFERENCES ====================
-private ChatInput? chatInput;
-
-// ==================== INIT ====================
-protected override void OnInitialized()
-{
-    systemPrompt = Prompts.GenerateChatSystemPrompt(CustomSystemPrompt);
-    _ownedClient = BuildClientForProvider(AiProvider);
-
-    chatOptions.Tools =
-    [
-        AIFunctionFactory.Create(SearchAsync, "SearchAsync"),
-    ];
-}
-
-protected override async Task OnInitializedAsync()
-{
-    await AddWelcomeMessage();
-}
-
-private async Task AddWelcomeMessage()
-{
-    if (!messages.Any(m => m.Role == ChatRole.Assistant))
+    protected override void OnInitialized()
     {
-        var msg = !string.IsNullOrWhiteSpace(WelcomeMessage)
-            ? WelcomeMessage
-            : "Hi! I'm your brix Assistant. How can I help you today?";
-
-        messages.Add(new(ChatRole.Assistant, msg));
-        StateHasChanged();
-    }
-}
-
-// ==================== BUILD CLIENT ====================
-/// <summary>
-/// Returns a new IChatClient for the given provider string, or null to use the DI default.
-/// Any non-null client returned here is owned by this component and disposed on teardown.
-/// </summary>
-private IChatClient? BuildClientForProvider(string? provider)
-{
-    provider = (provider ?? "auto").Trim().ToLowerInvariant();
-
-    if (provider == "ollama")
-    {
-        var url = Config["Ollama:BaseUrl"] ?? "http://localhost:11434";
-        var model = Config["Ollama:ChatModel"] ?? "llama3.2";
-        return ((IChatClient)new OllamaApiClient(new Uri(url), model))
-            .AsBuilder()
-            .UseFunctionInvocation()
-            .UseLogging(LoggerFactory)
-            .Build();
+        systemPrompt = Prompts.GenerateChatSystemPrompt(CustomSystemPrompt);
+        _ownedClient = BuildClientForProvider(AiProvider);
+        chatOptions.Tools = [AIFunctionFactory.Create(SearchAsync, "SearchAsync")];
     }
 
-    if (provider is "gemini" or "deepseek" or "mistral")
+    protected override async Task OnInitializedAsync() => await AddWelcomeMessage();
+
+    private async Task AddWelcomeMessage()
     {
-        var known = ApiKeyService.KnownProviders;
-        if (known.TryGetValue(provider, out var info))
+        if (!messages.Any(m => m.Role == ChatRole.Assistant))
         {
-            var plainKey = ApiKeys.GetDecryptedKeySync(provider);
-            if (!string.IsNullOrEmpty(plainKey))
-            {
-                var openAiClient = new OpenAIClient(
-                    new ApiKeyCredential(plainKey),
-                    new OpenAIClientOptions { Endpoint = new Uri(info.Endpoint) });
-
-                return openAiClient
-                    .GetChatClient(info.DefaultModel)
-                    .AsIChatClient()
-                    .AsBuilder()
-                    .UseFunctionInvocation()
-                    .UseLogging(LoggerFactory)
-                    .Build();
-            }
+            var msg = !string.IsNullOrWhiteSpace(WelcomeMessage)
+                ? WelcomeMessage
+                : "Hi! I'm your AI Assistant. How can I help you today?";
+            messages.Add(new(ChatRole.Assistant, msg));
+            StateHasChanged();
         }
     }
 
-    return null; // "auto" → use DI ChatClient
-}
-
-// ==================== USER MESSAGE HANDLER ====================
-private async Task AddUserMessageAsync(ChatMessage userMessage)
-{
-    CancelCurrentResponse();
-
-    messages.Add(userMessage);
-
-    if (chatInput is not null)
-        await chatInput.FocusAsync();
-
-    StateHasChanged();
-
-    responseCts = new();
-    accumulatedResponse = string.Empty;
-    inProgressMessage = null;
-
-    try
+    private IChatClient? BuildClientForProvider(string? provider)
     {
-        Logger.LogInformation("🔄 [CHAT] Provider={Provider} | Messages={Count}",
-            AiProvider ?? "auto", messages.Count);
-
-        var messagesForApi = new List<ChatMessage>
+        provider = (provider ?? "auto").Trim().ToLowerInvariant();
+        if (provider == "ollama")
         {
-            new(ChatRole.System, systemPrompt)
-        };
-        messagesForApi.AddRange(messages);
-
-        var activeClient = _ownedClient ?? ChatClient;
-
-        await foreach (var update in activeClient.GetStreamingResponseAsync(
-            messagesForApi, chatOptions, responseCts.Token))
+            var url = Config["Ollama:BaseUrl"] ?? "http://localhost:11434";
+            var model = Config["Ollama:ChatModel"] ?? "llama3.2";
+            return ((IChatClient)new OllamaApiClient(new Uri(url), model))
+                .AsBuilder().UseFunctionInvocation().UseLogging(LoggerFactory).Build();
+        }
+        if (provider is "gemini" or "deepseek" or "mistral")
         {
-            if (!string.IsNullOrEmpty(update.Text))
+            var known = ApiKeyService.KnownProviders;
+            if (known.TryGetValue(provider, out var info))
             {
-                accumulatedResponse += update.Text;
-                inProgressMessage = new(ChatRole.Assistant, accumulatedResponse);
+                var plainKey = ApiKeys.GetDecryptedKeySync(provider);
+                if (!string.IsNullOrEmpty(plainKey))
+                {
+                    var openAiClient = new OpenAIClient(
+                        new ApiKeyCredential(plainKey),
+                        new OpenAIClientOptions { Endpoint = new Uri(info.Endpoint) });
+                    return openAiClient.GetChatClient(info.DefaultModel).AsIChatClient()
+                        .AsBuilder().UseFunctionInvocation().UseLogging(LoggerFactory).Build();
+                }
+            }
+        }
+        return null;
+    }
+
+    private async Task AddUserMessageAsync(ChatMessage userMessage)
+    {
+        CancelCurrentResponse();
+        messages.Add(userMessage);
+        if (chatInput is not null) await chatInput.FocusAsync();
+        StateHasChanged();
+
+        responseCts = new();
+        accumulatedResponse = string.Empty;
+        inProgressMessage = null;
+
+        try
+        {
+            Logger.LogInformation("🔄 [CHAT] Provider={Provider} | Messages={Count}", AiProvider ?? "auto", messages.Count);
+            var messagesForApi = new List<ChatMessage> { new(ChatRole.System, systemPrompt) };
+            messagesForApi.AddRange(messages);
+            var activeClient = _ownedClient ?? ChatClient;
+
+            await foreach (var update in activeClient.GetStreamingResponseAsync(messagesForApi, chatOptions, responseCts.Token))
+            {
+                if (!string.IsNullOrEmpty(update.Text))
+                {
+                    accumulatedResponse += update.Text;
+                    inProgressMessage = new(ChatRole.Assistant, accumulatedResponse);
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+
+            Logger.LogInformation("✅ [CHAT] Response length={Length}", accumulatedResponse?.Length ?? 0);
+            if (!string.IsNullOrWhiteSpace(accumulatedResponse))
+            {
+                messages.Add(new(ChatRole.Assistant, accumulatedResponse));
+                inProgressMessage = null;
                 await InvokeAsync(StateHasChanged);
             }
         }
-
-        Logger.LogInformation("✅ [CHAT] Response length={Length}", accumulatedResponse?.Length ?? 0);
-
-        if (!string.IsNullOrWhiteSpace(accumulatedResponse))
+        catch (OperationCanceledException)
         {
-            messages.Add(new(ChatRole.Assistant, accumulatedResponse));
-            inProgressMessage = null;
+            Logger.LogInformation("⚠️ [CHAT] Cancelled");
+            if (!string.IsNullOrWhiteSpace(accumulatedResponse))
+            {
+                messages.Add(new(ChatRole.Assistant, accumulatedResponse));
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ [CHAT] Error: {Message}", ex.Message);
+            inProgressMessage = new(ChatRole.Assistant, $"❌ Error: {ex.Message}");
+            accumulatedResponse = null;
             await InvokeAsync(StateHasChanged);
         }
+        finally { responseCts = null; }
     }
-    catch (OperationCanceledException)
+
+    private void CancelCurrentResponse()
     {
-        Logger.LogInformation("⚠️ [CHAT] Cancelled");
-        if (!string.IsNullOrWhiteSpace(accumulatedResponse))
-        {
-            messages.Add(new(ChatRole.Assistant, accumulatedResponse));
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-    catch (Exception ex)
-    {
-        Logger.LogError(ex, "❌ [CHAT] Error: {Message}", ex.Message);
-        inProgressMessage = new(ChatRole.Assistant, $"❌ Error: {ex.Message}");
+        if (responseCts is not null) { responseCts.Cancel(); responseCts.Dispose(); }
+        if (inProgressMessage is not null && !string.IsNullOrWhiteSpace(inProgressMessage.Text))
+            messages.Add(inProgressMessage);
+        inProgressMessage = null;
         accumulatedResponse = null;
+    }
+
+    public async Task ResetConversationAsync()
+    {
+        CancelCurrentResponse();
+        messages.Clear();
+        if (chatInput is not null) await chatInput.FocusAsync();
+        await AddWelcomeMessage();
+    }
+
+    [Description("Searches the knowledge-base documents (PDFs) for information.")]
+    private async Task<IEnumerable<string>> SearchAsync(
+        [Description("The phrase or question to search for")] string searchPhrase,
+        [Description("Optional: limit search to a specific filename")] string? filenameFilter = null)
+    {
         await InvokeAsync(StateHasChanged);
+        var effectiveFilter = !string.IsNullOrWhiteSpace(PdfFilter) ? PdfFilter : filenameFilter;
+        var results = await Search.SearchAsync(searchPhrase, effectiveFilter, maxResults: 5);
+        return results.Select(r => $"<result filename=\"{r.DocumentId}\" page_number=\"{r.PageNumber}\">{r.Text}</result>");
     }
-    finally
+
+    public void Dispose()
     {
-        responseCts = null;
+        CancelCurrentResponse();
+        responseCts?.Dispose();
+        if (_ownedClient is IDisposable d) d.Dispose();
     }
-}
 
-// ==================== CANCEL ====================
-private void CancelCurrentResponse()
-{
-    if (responseCts is not null)
+    private static string HexToRgba(string hex, string alpha)
     {
-        responseCts.Cancel();
-        responseCts.Dispose();
+        if (string.IsNullOrEmpty(hex)) return $"rgba(0,0,0,{alpha})";
+        hex = hex.TrimStart('#');
+        if (hex.Length == 3) hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+        var r = Convert.ToInt32(hex.Substring(0, 2), 16);
+        var g = Convert.ToInt32(hex.Substring(2, 2), 16);
+        var b = Convert.ToInt32(hex.Substring(4, 2), 16);
+        return $"rgba({r},{g},{b},{Convert.ToInt32(alpha, 16) / 255.0:F2})";
     }
-
-    if (inProgressMessage is not null && !string.IsNullOrWhiteSpace(inProgressMessage.Text))
-        messages.Add(inProgressMessage);
-
-    inProgressMessage = null;
-    accumulatedResponse = null;
-}
-
-// ==================== RESET ====================
-public async Task ResetConversationAsync()
-{
-    CancelCurrentResponse();
-    messages.Clear();
-
-    if (chatInput is not null)
-        await chatInput.FocusAsync();
-
-    await AddWelcomeMessage();
-}
-
-// ==================== TOOL: SEMANTIC SEARCH ====================
-[Description("Searches the knowledge-base documents (PDFs) for information about services, policies, FAQs, hours, menus, ingredients, etc.")]
-private async Task<IEnumerable<string>> SearchAsync(
-    [Description("The phrase or question to search for")] string searchPhrase,
-    [Description("Optional: limit search to a specific filename")] string? filenameFilter = null)
-{
-    await InvokeAsync(StateHasChanged);
-    // Block-level PDF restriction overrides the AI-chosen filter
-    var effectiveFilter = !string.IsNullOrWhiteSpace(PdfFilter) ? PdfFilter : filenameFilter;
-    var results = await Search.SearchAsync(searchPhrase, effectiveFilter, maxResults: 5);
-    return results.Select(r =>
-        $"<result filename=\"{r.DocumentId}\" page_number=\"{r.PageNumber}\">{r.Text}</result>");
-}
-
-// ==================== DISPOSE ====================
-public void Dispose()
-{
-    CancelCurrentResponse();
-    responseCts?.Dispose();
-    if (_ownedClient is IDisposable d) d.Dispose();
-}
-
 }

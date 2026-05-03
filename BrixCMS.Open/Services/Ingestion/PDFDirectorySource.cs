@@ -114,7 +114,7 @@ public class PDFDirectorySource(
             var cleanedText = block.Text.ReplaceLineEndings(" ").Trim();
             if (string.IsNullOrWhiteSpace(cleanedText)) continue;
 
-            foreach (var subParagraph in SplitIntoChunks(cleanedText, 200))
+            foreach (var subParagraph in SplitIntoChunks(cleanedText, 80))
             {
                 allChunks.Add((pdfPage.Number, chunkIndex++, subParagraph));
             }
