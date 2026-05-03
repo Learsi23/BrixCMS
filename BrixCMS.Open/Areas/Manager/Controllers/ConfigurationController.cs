@@ -137,10 +137,8 @@ public class ConfigurationController : Controller
             .OrderByDescending(f => f.LastWriteTime)
             .ToList();
 
-        var admin           = _auth.GetAdmin();
         var activeConfig    = _apiKeys.GetActiveProviderConfig();
 
-        ViewBag.TwoFactorEnabled = admin?.TwoFactorEnabled ?? false;
         ViewBag.OllamaUrl        = _apiKeys.GetOllamaUrl();
         ViewBag.OllamaModel      = activeConfig?.Provider == "ollama" ? activeConfig.Model : "";
         ViewBag.PdfFiles         = pdfFiles.Select(f => new PdfFileInfo
@@ -301,43 +299,45 @@ public class ConfigurationController : Controller
         if (string.IsNullOrWhiteSpace(newEmail))
         {
             TempData["AccountError"] = "Email cannot be empty.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
-        var admin = await _auth.GetAdminAsync();
+        var currentEmail = HttpContext.Session.GetString("AdminEmail") ?? "";
+        var admin = await _auth.GetAdminByEmailAsync(currentEmail);
         if (admin != null)
         {
             await _auth.UpdateEmailAsync(admin.Id, newEmail.Trim());
             HttpContext.Session.SetString("AdminEmail", newEmail.Trim());
         }
         TempData["AccountSuccess"] = "Email updated.";
-        return RedirectToAction(nameof(Chatbot));
+        return RedirectToAction("Index", "Admins");
     }
 
     [HttpPost]
     public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
     {
-        var admin = await _auth.GetAdminAsync();
-        if (admin == null) return RedirectToAction(nameof(Chatbot));
+        var currentEmail = HttpContext.Session.GetString("AdminEmail") ?? "";
+        var admin = await _auth.GetAdminByEmailAsync(currentEmail);
+        if (admin == null) return RedirectToAction("Index", "Admins");
 
         if (!AdminAuthService.VerifyPassword(currentPassword, admin.PasswordHash, admin.PasswordSalt))
         {
             TempData["AccountError"] = "Current password is incorrect.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
         if (newPassword != confirmPassword)
         {
             TempData["AccountError"] = "New passwords do not match.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
         if (newPassword.Length < 8)
         {
             TempData["AccountError"] = "Password must be at least 8 characters.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
 
         await _auth.UpdatePasswordAsync(admin.Id, newPassword);
         TempData["AccountSuccess"] = "Password updated.";
-        return RedirectToAction(nameof(Chatbot));
+        return RedirectToAction("Index", "Admins");
     }
 
     [HttpPost]
@@ -345,8 +345,7 @@ public class ConfigurationController : Controller
     {
         var secret = AdminAuthService.GenerateTotpSecret();
         HttpContext.Session.SetString("PendingTotpSecret", secret);
-        var admin  = _auth.GetAdmin();
-        var email  = admin?.Email ?? HttpContext.Session.GetString("AdminEmail") ?? "admin";
+        var email  = HttpContext.Session.GetString("AdminEmail") ?? "admin";
         var otpUrl = AdminAuthService.GetOtpAuthUrl(secret, email);
         return Json(new
         {
@@ -359,41 +358,43 @@ public class ConfigurationController : Controller
     [HttpPost]
     public async Task<IActionResult> EnableTwoFactor(string totpCode)
     {
-        var admin         = await _auth.GetAdminAsync();
+        var currentEmail  = HttpContext.Session.GetString("AdminEmail") ?? "";
+        var admin         = await _auth.GetAdminByEmailAsync(currentEmail);
         var pendingSecret = HttpContext.Session.GetString("PendingTotpSecret");
 
         if (admin == null || string.IsNullOrEmpty(pendingSecret))
         {
             TempData["AccountError"] = "Session expired. Restart 2FA setup.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
         if (!AdminAuthService.VerifyTotp(pendingSecret, totpCode))
         {
             TempData["AccountError"] = "Incorrect code. Try again.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
 
         await _auth.SetTwoFactorAsync(admin.Id, true, pendingSecret);
         HttpContext.Session.Remove("PendingTotpSecret");
         TempData["AccountSuccess"] = "Two-factor authentication enabled.";
-        return RedirectToAction(nameof(Chatbot));
+        return RedirectToAction("Index", "Admins");
     }
 
     [HttpPost]
     public async Task<IActionResult> DisableTwoFactor(string password)
     {
-        var admin = await _auth.GetAdminAsync();
-        if (admin == null) return RedirectToAction(nameof(Chatbot));
+        var currentEmail = HttpContext.Session.GetString("AdminEmail") ?? "";
+        var admin = await _auth.GetAdminByEmailAsync(currentEmail);
+        if (admin == null) return RedirectToAction("Index", "Admins");
 
         if (!AdminAuthService.VerifyPassword(password, admin.PasswordHash, admin.PasswordSalt))
         {
             TempData["AccountError"] = "Incorrect password.";
-            return RedirectToAction(nameof(Chatbot));
+            return RedirectToAction("Index", "Admins");
         }
 
         await _auth.SetTwoFactorAsync(admin.Id, false, null);
         TempData["AccountSuccess"] = "Two-factor authentication disabled.";
-        return RedirectToAction(nameof(Chatbot));
+        return RedirectToAction("Index", "Admins");
     }
 
     // ── Analytics (AJAX) ─────────────────────────────────────────────────────

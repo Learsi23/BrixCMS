@@ -1,3 +1,4 @@
+using BrixCMS.Open.Data;
 using BrixCMS.Open.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -28,10 +29,9 @@ public class LoginController : Controller
     [EnableRateLimiting("login")]
     public async Task<IActionResult> Index(string email, string password, string? returnUrl = null)
     {
-        var admin = await _auth.GetAdminAsync();
+        var admin = await _auth.GetAdminByEmailAsync(email);
 
         if (admin == null ||
-            !string.Equals(admin.Email, email, StringComparison.OrdinalIgnoreCase) ||
             !AdminAuthService.VerifyPassword(password, admin.PasswordHash, admin.PasswordSalt))
         {
             ViewBag.Error = "Incorrect email or password.";
@@ -49,6 +49,7 @@ public class LoginController : Controller
         // Full auth
         HttpContext.Session.SetString("AdminAuth", "1");
         HttpContext.Session.SetString("AdminEmail", admin.Email);
+        HttpContext.Session.SetString("AdminIsOwner", admin.IsOwner ? "1" : "0");
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
@@ -75,7 +76,10 @@ public class LoginController : Controller
         var preAuthId = HttpContext.Session.GetString("AdminPreAuth");
         if (preAuthId == null) return RedirectToAction("Index");
 
-        var admin = await _auth.GetAdminAsync();
+        AdminUser? admin = int.TryParse(preAuthId, out var adminId)
+            ? await _auth.GetAdminByIdAsync(adminId)
+            : await _auth.GetAdminAsync();
+
         if (admin == null || admin.TwoFactorSecret == null ||
             !AdminAuthService.VerifyTotp(admin.TwoFactorSecret, code))
         {
@@ -87,6 +91,7 @@ public class LoginController : Controller
         HttpContext.Session.Remove("AdminPreAuth");
         HttpContext.Session.SetString("AdminAuth", "1");
         HttpContext.Session.SetString("AdminEmail", admin.Email);
+        HttpContext.Session.SetString("AdminIsOwner", admin.IsOwner ? "1" : "0");
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);

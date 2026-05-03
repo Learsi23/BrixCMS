@@ -61,12 +61,15 @@ public class SiteConfig
 
 public class AdminUser
 {
-    public int Id { get; set; } = 1;
-    public string Email { get; set; } = "admin@brix.com";
+    public int Id { get; set; }
+    public string Email { get; set; } = "";
+    public string Name { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public string PasswordSalt { get; set; } = "";
     public bool TwoFactorEnabled { get; set; } = false;
     public string? TwoFactorSecret { get; set; }
+    public bool IsOwner { get; set; } = false;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class PageView

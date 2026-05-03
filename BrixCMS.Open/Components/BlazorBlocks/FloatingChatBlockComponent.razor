@@ -103,6 +103,7 @@
         <div class="flex-1 overflow-hidden" style="background: @chatBg;">
             <Chat @ref="_chatRef"
                   ShowHeader="false"
+                  ChatId="floating_chat"
                   AiProvider="@(Model.AiProvider?.Value)"
                   CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
                   WelcomeMessage="@(Model.WelcomeMessage?.Value)"

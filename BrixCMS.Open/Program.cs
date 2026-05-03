@@ -321,6 +321,22 @@ using (var scope = app.Services.CreateScope())
     }
     catch { /* already exists */ }
 
+    // Manual migration: AdminUser new columns (safe if already exist)
+    var adminNewColumns = new Dictionary<string, string>
+    {
+        ["Name"]      = "TEXT NOT NULL DEFAULT ''",
+        ["IsOwner"]   = "INTEGER NOT NULL DEFAULT 0",
+        ["CreatedAt"] = "TEXT NOT NULL DEFAULT '2024-01-01T00:00:00'"
+    };
+    foreach (var col in adminNewColumns)
+    {
+        try { db.Database.ExecuteSqlRaw($"ALTER TABLE AdminUsers ADD COLUMN \"{col.Key}\" {col.Value}"); }
+        catch { }
+    }
+    // Ensure the first admin is always owner
+    try { db.Database.ExecuteSqlRaw("UPDATE AdminUsers SET IsOwner = 1 WHERE Id = (SELECT MIN(Id) FROM AdminUsers)"); }
+    catch { }
+
     // ── Seed admin on first run ──
     if (!db.AdminUsers.Any())
     {
@@ -328,8 +344,11 @@ using (var scope = app.Services.CreateScope())
         db.AdminUsers.Add(new BrixCMS.Open.Data.AdminUser
         {
             Email        = "admin@brix.com",
+            Name         = "Owner",
             PasswordHash = hash,
-            PasswordSalt = salt
+            PasswordSalt = salt,
+            IsOwner      = true,
+            CreatedAt    = DateTime.UtcNow
         });
         db.SaveChanges();
 

@@ -3,9 +3,21 @@ using BrixCMS.Open.Data.Fields;
 namespace BrixCMS.Open.Models.BlazorBlocks
 {
     [BlockType(Name = "AI Assistant", Category = "AI", Icon = "fas fa-robot",
-        Description = "Modern embedded AI chatbot with glassmorphism design, animated gradients, and fully customizable colors.")]
+        Description = "Modern AI chatbot. Use Fullscreen for a DeepSeek/Gemini-style full-page chat, or Embedded for a card-style widget.")]
     public class ChatBlock
     {
+        // ── Layout Mode ─────────────────────────────────────────────────────────
+        [Field(Title = "Display Mode")]
+        public SelectField<string> DisplayMode { get; set; } = new()
+        {
+            Options = new List<SelectOption<string>>
+            {
+                new() { Value = "fullscreen", Label = "Fullscreen (AI desktop style)" },
+                new() { Value = "embedded",   Label = "Embedded (card widget)" },
+            },
+            Value = "embedded"
+        };
+
         // ── Block Appearance ────────────────────────────────────────────────────
         [Field(Title = "Block Background Color")]
         public ColorField BackgroundColor { get; set; } = new() { Value = "#FFFFFF" };

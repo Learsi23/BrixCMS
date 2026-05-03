@@ -331,7 +331,7 @@ public class ManagerController : Controller
 
     // GUARDAR CONFIGURACI�N DE P�GINA (FONDO, ETC.)
     [HttpPost]
-    public async Task<IActionResult> SavePageSettings(Guid pageId, string backgroundColor, string fontFamily = "", string metaDescription = "", string ogImage = "")
+    public async Task<IActionResult> SavePageSettings(Guid pageId, string backgroundColor, string fontFamily = "", string metaDescription = "", string ogImage = "", string pageTitle = "")
     {
         var page = await _db.Pages.FindAsync(pageId);
         if (page == null) return NotFound();
@@ -342,9 +342,12 @@ public class ManagerController : Controller
             FontFamily      = new BrixCMS.Open.Data.Fields.StringField { Value = fontFamily },
         };
 
-        page.JsonData = JsonSerializer.Serialize(settings);
+        page.JsonData        = JsonSerializer.Serialize(settings);
         page.MetaDescription = metaDescription;
-        page.OgImage = ogImage;
+        page.OgImage         = ogImage;
+        if (!string.IsNullOrWhiteSpace(pageTitle))
+            page.Title = pageTitle.Trim();
+
         await _db.SaveChangesAsync();
         return RedirectToAction("Edit", new { id = pageId });
     }

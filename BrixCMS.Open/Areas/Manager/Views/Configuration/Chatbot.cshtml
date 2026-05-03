@@ -27,19 +27,6 @@
             <i class="fas fa-times-circle text-red-600"></i> @TempData["ChatbotError"]
         </div>
     }
-    @if (TempData["AccountSuccess"] != null)
-    {
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl flex items-center gap-2">
-            <i class="fas fa-check-circle text-emerald-600"></i> @TempData["AccountSuccess"]
-        </div>
-    }
-    @if (TempData["AccountError"] != null)
-    {
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
-            <i class="fas fa-times-circle text-red-600"></i> @TempData["AccountError"]
-        </div>
-    }
-
     @* ── OLLAMA CONFIG ── *@
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4">
@@ -217,132 +204,11 @@
         </div>
     </div>
 
-    @* ── ACCOUNT SECURITY ── *@
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
-            <h2 class="text-xl font-black text-white flex items-center gap-3">
-                <i class="fas fa-shield-alt"></i> Account Security
-            </h2>
-        </div>
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-
-            @* Change Email *@
-            <div>
-                <h3 class="font-bold text-gray-700 mb-4">Change Email</h3>
-                <form asp-action="ChangeEmail" method="post" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase mb-2">New Email</label>
-                        <input type="email" name="newEmail" placeholder="new@@example.com"
-                               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                    </div>
-                    <button type="submit"
-                            class="bg-slate-600 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm">
-                        Update Email
-                    </button>
-                </form>
-            </div>
-
-            @* Change Password *@
-            <div>
-                <h3 class="font-bold text-gray-700 mb-4">Change Password</h3>
-                <form asp-action="ChangePassword" method="post" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase mb-2">Current Password</label>
-                        <input type="password" name="currentPassword"
-                               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase mb-2">New Password</label>
-                        <input type="password" name="newPassword"
-                               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase mb-2">Confirm Password</label>
-                        <input type="password" name="confirmPassword"
-                               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                    </div>
-                    <button type="submit"
-                            class="bg-slate-600 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm">
-                        Update Password
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        @* 2FA *@
-        <div class="border-t px-6 py-6" x-data="{ show2fa: false }">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="font-bold text-gray-700">Two-Factor Authentication</h3>
-                    <p class="text-xs text-gray-400 mt-0.5">Protect your account with a TOTP authenticator app</p>
-                </div>
-                @if (twoFactorEnabled)
-                {
-                    <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">ENABLED</span>
-                }
-                else
-                {
-                    <span class="bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1 rounded-full">DISABLED</span>
-                }
-            </div>
-
-            @if (!twoFactorEnabled)
-            {
-                <div x-show="!show2fa">
-                    <button type="button" @@click="show2fa = true; setup2fa()"
-                            class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm">
-                        <i class="fas fa-qrcode mr-2"></i> Enable 2FA
-                    </button>
-                </div>
-                <div x-show="show2fa" x-cloak class="space-y-4">
-                    <div id="qrCodeArea" class="flex flex-col items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <div class="text-sm text-gray-500">Loading QR code...</div>
-                    </div>
-                    <form asp-action="EnableTwoFactor" method="post" class="flex gap-3">
-                        <input type="text" name="totpCode" placeholder="000000" maxlength="6"
-                               class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg font-mono text-center text-lg tracking-widest" />
-                        <button type="submit"
-                                class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm">
-                            Verify &amp; Enable
-                        </button>
-                    </form>
-                    <p class="text-xs text-gray-400">Scan the QR code with Google Authenticator, Authy, or any TOTP app, then enter the 6-digit code.</p>
-                </div>
-            }
-            else
-            {
-                <form asp-action="DisableTwoFactor" method="post" class="flex gap-3 items-end"
-                      onsubmit="return confirm('Disable two-factor authentication?')">
-                    <div class="flex-1">
-                        <label class="block text-xs font-black text-gray-500 uppercase mb-2">Confirm with password</label>
-                        <input type="password" name="password" placeholder="Your password"
-                               class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                    </div>
-                    <button type="submit"
-                            class="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm">
-                        Disable 2FA
-                    </button>
-                </form>
-            }
-        </div>
-    </div>
-
 </div>
 
 <script>
     const currentModel = '@ollamaModel';
     const ollamaUrl = '@ollamaUrl';
-
-    async function setup2fa() {
-        const res  = await fetch('/Manager/Configuration/GenerateTotpSetup', { method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' } });
-        const data = await res.json();
-        document.getElementById('qrCodeArea').innerHTML = `
-            <img src="${data.qrUrl}" alt="QR Code" class="w-48 h-48 rounded" />
-            <div class="text-center">
-                <p class="text-xs text-gray-500 mb-1">Manual entry key:</p>
-                <code class="bg-gray-100 px-3 py-1 rounded text-sm font-mono select-all">${data.secret}</code>
-            </div>`;
-    }
 
     // ── Ollama models ──
     async function loadOllamaModels() {

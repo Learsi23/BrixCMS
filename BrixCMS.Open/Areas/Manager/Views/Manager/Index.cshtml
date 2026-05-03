@@ -119,16 +119,31 @@
                             <td class="px-6 py-4 text-right flex justify-end gap-3 items-center">
                                 @if (p.IsPublished)
                                 {
-                                    <a href="/@p.Slug" target="_blank"
-                                            class="text-emerald-600 hover:underline text-sm">
+                                    @*
+                                       FIX: Changed target="_blank" to a unique name per page.
+                                       This ensures clicking "View" repeatedly for the same page refreshes the same tab.
+                                    *@
+                                    <a href="/@p.Slug"
+                                           target="view-page-@p.Id"
+                                           rel="noopener"
+                                           class="text-emerald-600 hover:underline text-sm">
                                         <i class="fas fa-eye mr-1"></i> View
                                     </a>
                                 }
+
+                                @*
+                                   FIX: If you want 'Edit' to open in a new, reusable tab, add target="edit-page-@p.Id".
+                                   If you want it to open in the current tab, simply remove the target attribute.
+                                   Below, I've set it to reuse an edit tab.
+                                *@
                                 <a asp-area="Manager" asp-controller="Manager"
                                        asp-action="Edit" asp-route-id="@p.Id"
+                                       target="edit-page-@p.Id"
+                                       rel="noopener"
                                        class="text-blue-600 hover:underline text-sm">
                                     Edit
                                 </a>
+
                                 <form asp-area="Manager" asp-controller="Manager"
                                       asp-action="DeletePage" asp-route-id="@p.Id"
                                       method="post"

@@ -340,3 +340,50 @@ function savePageColor() {
         else alert('Error saving page color');
     });
 }
+
+// --- CHAT LOCAL STORAGE (30-day persistence) ---
+
+window.chatStorage = {
+    save: function(chatId, messagesJson) {
+        const key = 'brixcms_chat_' + chatId;
+        const data = { messages: messagesJson, savedAt: new Date().toISOString() };
+        localStorage.setItem(key, JSON.stringify(data));
+    },
+    load: function(chatId) {
+        const key = 'brixcms_chat_' + chatId;
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        try {
+            const data = JSON.parse(raw);
+            const saved = new Date(data.savedAt);
+            const now = new Date();
+            const daysDiff = (now - saved) / (1000 * 60 * 60 * 24);
+            if (daysDiff > 30) {
+                localStorage.removeItem(key);
+                return null;
+            }
+            return data.messages;
+        } catch (e) {
+            localStorage.removeItem(key);
+            return null;
+        }
+    },
+    clear: function(chatId) {
+        const key = 'brixcms_chat_' + chatId;
+        localStorage.removeItem(key);
+    }
+};
+
+window.chatLockBody = function(lock) {
+    if (lock) {
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+    } else {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+    }
+};

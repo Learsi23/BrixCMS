@@ -1,7 +1,11 @@
+@inject IJSRuntime JS
+
 @using BrixCMS.Open.Models.BlazorBlocks
 @using BrixCMS.Open.Components.Pages.Chat
 
 @{
+    var displayMode = Model.DisplayMode?.Value ?? "embedded";
+    var isFullscreen = displayMode == "fullscreen";
     var bgColor         = SafeColor(Model.BackgroundColor?.Value, "#FFFFFF");
     var borderColor     = SafeColor(Model.BorderColor?.Value, "#E2E8F0");
     var borderRadius    = Model.BorderRadius?.Value ?? "16px";
@@ -25,50 +29,104 @@
     var inputBorder     = SafeColor(Model.InputBorderColor?.Value, "#CBD5E1");
     var inputPlaceholder = SafeColor(Model.InputPlaceholderColor?.Value, "#94A3B8");
     var sendBtn         = SafeColor(Model.SendButtonColor?.Value, "#6366F1");
+    var effectiveChatId = !string.IsNullOrWhiteSpace(ChatId) ? ChatId : $"chat_{Guid.NewGuid():N}";
 }
 
-<div class="w-full max-w-2xl mx-auto overflow-hidden"
-     style="background: @bgColor; border: 1px solid @borderColor; border-radius: @borderRadius; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
-    
-    @* Header ── *@
-    <div class="px-6 py-5 flex items-center gap-4"
-         style="background: linear-gradient(135deg, @headerBg, @headerGradient);">
-        @if (!string.IsNullOrEmpty(logoUrl))
-        {
-            <img src="@logoUrl" alt="logo" style="height: @logoSize; width: auto;" class="rounded-lg object-contain bg-white/10 p-1.5" />
-        }
-        else
-        {
-            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <span class="text-lg">🤖</span>
-            </div>
-        }
-        <div>
-            <h2 style="color: @headerText; font-size: @titleSize;" class="font-bold">@titleText</h2>
-            <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
-                <span class="text-[11px] font-medium" style="color: @(headerText + "CC")">Powered by AI</span>
+@if (isFullscreen)
+{
+    @* Fullscreen mode: DeepSeek/Gemini style - takes entire viewport *@
+    <div class="fixed inset-0 z-[99999] flex flex-col"
+         style="background: @chatBg;">
+        @* Header *@
+        <div class="flex items-center gap-4 px-6 py-4 flex-shrink-0 border-b"
+             style="background: linear-gradient(135deg, @headerBg, @headerGradient); border-color: @SafeColor(Model.BorderColor?.Value, "#E2E8F0");">
+            @if (!string.IsNullOrEmpty(logoUrl))
+            {
+                <img src="@logoUrl" alt="logo" style="height: @logoSize; width: auto;" class="rounded-lg object-contain bg-white/10 p-1.5" />
+            }
+            <div class="flex-1">
+                <h2 style="color: @headerText; font-size: @titleSize;" class="font-bold">@titleText</h2>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                    <span class="text-[11px] font-medium" style="color: @(headerText + "CC")">Powered by AI</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    @* Chat body ── *@
-    <div class="overflow-hidden" style="background: @chatBg;">
-        <Chat CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
-              WelcomeMessage="@(Model.WelcomeMessage?.Value)"
-              AiProvider="@(Model.AiProvider?.Value)"
-              PdfFilter="@(Model.PdfFiles?.Value)"
-              Logo="@logoUrl"
-              LogoSize="@logoSize"
-              AiLogo="@(aiLogoUrl)"
-              AiLogoSize="@aiLogoSize"
-              Title="@titleText"
-              Theme="@CreateTheme()" />
+        @* Chat area *@
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <Chat CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
+                  WelcomeMessage="@(Model.WelcomeMessage?.Value)"
+                  AiProvider="@(Model.AiProvider?.Value)"
+                  PdfFilter="@(Model.PdfFiles?.Value)"
+                  Logo="@logoUrl"
+                  LogoSize="@logoSize"
+                  AiLogo="@(aiLogoUrl)"
+                  AiLogoSize="@aiLogoSize"
+                  Title="@titleText"
+                  ChatId="@effectiveChatId"
+                  ShowHeader="false"
+                  Theme="@CreateTheme()" />
+        </div>
     </div>
-</div>
+}
+else
+{
+    @* Embedded mode: card-style widget *@
+    <div class="w-full max-w-2xl mx-auto overflow-hidden"
+         style="background: @bgColor; border: 1px solid @borderColor; border-radius: @borderRadius; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+        
+        @* Header *@
+        <div class="px-6 py-5 flex items-center gap-4"
+             style="background: linear-gradient(135deg, @headerBg, @headerGradient);">
+            @if (!string.IsNullOrEmpty(logoUrl))
+            {
+                <img src="@logoUrl" alt="logo" style="height: @logoSize; width: auto;" class="rounded-lg object-contain bg-white/10 p-1.5" />
+            }
+            else
+            {
+                <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                    <span class="text-lg">🤖</span>
+                </div>
+            }
+            <div>
+                <h2 style="color: @headerText; font-size: @titleSize;" class="font-bold">@titleText</h2>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                    <span class="text-[11px] font-medium" style="color: @(headerText + "CC")">Powered by AI</span>
+                </div>
+            </div>
+        </div>
+
+        @* Chat body *@
+        <div class="overflow-hidden" style="background: @chatBg;">
+            <Chat CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
+                  WelcomeMessage="@(Model.WelcomeMessage?.Value)"
+                  AiProvider="@(Model.AiProvider?.Value)"
+                  PdfFilter="@(Model.PdfFiles?.Value)"
+                  Logo="@logoUrl"
+                  LogoSize="@logoSize"
+                  AiLogo="@(aiLogoUrl)"
+                  AiLogoSize="@aiLogoSize"
+                  Title="@titleText"
+                  ChatId="@effectiveChatId"
+                  Theme="@CreateTheme()" />
+        </div>
+    </div>
+}
 
 @code {
     [Parameter] public ChatBlock Model { get; set; } = new();
+    [Parameter] public string? ChatId { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var displayMode = Model.DisplayMode?.Value ?? "embedded";
+        if (displayMode == "fullscreen" && firstRender)
+        {
+            try { await JS.InvokeVoidAsync("chatLockBody", true); } catch { }
+        }
+    }
 
     private ChatTheme CreateTheme() => new()
     {

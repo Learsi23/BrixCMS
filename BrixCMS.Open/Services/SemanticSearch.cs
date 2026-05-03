@@ -1,3 +1,4 @@
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using System.Linq.Expressions;
 
@@ -5,10 +6,14 @@ namespace BrixCMS.Open.Services;
 
 public class SemanticSearch(
     VectorStoreCollection<string, IngestedChunk> chunksCollection,
-    VectorStoreCollection<string, IngestedDocument> documentsCollection)
+    VectorStoreCollection<string, IngestedDocument> documentsCollection,
+    IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator)
 {
     public async Task<IReadOnlyList<IngestedChunk>> SearchAsync(string text, string? documentIdFilter, int maxResults)
     {
+        var embedding = await embeddingGenerator.GenerateAsync(text);
+        var queryVector = embedding.Vector;
+
         var filters = (documentIdFilter ?? "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(f => f.Length > 0)
@@ -25,7 +30,7 @@ public class SemanticSearch(
 
         var results = new List<IngestedChunk>();
         var searchCount = filters.Count > 1 ? maxResults * 3 : maxResults;
-        await foreach (var result in chunksCollection.SearchAsync(text, searchCount, options))
+        await foreach (var result in chunksCollection.SearchAsync(queryVector, searchCount, options))
             results.Add(result.Record);
 
         if (filters.Count > 1)

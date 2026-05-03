@@ -149,6 +149,42 @@ public class AdminAuthService
     public async Task<AdminUser?> GetAdminAsync() =>
         await _db.AdminUsers.FirstOrDefaultAsync();
 
+    public async Task<AdminUser?> GetAdminByEmailAsync(string email) =>
+        await _db.AdminUsers.FirstOrDefaultAsync(u =>
+            u.Email.ToLower() == email.ToLower());
+
+    public async Task<AdminUser?> GetAdminByIdAsync(int id) =>
+        await _db.AdminUsers.FindAsync(id);
+
+    public async Task<List<AdminUser>> GetAllAdminsAsync() =>
+        await _db.AdminUsers.OrderBy(u => u.Id).ToListAsync();
+
+    public async Task<AdminUser> CreateAdminAsync(string email, string name, string password)
+    {
+        var hash = HashPassword(password, out var salt);
+        var user = new AdminUser
+        {
+            Email        = email,
+            Name         = string.IsNullOrWhiteSpace(name) ? email : name,
+            PasswordHash = hash,
+            PasswordSalt = salt,
+            IsOwner      = false,
+            CreatedAt    = DateTime.UtcNow
+        };
+        _db.AdminUsers.Add(user);
+        await _db.SaveChangesAsync();
+        return user;
+    }
+
+    public async Task<bool> DeleteAdminAsync(int id)
+    {
+        var user = await _db.AdminUsers.FindAsync(id);
+        if (user == null || user.IsOwner) return false;
+        _db.AdminUsers.Remove(user);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task UpdateEmailAsync(int id, string newEmail)
     {
         var u = await _db.AdminUsers.FindAsync(id);

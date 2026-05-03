@@ -22,18 +22,35 @@
 <body class="font-sans">
     <div class="flex h-screen overflow-hidden">
         <aside class="w-60 bg-slate-900 text-white flex flex-col flex-shrink-0">
-
             @* Brand *@
-            <div class="px-5 pt-6 pb-4 border-b border-white/5">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white p-1">
-                        <img src="~/images/logo-menu.png" alt="Logo" class="w-full h-full object-contain" />
+            <div class="px-5 pt-6 pb-4 border-b border-white/10 group">
+                <div class="flex items-center gap-2.5">
+                    <!-- Logo mark -->
+                    <div class="relative flex-shrink-0">
+                        <div class="absolute inset-0 bg-emerald-500 rounded-xl blur-md opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+                        <div class="relative bg-slate-800 rounded-xl p-1.5 border border-white/10">
+                            <svg width="22" height="22" viewBox="0 0 18 18" fill="none">
+                                <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#22c55e"/>
+                                <rect x="10" y="1" width="7" height="7" rx="1.5" fill="white" opacity="0.9"/>
+                                <rect x="1" y="10" width="7" height="7" rx="1.5" fill="white" opacity="0.9"/>
+                                <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#22c55e" opacity="0.5"/>
+                            </svg>
+                        </div>
                     </div>
+
+                    <!-- Wordmark -->
                     <div>
-                        <p class="font-black text-white text-sm leading-none">BrixCMS</p>
-                        <p class="text-slate-500 text-[10px] truncate max-w-[7rem]">
-                            @(Context.Session.GetString("AdminEmail") ?? "admin")
+                        <p class="text-sm leading-none font-black tracking-tight">
+                            <span class="text-white">BRIX</span><span style="color:#22c55e">cms</span>
                         </p>
+                        <div class="flex items-center gap-1 mt-1">
+                            <svg class="w-2 h-2 text-emerald-500" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="4" />
+                            </svg>
+                            <p class="text-slate-500 text-[9px] font-medium truncate max-w-[6rem]">
+                                @(Context.Session.GetString("AdminEmail") ?? "admin")
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -60,6 +77,10 @@
                 @Html.Raw(NavLink("/Manager/Configuration", "fas fa-paint-brush", "Navbar &amp; Footer"))
                 @Html.Raw(NavLink("/Manager/Configuration/Chatbot", "fas fa-robot", "Chatbot"))
                 @Html.Raw(NavLink("/Manager/Backup", "fas fa-database", "Backup"))
+                @if (Context.Session.GetString("AdminIsOwner") == "1")
+                {
+                    @Html.Raw(NavLink("/Manager/Admins", "fas fa-users", "Team"))
+                }
 
             </nav>
 

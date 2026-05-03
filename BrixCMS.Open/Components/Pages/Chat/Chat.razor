@@ -5,6 +5,8 @@
 @using OllamaSharp
 @using OpenAI
 @using System.ClientModel
+@using Microsoft.JSInterop
+@using System.Text.Json
 
 @inject IChatClient ChatClient
 @inject NavigationManager Nav
@@ -14,6 +16,7 @@
 @inject ApiKeyService ApiKeys
 @inject ILoggerFactory LoggerFactory
 @inject IConfiguration Config
+@inject IJSRuntime JS
 @implements IDisposable
 
 @if (ShowHeader)
@@ -24,9 +27,7 @@
                 LogoSize="@(LogoSize ?? "32px")" />
 }
 
-<!-- Usamos height: 100% en lugar de h-full de Tailwind -->
 <div style="display: flex; flex-direction: column; height: 100%; background: @Theme.ChatBgColor;">
-    <!-- Mensajes: scrollable -->
     <div style="flex: 1; overflow-y: auto; min-height: 0; padding: 1rem;">
         <div style="max-width: 48rem; margin: 0 auto;">
             <ChatMessageList Messages="@messages"
@@ -49,7 +50,6 @@
         </div>
     </div>
 
-    <!-- Input: fijo abajo -->
     <div style="flex-shrink: 0; padding: 0.75rem 1rem; background: @Theme.ChatBgColor; border-top: 1px solid @HexToRgba(Theme.InputBorderColor, "50");">
         <div style="max-width: 48rem; margin: 0 auto;">
             <ChatInput OnSend="@AddUserMessageAsync" @ref="@chatInput" Theme="Theme" />
@@ -68,6 +68,7 @@
     [Parameter] public string? AiProvider { get; set; }
     [Parameter] public string? PdfFilter { get; set; }
     [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public string? ChatId { get; set; }
     [Parameter] public ChatTheme Theme { get; set; } = ChatTheme.Default;
 
     private readonly ChatOptions chatOptions = new();
@@ -78,15 +79,70 @@
     private string systemPrompt = string.Empty;
     private IChatClient? _ownedClient;
     private ChatInput? chatInput;
+    private bool loadedFromStorage;
+    private string effectiveChatId = string.Empty;
 
     protected override void OnInitialized()
     {
         systemPrompt = Prompts.GenerateChatSystemPrompt(CustomSystemPrompt);
         _ownedClient = BuildClientForProvider(AiProvider);
         chatOptions.Tools = [AIFunctionFactory.Create(SearchAsync, "SearchAsync")];
+        effectiveChatId = !string.IsNullOrWhiteSpace(ChatId) ? ChatId : "default";
     }
 
-    protected override async Task OnInitializedAsync() => await AddWelcomeMessage();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessagesFromStorage();
+        if (!loadedFromStorage)
+        {
+            await AddWelcomeMessage();
+        }
+    }
+
+    private async Task LoadMessagesFromStorage()
+    {
+        try
+        {
+            var storedJson = await JS.InvokeAsync<string>("chatStorage.load", effectiveChatId);
+            if (!string.IsNullOrEmpty(storedJson) && storedJson != "null")
+            {
+                var stored = JsonSerializer.Deserialize<List<StoredMessage>>(storedJson);
+                if (stored != null && stored.Count > 0)
+                {
+                    messages.Clear();
+                    foreach (var sm in stored)
+                    {
+                        var role = sm.Role == "User" ? ChatRole.User : ChatRole.Assistant;
+                        messages.Add(new ChatMessage(role, sm.Text));
+                    }
+                    loadedFromStorage = true;
+                    Logger.LogInformation("💾 [CHAT] Loaded {Count} messages from localStorage", messages.Count);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load chat from localStorage");
+        }
+    }
+
+    private async Task SaveMessagesToStorage()
+    {
+        try
+        {
+            var stored = messages.Select(m => new StoredMessage
+            {
+                Role = m.Role == ChatRole.User ? "User" : "Assistant",
+                Text = m.Text ?? string.Empty
+            }).ToList();
+            var json = JsonSerializer.Serialize(stored);
+            await JS.InvokeVoidAsync("chatStorage.save", effectiveChatId, json);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to save chat to localStorage");
+        }
+    }
 
     private async Task AddWelcomeMessage()
     {
@@ -96,6 +152,7 @@
                 ? WelcomeMessage
                 : "Hi! I'm your AI Assistant. How can I help you today?";
             messages.Add(new(ChatRole.Assistant, msg));
+            await SaveMessagesToStorage();
             StateHasChanged();
         }
     }
@@ -133,6 +190,7 @@
     {
         CancelCurrentResponse();
         messages.Add(userMessage);
+        await SaveMessagesToStorage();
         if (chatInput is not null) await chatInput.FocusAsync();
         StateHasChanged();
 
@@ -162,6 +220,7 @@
             {
                 messages.Add(new(ChatRole.Assistant, accumulatedResponse));
                 inProgressMessage = null;
+                await SaveMessagesToStorage();
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -171,6 +230,7 @@
             if (!string.IsNullOrWhiteSpace(accumulatedResponse))
             {
                 messages.Add(new(ChatRole.Assistant, accumulatedResponse));
+                await SaveMessagesToStorage();
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -198,6 +258,7 @@
         CancelCurrentResponse();
         messages.Clear();
         if (chatInput is not null) await chatInput.FocusAsync();
+        await JS.InvokeVoidAsync("chatStorage.clear", effectiveChatId);
         await AddWelcomeMessage();
     }
 
@@ -228,5 +289,11 @@
         var g = Convert.ToInt32(hex.Substring(2, 2), 16);
         var b = Convert.ToInt32(hex.Substring(4, 2), 16);
         return $"rgba({r},{g},{b},{Convert.ToInt32(alpha, 16) / 255.0:F2})";
+    }
+
+    private class StoredMessage
+    {
+        public string Role { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
     }
 }
