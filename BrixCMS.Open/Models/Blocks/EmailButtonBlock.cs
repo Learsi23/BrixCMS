@@ -3,19 +3,19 @@ using BrixCMS.Open.Data.Fields;
 
 namespace BrixCMS.Open.Models.Blocks.Email
 {
-    [BlockType(Name = "Email Button", Category = "Ecommerce", Icon = "fas fa-envelope-open-text", Description = "Button that triggers an email action (e.g. inquiry, quote request). Sends an email via your SMTP configuration.")]
+    [BlockType(Name = "Email Button", Category = "Media", Icon = "fas fa-envelope-open-text", Description = "Button that triggers an email action (e.g. inquiry, quote request). Sends an email via your SMTP configuration.")]
     public class EmailButtonBlock : BlockBase
     {
-        [Field(Title = "Button Text", Placeholder = "Ej: Contáctanos")]
+        [Field(Title = "Button Text", Placeholder = "Ej: Contact Us")]
         public StringField Text { get; set; } = new();
 
-        [Field(Title = "Email Address", Placeholder = "Ej: info@ejemplo.com")]
+        [Field(Title = "Email Address", Placeholder = "Ej: info@example.com")]
         public StringField EmailAddress { get; set; } = new();
 
-        [Field(Title = "Email Subject", Placeholder = "Ej: Consulta desde web")]
+        [Field(Title = "Email Subject", Placeholder = "Ej: Inquiry from website")]
         public StringField Subject { get; set; } = new();
 
-        [Field(Title = "Email Body", Placeholder = "Ej: Hola, me gustaría...")]
+        [Field(Title = "Email Body", Placeholder = "Ej: Hello, I would like...")]
         public TextAreaField Body { get; set; } = new();
 
         [Field(Title = "Button Color")]
@@ -40,14 +40,14 @@ namespace BrixCMS.Open.Models.Blocks.Email
         public StringField Padding { get; set; } = new() { Value = "12px 24px" };
 
         [Field(Title = "Button Position",
-               Description = "Alineación del botón dentro del contenedor")]
+               Description = "Button alignment within the container")]
         public SelectField<string> Position { get; set; } = new()
         {
             Options = new List<SelectOption<string>>
             {
-                new() { Value = "left", Label = "Izquierda", Icon = "fas fa-align-left" },
-                new() { Value = "center", Label = "Centro", Icon = "fas fa-align-center" },
-                new() { Value = "right", Label = "Derecha", Icon = "fas fa-align-right" }
+                new() { Value = "left", Label = "Left", Icon = "fas fa-align-left" },
+                new() { Value = "center", Label = "Center", Icon = "fas fa-align-center" },
+                new() { Value = "right", Label = "Right", Icon = "fas fa-align-right" }
             },
             Value = "center"
         };

@@ -3,12 +3,15 @@ using BrixCMS.Open.Extensions;
 using BrixCMS.Open.Services;
 using BrixCMS.Open.Services.Email;
 using BrixCMS.Open.Services.Ingestion;
+
+using Microsoft.Extensions.AI;
+using Microsoft.SemanticKernel;
+using OllamaSharp;
+
 using Markdig;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.AI;
 using OpenAI;
-using OllamaSharp;
 using System.ClientModel;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -33,13 +36,6 @@ builder.Services.AddRateLimiter(opts =>
     opts.AddFixedWindowLimiter("ai", o =>
     {
         o.PermitLimit = 20;
-        o.Window = TimeSpan.FromMinutes(1);
-        o.QueueLimit = 0;
-        o.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-    });
-    opts.AddFixedWindowLimiter("checkout", o =>
-    {
-        o.PermitLimit = 10;
         o.Window = TimeSpan.FromMinutes(1);
         o.QueueLimit = 0;
         o.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
@@ -114,6 +110,7 @@ builder.Services.AddSingleton<MarkdownPipeline>(_ =>
 // =====================================================
 // 5️⃣ AI — Dynamic provider (Gemini / DeepSeek / Mistral) with Ollama fallback
 // =====================================================
+
 var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
 var chatModel = builder.Configuration["Ollama:ChatModel"] ?? "llama3.1:8b";
 var embeddingModel = builder.Configuration["Ollama:EmbeddingModel"]!;
@@ -121,15 +118,28 @@ var embeddingModel = builder.Configuration["Ollama:EmbeddingModel"]!;
 // Embeddings always use Ollama (needed for PDF semantic search)
 var embeddingGenerator = new OllamaApiClient(new Uri(ollamaUrl), embeddingModel);
 
-var vectorStorePath = Path.Combine(AppContext.BaseDirectory, "vector-store.db");
-var vectorStoreConnectionString = $"Data Source={vectorStorePath}";
+// =====================================================
+// VECTOR STORE (InMemory — SK.Connectors.Sqlite 1.51 solo soporta VectorData 9.x)
+// Los datos se reingresan al arranque via la lógica de ingesta existente.
+// =====================================================
+builder.Services.AddInMemoryVectorStore();
 
-builder.Services.AddSqliteCollection<string, IngestedChunk>("data-chatappollama-chunks", vectorStoreConnectionString);
-builder.Services.AddSqliteCollection<string, IngestedDocument>("data-chatappollama-documents", vectorStoreConnectionString);
+builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedChunk>(
+    "data-chatappollama-chunks");
+
+builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedDocument>(
+    "data-chatappollama-documents");
+
+// =====================================================
+// EMBEDDINGS
+// =====================================================
 
 builder.Services.AddEmbeddingGenerator(embeddingGenerator);
 
-// IChatClient: checks DB for a configured external provider; falls back to Ollama
+// =====================================================
+// CHAT CLIENT
+// =====================================================
+
 builder.Services.AddScoped<IChatClient>(sp =>
 {
     var apiKeySvc = sp.GetRequiredService<ApiKeyService>();
@@ -151,9 +161,13 @@ builder.Services.AddScoped<IChatClient>(sp =>
         }
 
         var plainKey = apiKeySvc.GetDecryptedKeySync(provider)!;
-        var openAiClient = new OpenAIClient(
-            new ApiKeyCredential(plainKey),
-            new OpenAIClientOptions { Endpoint = new Uri(endpoint) });
+
+        var openAiClient = new OpenAI.OpenAIClient(
+            new System.ClientModel.ApiKeyCredential(plainKey),
+            new OpenAI.OpenAIClientOptions
+            {
+                Endpoint = new Uri(endpoint)
+            });
 
         return openAiClient
             .GetChatClient(model)
@@ -164,7 +178,7 @@ builder.Services.AddScoped<IChatClient>(sp =>
             .Build();
     }
 
-    // Fallback: Ollama (appsettings / default)
+    // Fallback: Ollama
     return ((IChatClient)new OllamaApiClient(new Uri(ollamaUrl), chatModel))
         .AsBuilder()
         .UseFunctionInvocation()
@@ -225,12 +239,6 @@ app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Manager}/{action=Index}/{id?}");
 
-// 2. Cart routes
-app.MapControllerRoute(
-    name: "cart",
-    pattern: "Cart/{action=Index}/{id?}",
-    defaults: new { controller = "Cart", action = "Index" });
-
 // 4. BrixCMS Landing page (marketing / sales)
 app.MapControllerRoute(
     name: "landing",
@@ -270,23 +278,6 @@ using (var scope = app.Services.CreateScope())
     }
     catch { /* already exists */ }
 
-    // Manual migration: AiUsageLogs table
-    try
-    {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""AiUsageLogs"" (
-                ""Id""               INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""CreatedAt""        TEXT NOT NULL,
-                ""Operation""        TEXT NOT NULL,
-                ""Provider""         TEXT NOT NULL,
-                ""Model""            TEXT NOT NULL,
-                ""InputTokens""      INTEGER NOT NULL DEFAULT 0,
-                ""OutputTokens""     INTEGER NOT NULL DEFAULT 0,
-                ""EstimatedCostUsd"" TEXT NOT NULL DEFAULT '0'
-            )");
-    }
-    catch { /* already exists */ }
-
     // Manual migration: PageViews table
     try
     {
@@ -297,23 +288,6 @@ using (var scope = app.Services.CreateScope())
                 ""Slug""      TEXT NOT NULL,
                 ""UserAgent"" TEXT,
                 ""Referrer""  TEXT
-            )");
-    }
-    catch { }
-
-    // Manual migration: AiGenerationLogs table
-    try
-    {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""AiGenerationLogs"" (
-                ""Id""         INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""CreatedAt""  TEXT NOT NULL,
-                ""PageId""     TEXT,
-                ""PageTitle""  TEXT NOT NULL DEFAULT '',
-                ""Prompt""     TEXT NOT NULL DEFAULT '',
-                ""Provider""   TEXT NOT NULL DEFAULT '',
-                ""Model""      TEXT NOT NULL DEFAULT '',
-                ""Mode""       TEXT NOT NULL DEFAULT 'create'
             )");
     }
     catch { }
@@ -331,11 +305,8 @@ using (var scope = app.Services.CreateScope())
         catch { }
     }
 
-    // ── Seed BrixCMS landing page (marketing) ──
+    // ── Seed BrixCMS landing page (first run) ──
     BrixCMS.Open.Services.BrixLandingSeeder.SeedIfEmpty(db);
-
-    // ── Seed Block Showcase demo page ──
-    BrixCMS.Open.Services.BlockShowcaseSeeder.SeedIfEmpty(db);
 
     // Manual migration: Subscribers table
     try
@@ -350,16 +321,13 @@ using (var scope = app.Services.CreateScope())
     }
     catch { /* already exists */ }
 
-    // ── Seed admin on first run with a random one-time password ──
+    // ── Seed admin on first run ──
     if (!db.AdminUsers.Any())
     {
-        // Generate a cryptographically random 16-char password
-        var rng = System.Security.Cryptography.RandomNumberGenerator.GetBytes(12);
-        var oneTimePassword = Convert.ToBase64String(rng).Replace("=", "").Replace("/", "_").Replace("+", "-");
-        var hash = BrixCMS.Open.Services.AdminAuthService.HashPassword(oneTimePassword, out var salt);
+        var hash = BrixCMS.Open.Services.AdminAuthService.HashPassword("admin123", out var salt);
         db.AdminUsers.Add(new BrixCMS.Open.Data.AdminUser
         {
-            Email = "admin@brix.com",
+            Email        = "admin@brix.com",
             PasswordHash = hash,
             PasswordSalt = salt
         });
@@ -367,8 +335,8 @@ using (var scope = app.Services.CreateScope())
 
         var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         startupLogger.LogWarning("==========================================================");
-        startupLogger.LogWarning("ADMIN CREATED — one-time password: {Password}", oneTimePassword);
-        startupLogger.LogWarning("Change this immediately at /admin/manager after first login.");
+        startupLogger.LogWarning("ADMIN CREATED — email: admin@brix.com  password: admin123");
+        startupLogger.LogWarning("Change this immediately at /Manager/Login after first login.");
         startupLogger.LogWarning("==========================================================");
     }
 
@@ -419,9 +387,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
-
-
-
 
 //using BrixCMS.Open.Data;
 //using BrixCMS.Open.Extensions;

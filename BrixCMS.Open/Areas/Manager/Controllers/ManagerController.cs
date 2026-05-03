@@ -225,17 +225,6 @@ public class ManagerController : Controller
             SortOrder = await _db.Blocks.CountAsync(b => b.PageId == pageId && b.ParentId == parentId)
         };
 
-        // Use first available product ID for product blocks
-        if (blockType == "ProductCardBlock" || blockType == "CatalogItemBlock")
-        {
-            var firstProduct = await _db.Set<ProductEntity>().FirstOrDefaultAsync();
-            var productId = firstProduct?.ProductId.ToString() ?? Guid.NewGuid().ToString();
-            block.JsonData = JsonSerializer.Serialize(new Dictionary<string, object>
-            {
-                ["ProductId"] = new { Value = productId }
-            });
-        }
-
         _db.Blocks.Add(block);
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Edit), new { id = pageId });

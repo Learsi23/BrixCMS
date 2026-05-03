@@ -1,5 +1,4 @@
 @using BrixCMS.Open.Components.BlazorBlocks
-@using BrixCMS.Open.Components.BlazorComponents
 @using BrixCMS.Open.Data
 @inject BrixDbContext _db
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery _antiforgery
@@ -40,7 +39,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    @* ? Bootstrap solo CSS — sin JS ni jQuery *@
+    @* ? Bootstrap solo CSS ï¿½ sin JS ni jQuery *@
     <script defer src="~/js/cookieBanner.js"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -51,7 +50,7 @@
 </head>
 <body class="min-h-screen flex flex-col bg-gray-50">
 
-    @* NAVEGACIÓN DINÁMICA GLOBAL *@
+    @* NAVEGACIï¿½N DINï¿½MICA GLOBAL *@
     @await Component.InvokeAsync("DynamicNavbar")
 
         <div class="flex-1">
@@ -60,15 +59,15 @@
             </main>
             
         </div>
-    @* FOOTER DINÁMICO GLOBAL *@
+    @* FOOTER DINï¿½MICO GLOBAL *@
     @await Component.InvokeAsync("DynamicFooter")
 
-    @* ? Sin jQuery — no existe en el proyecto *@
+    @* ? Sin jQuery ï¿½ no existe en el proyecto *@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/Script.js?v=@DateTime.UtcNow.Ticks"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        // CSRF helper — reads token from meta tag set by IAntiforgery
+        // CSRF helper ï¿½ reads token from meta tag set by IAntiforgery
         function csrfHeaders() {
             var token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
             return { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token };

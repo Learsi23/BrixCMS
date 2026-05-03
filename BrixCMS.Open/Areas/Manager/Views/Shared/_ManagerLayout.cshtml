@@ -1,19 +1,11 @@
 @using BrixCMS.Open.Components.BlazorBlocks
-@using BrixCMS.Open.Components.BlazorComponents
-@inject BrixCMS.Open.Services.PromptsService _adminPrompts
-@inject BrixCMS.Open.Data.BrixDbContext _adminDb
-@{
-    var _adminDefaultImg = _adminDb.SiteConfig
-        .FirstOrDefault(c => c.Key == "admin-chat-default-image")?.JsonData?.Trim('"');
-    var _adminSystemPrompt = _adminPrompts.GenerateAdminChatSystemPrompt();
-}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <title>Brix-CMS </title>
+    <title>BrixCMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
@@ -64,11 +56,10 @@
                 }
 
                 @Html.Raw(NavLink("/Manager", "fas fa-file-alt", "Pages"))
-                @Html.Raw(NavLink("/Manager/Configuracion", "fas fa-paint-brush", "Navbar &amp; Footer"))
                 @Html.Raw(NavLink("/Manager/Media", "fas fa-images", "Media"))
+                @Html.Raw(NavLink("/Manager/Configuration", "fas fa-paint-brush", "Navbar &amp; Footer"))
+                @Html.Raw(NavLink("/Manager/Configuration/Chatbot", "fas fa-robot", "Chatbot"))
                 @Html.Raw(NavLink("/Manager/Backup", "fas fa-database", "Backup"))
-                @Html.Raw(NavLink("/Manager/Configuracion", "fas fa-paint-brush", "Navbar &amp; Footer"))
-                @Html.Raw(NavLink("/Manager/Configuracion/AiConfig", "fas fa-cog", "AI Config"))
 
             </nav>
 
@@ -87,12 +78,11 @@
                 <div class="flex-1">
                     @RenderBody()
                 </div>
-               
             </div>
         </main>
-        </div>
+    </div>
 
-        <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="/_framework/blazor.server.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

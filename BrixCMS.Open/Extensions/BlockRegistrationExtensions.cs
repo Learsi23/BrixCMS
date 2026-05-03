@@ -53,7 +53,6 @@ namespace BrixCMS.Open.Extensions
             registry.Register<TeamBlock>("content");
             registry.Register<TeamMemberBlock>("content");
             registry.Register<FeatureGridBlock>("content");
-            registry.Register<BYOKConfigBlock>("content");
             registry.Register<BrixGridDemoBlock>("content");
             registry.Register<MenuBlock>("content");
             registry.Register<OpeningHoursBlock>("content");

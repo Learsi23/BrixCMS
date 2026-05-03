@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.VectorData;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
@@ -126,17 +127,36 @@ public class DataIngestor(
             var cleanedText = block.Text.ReplaceLineEndings(" ").Trim();
             if (string.IsNullOrWhiteSpace(cleanedText)) continue;
 
-#pragma warning disable SKEXP0050
-            var subParagraphs = TextChunker.SplitPlainTextParagraphs([cleanedText], 200);
-
-            foreach (var subParagraph in subParagraphs)
+            foreach (var subParagraph in SplitIntoChunks(cleanedText, 200))
             {
                 allChunks.Add((pdfPage.Number, chunkIndex++, subParagraph));
             }
-#pragma warning restore SKEXP0050
         }
 
         return allChunks;
+    }
+
+    private static List<string> SplitIntoChunks(string text, int maxWords)
+    {
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length <= maxWords) return [text];
+
+        var chunks = new List<string>();
+        var sb = new System.Text.StringBuilder();
+        int count = 0;
+        foreach (var word in words)
+        {
+            if (count > 0 && count >= maxWords)
+            {
+                chunks.Add(sb.ToString().TrimEnd());
+                sb.Clear();
+                count = 0;
+            }
+            sb.Append(word).Append(' ');
+            count++;
+        }
+        if (sb.Length > 0) chunks.Add(sb.ToString().TrimEnd());
+        return chunks;
     }
 
     private async Task DeleteChunksForDocumentIdAsync(string documentId)

@@ -14,7 +14,6 @@ public class CmsController : Controller
     {
         if (string.IsNullOrEmpty(slug))
         {
-            // ? First published page according to SortOrder
             var home = await _db.Pages
                 .Where(p => p.IsPublished)
                 .OrderBy(p => p.SortOrder)
@@ -22,6 +21,16 @@ public class CmsController : Controller
 
             if (home == null)
                 return Content("No published pages yet.");
+
+            // If home slug is also empty, render directly — redirecting to "/" would loop
+            if (string.IsNullOrEmpty(home.Slug))
+            {
+                home.Blocks = await _db.Blocks
+                    .Where(b => b.PageId == home.Id)
+                    .OrderBy(b => b.SortOrder)
+                    .ToListAsync();
+                return View(home);
+            }
 
             return Redirect("/" + home.Slug);
         }

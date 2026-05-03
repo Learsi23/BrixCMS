@@ -12,9 +12,7 @@ public class BrixDbContext : DbContext
     public DbSet<SiteConfig> SiteConfig { get; set; }
     public DbSet<AdminUser> AdminUsers { get; set; }
     public DbSet<ApiKey> ApiKeys { get; set; }
-    public DbSet<AiUsageLog> AiUsageLogs { get; set; }
     public DbSet<PageView> PageViews { get; set; }
-    public DbSet<AiGenerationLog> AiGenerationLogs { get; set; }
     public DbSet<Subscriber> Subscribers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -71,18 +69,6 @@ public class AdminUser
     public string? TwoFactorSecret { get; set; }
 }
 
-public class AiUsageLog
-{
-    public int Id { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public string Operation { get; set; } = "";   // "AskQuestions" | "Generate"
-    public string Provider { get; set; } = "";    // "Gemini" | "DeepSeek" | "Mistral" | "Ollama"
-    public string Model { get; set; } = "";
-    public long InputTokens { get; set; }
-    public long OutputTokens { get; set; }
-    public decimal EstimatedCostUsd { get; set; }
-}
-
 public class PageView
 {
     public int Id { get; set; }
@@ -100,14 +86,3 @@ public class Subscriber
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-public class AiGenerationLog
-{
-    public int Id { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public Guid? PageId { get; set; }
-    public string PageTitle { get; set; } = "";
-    public string Prompt { get; set; } = "";
-    public string Provider { get; set; } = "";
-    public string Model { get; set; } = "";
-    public string Mode { get; set; } = "create"; // "create" | "update"
-}
