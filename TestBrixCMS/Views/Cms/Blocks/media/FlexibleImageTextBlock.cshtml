@@ -1,0 +1,407 @@
+@using TestBrixCMS.Extensions
+@model TestBrixCMS.Models.BlazorBlocks.FlexibleImageTextBlock
+
+@{
+    // ==================== BACKGROUND VARIABLES ====================
+    var backgroundColor = Model?.BackgroundColor?.Value ?? "transparent";
+    var backgroundImage = Model?.BackgroundImage?.Value;
+    var backgroundOpacity = float.TryParse(Model?.BackgroundOpacity?.Value, out float opacity) ? opacity : 1;
+
+    // ==================== LAYOUT VARIABLES ====================
+    var layout = Model?.Layout?.Value ?? "image-left";
+    var verticalAlignment = Model?.VerticalAlignment?.Value ?? "center";
+    var gap = Model?.Gap?.Value ?? "gap-8";
+
+    // ==================== TITLE VARIABLES ====================
+    var title = Model?.Title?.Value;
+    var titleColor = Model?.TitleColor?.Value;
+    var titleSize = Model?.TitleSize?.Value;
+    var titleWeight = Model?.TitleWeight?.Value ?? "font-bold";
+    var titleMarginBottom = Model?.TitleMarginBottom?.Value ?? "mb-4";
+
+    // ==================== SUBTITLE VARIABLES ====================
+    var subTitle = Model?.SubTitle?.Value;
+    var subTitleColor = Model?.SubTitleColor?.Value;
+    var subTitleSize = Model?.SubTitleSize?.Value;
+    var subTitleWeight = Model?.SubTitleWeight?.Value ?? "font-semibold";
+    var subTitleMarginBottom = Model?.SubTitleMarginBottom?.Value ?? "mb-3";
+
+    // ==================== TEXT VARIABLES ====================
+    var text = Model?.Text?.Value;
+    var textColor = Model?.TextColor?.Value;
+    var textSize = Model?.TextSize?.Value;
+    var textLineHeight = Model?.TextLineHeight?.Value ?? "leading-relaxed";
+
+    // ==================== IMAGE VARIABLES ====================
+    // DEFAULT: 50% width on desktop, responsive on mobile
+    var imageUrl = Model?.Image?.Value?.TrimStart('~');
+    var imageWidth = Model?.ImageWidth?.Value ?? "w-full md:w-1/2";     // Full on mobile, 50% on desktop
+    var imageMaxWidth = Model?.ImageMaxWidth?.Value ?? "max-w-full md:max-w-[50%]"; // Responsive max width
+    var imageBorderRadius = Model?.ImageBorderRadius?.Value ?? "rounded-lg";
+    var imageShadow = Model?.ImageShadow?.Value ?? "shadow-lg";
+    var imageObjectFit = Model?.ImageObjectFit?.Value ?? "object-contain";
+
+    // ==================== BUTTON VARIABLES ====================
+    var buttonText = Model?.ButtonText?.Value;
+    var buttonLink = Model?.ButtonLink?.Value;
+    var buttonOpenNewTab = Model?.ButtonLink?.OpenInNewTab ?? false;
+    var buttonStyle = Model?.ButtonStyle?.Value ?? "primary";
+
+    // ==================== PADDING VARIABLES ====================
+    var paddingVertical = Model?.PaddingVertical?.Value ?? "py-12";
+    var paddingHorizontal = Model?.PaddingHorizontal?.Value ?? "px-6";
+
+    // ==================== HELPER FUNCTIONS ====================
+
+    // Get layout class - responsive: column on mobile, row on desktop
+    string GetLayoutClass()
+    {
+        return layout switch
+        {
+            "image-right" => "flex-col md:flex-row-reverse",      // Column on mobile, row-reverse on desktop
+            "image-top" => "flex-col",                             // Always column
+            "image-bottom" => "flex-col-reverse",                  // Always column-reverse
+            "two-columns" => "flex-col md:flex-row",               // Column on mobile, row on desktop
+            _ => "flex-col md:flex-row"                            // image-left default: column on mobile, row on desktop
+        };
+    }
+
+    // Get vertical alignment class
+    string GetVerticalAlignmentClass()
+    {
+        return verticalAlignment switch
+        {
+            "start" => "items-start",
+            "end" => "items-end",
+            _ => "items-center" // center default
+        };
+    }
+
+    // Get image container class - responsive sizing
+    string GetImageContainerClass()
+    {
+        var classes = new List<string>();
+        
+        // For all layouts, make image responsive
+        if (layout == "image-top" || layout == "image-bottom")
+        {
+            // For top/bottom layouts: full width on all devices
+            classes.Add("w-full");
+            classes.Add("max-w-full");
+        }
+        else
+        {
+            // Side layouts: full on mobile, respects model's ImageWidth on desktop
+            // Default: 40% (w-2/5) with max 320px — much more balanced than 50%
+            var wField  = Model?.ImageWidth?.Value  ?? "w-2/5";
+            var mwField = Model?.ImageMaxWidth?.Value ?? "max-w-xs";
+
+            classes.Add("w-full flex-shrink-0");
+
+            // Convert Tailwind w-X to responsive md:w-X
+            if (wField.StartsWith("w-"))
+                classes.Add("md:" + wField);
+            else
+                classes.Add("md:w-2/5"); // fallback if CSS value like "300px"
+
+            // Max-width cap so images never overwhelm the layout
+            if (mwField.StartsWith("max-w-"))
+                classes.Add("md:" + mwField);
+            else
+                classes.Add("md:max-w-xs");
+        }
+        
+        return string.Join(" ", classes.Where(c => !string.IsNullOrEmpty(c)));
+    }
+
+    // Get image inline style for custom dimensions
+    string GetImageInlineStyle()
+    {
+        var styles = new List<string>();
+
+        // Only apply custom styles if not using responsive classes
+        if (layout != "image-left" && layout != "image-right" && layout != "two-columns")
+        {
+            // For top/bottom layouts, allow custom sizing
+            if (!string.IsNullOrEmpty(imageWidth) &&
+                !imageWidth.StartsWith("w-") &&
+                !imageWidth.StartsWith("max-w-") &&
+                !imageWidth.Contains("md:"))
+            {
+                styles.Add($"width: {imageWidth}");
+            }
+        }
+
+        return string.Join("; ", styles);
+    }
+
+    // Get title inline style
+    string GetTitleStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(titleColor))
+            styles.Add($"color: {titleColor}");
+
+        // If size is not a Tailwind class
+        if (!string.IsNullOrEmpty(titleSize) && !titleSize.StartsWith("text-"))
+            styles.Add($"font-size: {titleSize}");
+
+        return string.Join("; ", styles);
+    }
+
+    // Get title CSS classes
+    string GetTitleClass()
+    {
+        var classes = new List<string> { titleWeight, titleMarginBottom };
+
+        if (!string.IsNullOrEmpty(titleSize) && titleSize.StartsWith("text-"))
+            classes.Add(titleSize);
+
+        return string.Join(" ", classes);
+    }
+
+    // Get subtitle inline style
+    string GetSubTitleStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(subTitleColor))
+            styles.Add($"color: {subTitleColor}");
+
+        if (!string.IsNullOrEmpty(subTitleSize) && !subTitleSize.StartsWith("text-"))
+            styles.Add($"font-size: {subTitleSize}");
+
+        return string.Join("; ", styles);
+    }
+
+    // Get subtitle CSS classes
+    string GetSubTitleClass()
+    {
+        var classes = new List<string> { subTitleWeight, subTitleMarginBottom };
+
+        if (!string.IsNullOrEmpty(subTitleSize) && subTitleSize.StartsWith("text-"))
+            classes.Add(subTitleSize);
+
+        return string.Join(" ", classes);
+    }
+
+    // Get text inline style
+    string GetTextStyle()
+    {
+        var styles = new List<string>();
+
+        if (!string.IsNullOrEmpty(textColor))
+            styles.Add($"color: {textColor}");
+
+        if (!string.IsNullOrEmpty(textSize) && !textSize.StartsWith("text-"))
+            styles.Add($"font-size: {textSize}");
+
+        return string.Join("; ", styles);
+    }
+
+    // Get text CSS classes
+    string GetTextClass()
+    {
+        var classes = new List<string> { textLineHeight };
+
+        if (!string.IsNullOrEmpty(textSize) && textSize.StartsWith("text-"))
+            classes.Add(textSize);
+
+        return string.Join(" ", classes);
+    }
+
+    // Get button CSS classes based on style
+    string GetButtonClass()
+    {
+        var baseClass = "inline-block px-6 py-3 rounded-lg transition duration-300 mt-4";
+
+        return buttonStyle switch
+        {
+            "primary" => $"{baseClass} bg-blue-600 text-white hover:bg-blue-700",
+            "secondary" => $"{baseClass} bg-gray-600 text-white hover:bg-gray-700",
+            "outline" => $"{baseClass} border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white",
+            _ => $"{baseClass} bg-blue-600 text-white hover:bg-blue-700"
+        };
+    }
+
+    // ==================== BUILD BACKGROUND STYLE ====================
+    string backgroundStyle = "";
+    if (!string.IsNullOrEmpty(backgroundImage))
+    {
+        backgroundStyle = $"background-image: url('{Url.Content(backgroundImage)}'); background-size: cover; background-position: center;";
+        if (backgroundOpacity < 1)
+        {
+            backgroundStyle += $" position: relative;";
+        }
+    }
+    else
+    {
+        backgroundStyle = $"background-color: {backgroundColor};";
+    }
+
+    // ==================== FINAL VARIABLES ====================
+    var layoutClass = GetLayoutClass();
+    var verticalAlignmentClass = GetVerticalAlignmentClass();
+    var imageContainerClass = GetImageContainerClass();
+    var imageInlineStyle = GetImageInlineStyle();
+    var titleStyle = GetTitleStyle();
+    var titleClass = GetTitleClass();
+    var subTitleStyle = GetSubTitleStyle();
+    var subTitleClass = GetSubTitleClass();
+    var textStyle = GetTextStyle();
+    var textClass = GetTextClass();
+    var buttonClass = GetButtonClass();
+
+    var isImageTop = layout == "image-top";
+    var isImageBottom = layout == "image-bottom";
+    var showImage = !string.IsNullOrEmpty(imageUrl);
+}
+
+@* MAIN CONTAINER WITH BACKGROUND *@
+@if (backgroundOpacity < 1 && !string.IsNullOrEmpty(backgroundImage))
+{
+    <div style="position: relative; @backgroundStyle">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,@(1 - backgroundOpacity));"></div>
+        <div class="container mx-auto w-full h-auto @paddingVertical @paddingHorizontal" style="position: relative; z-index: 1;">
+            @* MAIN CONTENT - Responsive: column on mobile, row on desktop *@
+            <div class="flex @layoutClass @verticalAlignmentClass @gap">
+                @* IMAGE (except when position is bottom) *@
+                @if (showImage && !isImageBottom)
+                {
+                    <div class="@imageContainerClass">
+                        <img src="@imageUrl"
+                             class="w-full h-auto max-h-[400px] @imageBorderRadius @imageShadow @imageObjectFit"
+                             style="@imageInlineStyle"
+                             alt="@(Model?.Image?.AltText ?? "Block image")" />
+                    </div>
+                }
+
+                @* TEXT CONTENT - Takes full width on mobile, auto on desktop *@
+                <div class="w-full md:flex-1">
+                    @if (!string.IsNullOrEmpty(title))
+                    {
+                        <div class="@titleClass" style="@titleStyle">
+                            @RichText.Render(title)
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(subTitle))
+                    {
+                        <div class="@subTitleClass" style="@subTitleStyle">
+                            @RichText.Render(subTitle)
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(text))
+                    {
+                        <div class="@textClass" style="@textStyle">
+                            @RichText.Render(text)
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(buttonText))
+                    {
+                        <a href="@(buttonLink ?? "#")"
+                               class="@buttonClass"
+                               target="@(buttonOpenNewTab ? "_blank" : "")">
+                            @buttonText
+                        </a>
+                    }
+                </div>
+
+                @* IMAGE (only when position is bottom) *@
+                @if (showImage && isImageBottom)
+                {
+                    <div class="@imageContainerClass">
+                        <img src="@imageUrl"
+                             class="w-full h-auto max-h-[400px] @imageBorderRadius @imageShadow @imageObjectFit"
+                             style="@imageInlineStyle"
+                             alt="@(Model?.Image?.AltText ?? "Block image")" />
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div style="@backgroundStyle">
+        <div class="container mx-auto w-full h-auto @paddingVertical @paddingHorizontal">
+            @* MAIN CONTENT - Responsive: column on mobile, row on desktop *@
+            <div class="flex @layoutClass @verticalAlignmentClass @gap">
+                @* IMAGE (except when position is bottom) *@
+                @if (showImage && !isImageBottom)
+                {
+                    <div class="@imageContainerClass">
+                        <img src="@imageUrl"
+                             class="w-full h-auto max-h-[400px] @imageBorderRadius @imageShadow @imageObjectFit"
+                             style="@imageInlineStyle"
+                             alt="@(Model?.Image?.AltText ?? "Block image")" />
+                    </div>
+                }
+
+                @* TEXT CONTENT - Takes full width on mobile, auto on desktop *@
+                <div class="w-full md:flex-1">
+                    @if (!string.IsNullOrEmpty(title))
+                    {
+                        <div class="@titleClass" style="@titleStyle">
+                            @RichText.Render(title)
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(subTitle))
+                    {
+                        <div class="@subTitleClass" style="@subTitleStyle">
+                            @RichText.Render(subTitle)
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(text))
+                    {
+                        <div class="@textClass" style="@textStyle">
+                            @RichText.Render(text)
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(buttonText))
+                    {
+                        <a href="@(buttonLink ?? "#")"
+                               class="@buttonClass"
+                               target="@(buttonOpenNewTab ? "_blank" : "")">
+                            @buttonText
+                        </a>
+                    }
+                </div>
+
+                @* IMAGE (only when position is bottom) *@
+                @if (showImage && isImageBottom)
+                {
+                    <div class="@imageContainerClass">
+                        <img src="@imageUrl"
+                             class="w-full h-auto max-h-[400px] @imageBorderRadius @imageShadow @imageObjectFit"
+                             style="@imageInlineStyle"
+                             alt="@(Model?.Image?.AltText ?? "Block image")" />
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* ADMIN VISUAL HELPERS *@
+@if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit"))
+{
+    <div class="mt-2 text-[9px] text-gray-400 border-t border-gray-200 pt-1 flex gap-2 italic">
+        <span><i class="fas fa-columns mr-1"></i> Flexible Image Text Block</span>
+        @if (!string.IsNullOrEmpty(layout))
+        {
+            <span><i class="fas fa-arrows-alt mr-1"></i> Layout: @layout</span>
+        }
+        @if (!string.IsNullOrEmpty(buttonText))
+        {
+            <span><i class="fas fa-link mr-1"></i> With Button</span>
+        }
+        <span><i class="fas fa-image mr-1"></i> Responsive: 50% on desktop, full on mobile</span>
+    </div>
+}

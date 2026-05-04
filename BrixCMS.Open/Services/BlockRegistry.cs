@@ -6,16 +6,16 @@ namespace BrixCMS.Open.Services
 {
     public class BlockRegistry
     {
-        // Diccionario interno para mapear el nombre del bloque con su Clase C#
+        // Internal dictionary to map block name to its C# class
         private readonly Dictionary<string, Type> _types = new();
 
-        // Subcarpeta de la vista para cada bloque (opcional)
+        // Optional view subfolder for each block
         private readonly Dictionary<string, string> _viewFolders = new();
 
         /// <summary>
-        /// Registra un nuevo tipo de bloque en el sistema.
+        /// Registers a new block type in the system.
         /// </summary>
-        /// <param name="viewFolder">Subcarpeta dentro de Views/Cms/Blocks/ donde vive el .cshtml (opcional)</param>
+        /// <param name="viewFolder">Subfolder within Views/Cms/Blocks/ where the .cshtml file lives (optional)</param>
         public void Register<T>(string? viewFolder = null) where T : class
         {
             var type = typeof(T);
@@ -25,7 +25,7 @@ namespace BrixCMS.Open.Services
         }
 
         /// <summary>
-        /// Devuelve la ruta completa de la vista para un tipo de bloque.
+        /// Returns the full view path for a block type.
         /// </summary>
         public string GetViewPath(string blockType)
         {
@@ -35,7 +35,7 @@ namespace BrixCMS.Open.Services
         }
 
         /// <summary>
-        /// Obtiene el tipo de C# asociado a un nombre de bloque.
+        /// Gets the C# type associated with a block name.
         /// </summary>
         public Type? GetBlockType(string name)
         {
@@ -43,7 +43,7 @@ namespace BrixCMS.Open.Services
         }
 
         /// <summary>
-        /// Devuelve todos los bloques registrados para el panel lateral del editor.
+        /// Returns all registered blocks for the editor sidebar.
         /// </summary>
         public Dictionary<string, Type> GetAllBlocks()
         {
@@ -51,30 +51,30 @@ namespace BrixCMS.Open.Services
         }
 
         /// <summary>
-        /// Devuelve solo los nombres de los bloques registrados.
+        /// Returns only the names of registered blocks.
         /// </summary>
         public IEnumerable<string> GetRegisteredNames() => _types.Keys;
 
         /// <summary>
-        /// NUEVO M�TODO: Convierte un bloque crudo de la base de datos (Data.Block)
-        /// en un objeto de modelo real (como ChatBlock, HeroBlock, etc.)
+        /// NEW METHOD: Converts a raw block from the database (Data.Block)
+        /// into a real model object (like ChatBlock, HeroBlock, etc.)
         /// </summary>
-        /// <param name="block">La entidad de bloque que viene de la base de datos</param>
-        /// <returns>El objeto mapeado con sus datos cargados o null si no se encuentra el tipo</returns>
+        /// <param name="block">The block entity coming from the database</param>
+        /// <returns>The mapped object with its data loaded, or null if the type is not found</returns>
         public object? CreateModel(BrixCMS.Open.Data.Block block)
         {
-            // 1. Buscamos qu� clase de C# corresponde al tipo de bloque (ej: "ChatBlock")
+            // 1. Look up which C# class corresponds to the block type (e.g., "ChatBlock")
             var type = GetBlockType(block.Type);
             if (type == null) return null;
 
-            // 2. Si no tiene datos JSON, devolvemos una instancia limpia de la clase
+            // 2. If there's no JSON data, return a clean instance of the class
             if (string.IsNullOrEmpty(block.JsonData))
                 return Activator.CreateInstance(type);
 
             try
             {
-                // 3. Deserializamos el JSON de la DB al objeto real. 
-                // Esto llena las propiedades como CustomPrompt, Title, etc.
+                // 3. Deserialize the JSON from DB into the actual object.
+                // This populates properties like CustomPrompt, Title, etc.
                 return JsonSerializer.Deserialize(block.JsonData, type, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -82,7 +82,7 @@ namespace BrixCMS.Open.Services
             }
             catch (Exception)
             {
-                // 4. En caso de error en el JSON, devolvemos una instancia vac�a para no romper la web
+                // 4. In case of JSON error, return an empty instance to avoid breaking the site
                 return Activator.CreateInstance(type);
             }
         }

@@ -1,0 +1,157 @@
+@using TestBrixCMS.Models.BlazorBlocks
+@using TestBrixCMS.Components.Pages.Chat
+
+@{
+    var pos          = (Model.Position?.Value ?? "right").Trim().ToLowerInvariant();
+    var posClass     = pos == "left" ? "left-6" : "right-6";
+    var panelPos     = pos == "left" ? "left-0"  : "right-0";
+    var btnPrimary   = SafeColor(Model.ButtonColor?.Value, "#6366F1");
+    var btnGradient  = SafeColor(Model.ButtonGradientColor?.Value, "#8B5CF6");
+    var btnText      = SafeColor(Model.ButtonTextColor?.Value, "#FFFFFF");
+    var btnIcon      = string.IsNullOrEmpty(Model.ButtonIcon?.Value) ? "💬" : Model.ButtonIcon.Value;
+    var btnSize      = Model.ButtonSize?.Value ?? "60px";
+    var logo         = Model.Logo?.Value;
+    var logoSize     = Model.LogoSize?.Value ?? "28px";
+
+    var panelBg      = SafeColor(Model.PanelBgColor?.Value, "#0F172A");
+    var headerBg     = SafeColor(Model.HeaderBgColor?.Value, "#1E293B");
+    var headerText   = SafeColor(Model.HeaderTextColor?.Value, "#F8FAFC");
+    var chatBg       = SafeColor(Model.ChatBgColor?.Value, "#0F172A");
+    var userBubble   = SafeColor(Model.UserBubbleColor?.Value, "#6366F1");
+    var userText     = SafeColor(Model.UserTextColor?.Value, "#FFFFFF");
+    var aiBubble     = SafeColor(Model.AiBubbleColor?.Value, "#1E293B");
+    var aiText       = SafeColor(Model.AiTextColor?.Value, "#E2E8F0");
+    var inputBg      = SafeColor(Model.InputBgColor?.Value, "#1E293B");
+    var inputText    = SafeColor(Model.InputTextColor?.Value, "#F8FAFC");
+    var inputBorder  = SafeColor(Model.InputBorderColor?.Value, "#334155");
+    var sendBtnColor = SafeColor(Model.SendButtonColor?.Value, "#6366F1");
+    var shadowColor  = $"{btnPrimary}40";
+}
+
+@* Floating button with animated gradient ── *@
+<button @onclick="ToggleChat"
+        style="width: @btnSize; height: @btnSize;
+               background: linear-gradient(135deg, @btnPrimary, @btnGradient);
+               color: @btnText;
+               box-shadow: 0 8px 32px @shadowColor;"
+        class="fixed bottom-6 z-50 @posClass rounded-full flex items-center justify-center
+               transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl active:scale-95
+               group overflow-hidden">
+    <span class="relative z-10 text-2xl transition-transform duration-300 @( _showChat ? "rotate-90" : "" )">
+        @if (_showChat) { <span>✕</span> } else { <span>@btnIcon</span> }
+    </span>
+    <span class="absolute inset-0 rounded-full bg-white/0 group-hover:bg-white/10 transition-colors duration-300"></span>
+</button>
+
+@* Chat panel ── *@
+@if (_showChat)
+{
+    <div class="fixed bottom-[calc(@btnSize+24px)] z-50 @panelPos
+                w-[420px] max-w-[calc(100vw-3rem)] 
+                rounded-2xl overflow-hidden chat-panel-animate"
+         style="height: 560px;
+                background: @panelBg;
+                border: 1px solid @inputBorder33;
+                box-shadow: 0 25px 60px -12px rgba(0,0,0,0.5);">
+
+        @* Header ── *@
+        <div class="flex items-center justify-between px-5 py-4 flex-shrink-0"
+             style="background: linear-gradient(135deg, @headerBg, @btnPrimary);
+                    border-bottom: 1px solid @(btnPrimary + "33");">
+            <div class="flex items-center gap-3">
+                @if (!string.IsNullOrEmpty(logo))
+                {
+                    <img src="@logo" alt="logo" style="height: @logoSize; width: auto;" class="rounded-lg object-contain" />
+                }
+                else
+                {
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: @btnPrimary;">
+                        <span class="text-white text-sm">🤖</span>
+                    </div>
+                }
+                <div>
+                    <span class="text-sm font-bold" style="color: @headerText">
+                        @(string.IsNullOrEmpty(Model.WelcomeMessage?.Value) ? "Chat" : "Assistant")
+                    </span>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-[10px] font-medium" style="color: @(headerText + "CC")">Online</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                <button @onclick="ResetChat"
+                        title="New conversation"
+                        style="color: @headerText"
+                        class="opacity-70 hover:opacity-100 transition p-2 rounded-lg hover:bg-white/10 text-xs flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span>New</span>
+                </button>
+                <button @onclick="ToggleChat"
+                        style="color: @headerText"
+                        class="opacity-70 hover:opacity-100 transition p-1.5 rounded-lg hover:bg-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        @* Chat body ── *@
+        <div class="flex-1 overflow-hidden" style="background: @chatBg;">
+            <Chat @ref="_chatRef"
+                  ShowHeader="false"
+                  ChatId="floating_chat"
+                  AiProvider="@(Model.AiProvider?.Value)"
+                  CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
+                  WelcomeMessage="@(Model.WelcomeMessage?.Value)"
+                  PdfFilter="@(Model.PdfFiles?.Value)"
+                  Logo="@logo"
+                  LogoSize="@logoSize"
+                  AiLogo="@(Model.AiLogo?.Value)"
+                  AiLogoSize="@(Model.AiLogoSize?.Value ?? "28px")"
+                  Theme="@CreateFloatingTheme()" />
+        </div>
+    </div>
+}
+
+<style>
+    .chat-panel-animate { animation: chatSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @@keyframes chatSlideUp { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+</style>
+
+@code {
+    [Parameter] public FloatingChatBlock Model { get; set; } = new();
+    private bool _showChat;
+    private Chat? _chatRef;
+    private string btnPrimary => SafeColor(Model.ButtonColor?.Value, "#6366F1");
+    private string inputBorder33 => SafeColor(Model.InputBorderColor?.Value, "#334155") + "33";
+
+    private void ToggleChat() => _showChat = !_showChat;
+    private async Task ResetChat() { if (_chatRef is not null) await _chatRef.ResetConversationAsync(); }
+
+    private ChatTheme CreateFloatingTheme() => new()
+    {
+        UserBubbleColor = SafeColor(Model.UserBubbleColor?.Value, "#6366F1"),
+        UserTextColor = SafeColor(Model.UserTextColor?.Value, "#FFFFFF"),
+        AiBubbleColor = SafeColor(Model.AiBubbleColor?.Value, "#1E293B"),
+        AiTextColor = SafeColor(Model.AiTextColor?.Value, "#E2E8F0"),
+        AiBubbleBorderColor = SafeColor(Model.AiBubbleColor?.Value, "#1E293B") + "33",
+        InputBgColor = SafeColor(Model.InputBgColor?.Value, "#1E293B"),
+        InputTextColor = SafeColor(Model.InputTextColor?.Value, "#F8FAFC"),
+        InputBorderColor = SafeColor(Model.InputBorderColor?.Value, "#334155"),
+        InputPlaceholderColor = SafeColor(Model.InputTextColor?.Value, "#F8FAFC") + "50",
+        SendButtonColor = SafeColor(Model.SendButtonColor?.Value, "#6366F1"),
+        ChatBgColor = SafeColor(Model.ChatBgColor?.Value, "#0F172A"),
+        AiLogo = Model.AiLogo?.Value,
+        AiLogoSize = Model.AiLogoSize?.Value ?? "28px"
+    };
+
+    private static string SafeColor(string? hex, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return fallback;
+        return hex.Trim();
+    }
+}

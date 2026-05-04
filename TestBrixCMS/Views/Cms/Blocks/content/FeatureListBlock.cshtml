@@ -1,0 +1,112 @@
+@using TestBrixCMS.Models.Blocks
+@using TestBrixCMS.Services
+@using System.Text.Json
+@model FeatureListBlock
+@inject TestBrixCMS.Data.BrixDbContext Db
+
+@{
+    var blockData = (TestBrixCMS.Data.Block)ViewData["RawBlock"];
+    var childBlocks = Db.Blocks
+        .Where(b => b.ParentId == blockData.Id)
+        .OrderBy(b => b.SortOrder)
+        .ToList();
+    
+    var title = Model.Title?.Value ?? "";
+    var titleColor = Model.TitleColor?.Value ?? "#000000";
+    var titleAlign = Model.TitleAlign?.Value ?? "left";
+    var columns = Model.Columns?.Value ?? "2";
+    var gap = Model.Gap?.Value ?? "1rem";
+    var iconColor = Model.ItemIconColor?.Value ?? "#10b981";
+    var iconSize = Model.ItemIconSize?.Value ?? "24px";
+    var itemTitleColor = Model.ItemTitleColor?.Value ?? "#000000";
+    var itemTitleWeight = Model.ItemTitleWeight?.Value ?? "600";
+    var itemDescColor = Model.ItemDescriptionColor?.Value ?? "#666666";
+    var itemDescSize = Model.ItemDescriptionSize?.Value ?? "14px";
+    var bgColor = Model.BackgroundColor?.Value ?? "transparent";
+    var paddingY = Model.PaddingY?.Value ?? "2rem";
+    var sectionId = Model.SectionId?.Value ?? "";
+    
+    var colsClass = columns switch {
+        "1" => "grid-cols-1",
+        "2" => "grid-cols-1 md:grid-cols-2",
+        "3" => "grid-cols-1 md:grid-cols-3",
+        "4" => "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
+        _ => "grid-cols-2"
+    };
+    
+    // Helper to extract Value from wrapped JSON
+    string ExtractValue(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return "";
+        try {
+            var doc = JsonSerializer.Deserialize<JsonElement>(json);
+            if (doc.TryGetProperty("Value", out var val))
+                return val.GetString() ?? "";
+            return doc.GetString() ?? "";
+        } catch { return json; }
+    }
+}
+
+<section id="@sectionId" class="py-8" style="background-color:@bgColor; padding:@paddingY 0;">
+    <div class="mx-auto" style="max-width:1200px; padding:0 1rem;">
+        @if (!string.IsNullOrEmpty(title))
+        {
+            <h2 class="text-2xl font-bold mb-6" style="color:@titleColor; text-align:@titleAlign;">
+                @Html.Raw(title)
+            </h2>
+        }
+        <div class="grid @colsClass gap-@gap">
+            @if (childBlocks.Any())
+            {
+                foreach (var item in childBlocks)
+                {
+                    string itemTitle = "", itemDesc = "", itemIcon = "✓";
+                    var itemIconColor = iconColor;
+                    
+                    try {
+                        var itemData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(item.JsonData ?? "{}");
+                        if (itemData != null) {
+                            // Handle Title field (may be simple string or wrapped)
+                            if (itemData.TryGetValue("Title", out var titleEl)) {
+                                if (titleEl.ValueKind == JsonValueKind.Object && titleEl.TryGetProperty("Value", out var v))
+                                    itemTitle = v.GetString() ?? "";
+                                else if (titleEl.ValueKind == JsonValueKind.String)
+                                    itemTitle = titleEl.GetString() ?? "";
+                            }
+                            // Handle Description field
+                            if (itemData.TryGetValue("Description", out var descEl)) {
+                                if (descEl.ValueKind == JsonValueKind.Object && descEl.TryGetProperty("Value", out var v))
+                                    itemDesc = v.GetString() ?? "";
+                                else if (descEl.ValueKind == JsonValueKind.String)
+                                    itemDesc = descEl.GetString() ?? "";
+                            }
+                            // Handle TitleColor (for icon color)
+                            if (itemData.TryGetValue("TitleColor", out var titleColEl)) {
+                                if (titleColEl.ValueKind == JsonValueKind.Object && titleColEl.TryGetProperty("Value", out var v))
+                                    itemIconColor = v.GetString() ?? iconColor;
+                                else if (titleColEl.ValueKind == JsonValueKind.String)
+                                    itemIconColor = titleColEl.GetString() ?? iconColor;
+                            }
+                        }
+                    } catch {}
+                    
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-lg shadow-sm">
+                        <span style="color:@itemIconColor; font-size:@iconSize; font-weight:bold;">@Html.Raw(itemTitle)</span>
+                        <div>
+                            @if (!string.IsNullOrEmpty(itemDesc))
+                            {
+                                <p style="color:@itemDescColor; font-size:@itemDescSize; margin:0;">@itemDesc</p>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p style="color:#94a3b8; text-align:center; padding:2rem;">
+                    Add Feature Item blocks inside this Feature List block
+                </p>
+            }
+        </div>
+    </div>
+</section>

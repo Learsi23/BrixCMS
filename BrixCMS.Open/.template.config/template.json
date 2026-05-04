@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "BrixCMS",
+  "classifications": [ "Web", "CMS", "Blazor", "MVC" ],
+  "identity": "BrixCMS.Open.Web",
+  "name": "BrixCMS Open — Block-based CMS",
+  "shortName": "brixcms",
+  "description": "Open-source .NET 10 block-based CMS with Blazor Server, MVC, SQLite and local Ollama AI chatbot. 40+ pre-built blocks, visual page editor, PDF chatbot — zero config.",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "BrixCMS.Open",
+  "preferNameDirectory": true,
+  "primaryOutputs": [
+    {
+      "path": "BrixCMS.Open.csproj"
+    }
+  ],
+  "sources": [
+    {
+      "exclude": [
+        "**/.vs/**",
+        "**/bin/**",
+        "**/obj/**",
+        "**/*.db",
+        "**/*.db-shm",
+        "**/*.db-wal",
+        "**/*.user",
+        "**/appsettings.Development.json"
+      ]
+    }
+  ],
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "description": "Target framework",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net10.0",
+          "description": ".NET 10"
+        }
+      ],
+      "replaces": "net10.0",
+      "defaultValue": "net10.0"
+    },
+    "UserSecretsId": {
+      "type": "generated",
+      "generator": "guid",
+      "replaces": "cf90e7a9-d19d-40a3-ab6c-6f22eb17254e",
+      "parameters": {
+        "format": "D"
+      }
+    }
+  }
+}

@@ -26,8 +26,10 @@ namespace BrixCMS.Open.Models
     {
         public string CustomText { get; set; } = "";
         public string CustomUrl { get; set; } = "";
-        public bool IsCustomUrl { get; set; } = false;
+        /// <summary>Always true when added via the admin UI. Kept for backward compat.</summary>
+        public bool IsCustomUrl { get; set; } = true;
         public string PageSlug { get; set; } = "";
+        public bool OpenInNewTab { get; set; } = false;
     }
 
     public class FooterSettings

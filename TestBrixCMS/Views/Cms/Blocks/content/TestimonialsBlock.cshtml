@@ -1,0 +1,135 @@
+@using TestBrixCMS.Services
+@using TestBrixCMS.Models.Blocks
+@model TestimonialsBlock
+@inject TestBrixCMS.Data.BrixDbContext Db
+@inject BlockRegistry Registry
+
+@{
+    var blockData = (TestBrixCMS.Data.Block)ViewData["RawBlock"];
+    var allBlocks = ViewData["AllBlocks"] as List<TestBrixCMS.Data.Block>;
+    var children  = allBlocks != null
+        ? allBlocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList()
+        : Db.Blocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList();
+
+    var bg        = Model.BackgroundColor?.Value;
+    var cardBg    = Model.CardBgColor?.Value ?? "#ffffff";
+    var starColor = Model.StarColor?.Value ?? "#f59e0b";
+    var autoPlay  = Model.AutoPlay?.IsTrue ?? true;
+    var interval  = int.TryParse(Model.AutoPlayInterval?.Value, out var iv) ? iv : 4000;
+    var tmId      = "tm-" + blockData.Id.ToString()[..8];
+}
+
+<section style="@(string.IsNullOrWhiteSpace(bg)||bg=="transparent"?"":$"background-color:{bg};")"
+         class="py-16 px-4">
+    <div class="max-w-6xl mx-auto">
+        @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
+        {
+            <h2 class="text-3xl font-bold text-center mb-3"
+                style="color:@(Model.TitleColor?.Value ?? "inherit")">@Model.Title.Value</h2>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
+        {
+            <p class="text-center text-gray-500 mb-10">@Model.Subtitle.Value</p>
+        }
+
+        @if (!children.Any())
+        {
+            <div class="text-center text-gray-400 py-10 border-2 border-dashed border-gray-200 rounded-xl">
+                Añade testimonios con "+ Add item"
+            </div>
+        }
+        else
+        {
+            <div id="@tmId"
+                 x-data="{
+                    current: 0,
+                    total: @children.Count,
+                    autoPlay: @(autoPlay ? "true" : "false"),
+                    interval: @interval,
+                    timer: null,
+                    init() {
+                        if(this.autoPlay) this.timer = setInterval(()=>{ this.current=(this.current+1)%this.total; }, this.interval);
+                    },
+                    prev() { this.current=(this.current-1+this.total)%this.total; },
+                    next() { this.current=(this.current+1)%this.total; }
+                 }">
+                @* Carousel *@
+                <div class="relative overflow-hidden">
+                    <div class="flex transition-transform duration-500 ease-in-out"
+                         :style="'transform: translateX(-' + (current * 100) + '%)'">
+                        @foreach (var child in children)
+                        {
+                            var item = Registry.CreateModel(child) as TestimonialItemBlock;
+                            if (item == null) continue;
+                            var stars = int.TryParse(item.Stars?.Value, out var s) ? Math.Max(1, Math.Min(5, s)) : 5;
+                            <div class="min-w-full px-4 md:px-16">
+                                <div class="rounded-2xl p-8 shadow-md max-w-2xl mx-auto text-center"
+                                     style="background-color:@cardBg;">
+                                    @* Stars *@
+                                    <div class="flex justify-center gap-1 mb-4">
+                                        @for (int star = 0; star < 5; star++)
+                                        {
+                                            <svg class="w-5 h-5" fill="@(star < stars ? starColor : "#e5e7eb")" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        }
+                                    </div>
+                                    @* Quote *@
+                                    <p class="text-gray-700 text-lg italic leading-relaxed mb-6">
+                                        "@Html.Raw(item.ReviewText?.Value ?? "")"
+                                    </p>
+                                    @* Avatar + name *@
+                                    <div class="flex items-center justify-center gap-3">
+                                        @if (!string.IsNullOrEmpty(item.Avatar?.Value))
+                                        {
+                                            <img src="@item.Avatar.Value" alt="@item.Name?.Value"
+                                                 class="w-12 h-12 rounded-full object-cover" />
+                                        }
+                                        else
+                                        {
+                                            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <i class="fas fa-user text-gray-400"></i>
+                                            </div>
+                                        }
+                                        <div class="text-left">
+                                            <p class="font-semibold text-gray-800 text-sm">@(item.Name?.Value ?? "")</p>
+                                            <p class="text-gray-400 text-xs">@(item.Role?.Value ?? "")</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                @* Navigation *@
+                <div class="flex justify-center items-center gap-6 mt-8">
+                    <button @@click="prev()" class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-chevron-left text-gray-600 text-sm"></i>
+                    </button>
+                    <div class="flex gap-2">
+                        @for (int d = 0; d < children.Count; d++)
+                        {
+                            var di = d;
+                            <button @@click="current=@di"
+                                    class="w-2.5 h-2.5 rounded-full transition-all"
+                                    :class="current===@di ? 'bg-blue-500 w-6' : 'bg-gray-300'"></button>
+                        }
+                    </div>
+                    <button @@click="next()" class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-chevron-right text-gray-600 text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit"))
+        {
+            <div class="mt-4 text-center">
+                <button type="button" onclick="openSelectorForParent('@blockData.Id')"
+                        class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                    + Add testimonial
+                </button>
+            </div>
+        }
+    </div>
+</section>

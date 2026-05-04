@@ -1,0 +1,45 @@
+@using TestBrixCMS.Components.Pages.Chat
+
+<div class="fixed bottom-4 right-4 z-50">
+    <div class="flex flex-col items-end">
+        <button @onclick="ToggleChat"
+                class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 ease-in-out">
+            @if (showChat)
+            {
+                <span class="text-xl">?</span>
+            }
+            else
+            {
+                <span class="text-xl">??</span>
+            }
+        </button>
+
+        @if (showChat)
+        {
+            <div class="mt-4 bg-white rounded-xl shadow-2xl p-4 border border-gray-200 w-96 max-w-[calc(100vw-2rem)]"
+                 style="animation: fadeInUp 0.3s ease-out">
+                <Chat CustomSystemPrompt="@SystemPrompt" />
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string? SystemPrompt { get; set; }
+    private bool showChat = false;
+    private void ToggleChat() => showChat = !showChat;
+}

@@ -1,0 +1,49 @@
+@model TestBrixCMS.Models.NavbarSettings
+@using TestBrixCMS.Data
+
+@{
+    var logoUrl = Model.Logo?.TrimStart('~');
+    var publishedPages = ViewContext.HttpContext.RequestServices.GetService<BrixDbContext>()?.Pages.Where(x => x.IsPublished).OrderBy(x => x.Title).ToList() ?? new List<Page>();
+    var menuItems = Model.MenuItems ?? new List<MenuItemConfig>();
+}
+
+<nav class="@Model.PaddingVertical @(Model.IsSticky ? "sticky top-0 z-50" : "") @(Model.HasShadow ? "shadow-md" : "")" style="background-color: @Model.BackgroundColor;">
+    <div class="container mx-auto px-4 flex items-center justify-between">
+        @if (!string.IsNullOrEmpty(logoUrl))
+        {
+            <a href="@Model.LogoLink" class="flex-shrink-0">
+                <img src="@logoUrl" alt="@Model.LogoAltText" style="width: @Model.LogoWidth;" />
+            </a>
+        }
+        else
+        {
+            <a href="/" class="text-xl font-bold text-emerald-600">BrixCMS</a>
+        }
+
+        <div class="hidden md:flex items-center gap-4">
+            @* Published pages auto-injected (skip home slug="") *@
+            @foreach (var p in publishedPages.Where(p => p.Slug != ""))
+            {
+                <a href="/@p.Slug" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                    @p.Title
+                </a>
+            }
+
+            @* Custom menu items (external links, admin link, etc.) *@
+            @foreach (var item in menuItems)
+            {
+                var url = item.IsCustomUrl ? item.CustomUrl : (!string.IsNullOrEmpty(item.PageSlug) ? "/" + item.PageSlug : "#");
+                var text = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
+                <a href="@url" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                    @text
+                </a>
+            }
+        </div>
+
+        <button class="md:hidden" style="color: @Model.TextColor;">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </div>
+</nav>

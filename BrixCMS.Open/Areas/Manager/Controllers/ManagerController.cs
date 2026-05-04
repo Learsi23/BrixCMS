@@ -197,6 +197,16 @@ public class ManagerController : Controller
 
             await _db.SaveChangesAsync();
 
+            // Delete seed pages when the first real page is published
+            page.IsSeed = false;
+            var seeds = await _db.Pages.Where(p => p.IsSeed && p.Id != pageId).ToListAsync();
+            foreach (var s in seeds)
+            {
+                _db.Blocks.RemoveRange(_db.Blocks.Where(b => b.PageId == s.Id));
+                _db.Pages.Remove(s);
+            }
+            if (seeds.Any()) await _db.SaveChangesAsync();
+
             return Json(new { success = true });
         }
         catch (Exception ex)
@@ -327,6 +337,29 @@ public class ManagerController : Controller
 
         await _db.SaveChangesAsync();
         return RedirectToAction("Edit", new { id = pageGuid });
+    }
+
+    // PUBLICAR P�GINA DIRECTAMENTE DESDE EL EDITOR
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuickPublish(Guid pageId)
+    {
+        var page = await _db.Pages.FindAsync(pageId);
+        if (page == null) return NotFound();
+
+        page.IsPublished = true;
+        page.PublishedAt = DateTime.UtcNow;
+        page.IsSeed = false;
+
+        var seeds = await _db.Pages.Where(p => p.IsSeed && p.Id != pageId).ToListAsync();
+        foreach (var s in seeds)
+        {
+            _db.Blocks.RemoveRange(_db.Blocks.Where(b => b.PageId == s.Id));
+            _db.Pages.Remove(s);
+        }
+
+        await _db.SaveChangesAsync();
+        return RedirectToAction("Edit", new { id = pageId });
     }
 
     // GUARDAR CONFIGURACI�N DE P�GINA (FONDO, ETC.)

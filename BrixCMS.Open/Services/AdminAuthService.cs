@@ -41,17 +41,17 @@ public class AdminAuthService
     }
 
     // ─────────────────────────────────────────────────────────────
-    //  TOTP  (RFC 6238 — compatible con Google Authenticator)
+    //  TOTP  (RFC 6238 — compatible with Google Authenticator)
     // ─────────────────────────────────────────────────────────────
 
-    /// <summary>Genera un nuevo secret Base32 para el admin.</summary>
+    /// <summary>Generates a new Base32 secret for the admin.</summary>
     public static string GenerateTotpSecret()
     {
         var bytes = RandomNumberGenerator.GetBytes(20);
         return Base32Encode(bytes);
     }
 
-    /// <summary>Devuelve la URL otpauth:// para mostrar como QR.</summary>
+    /// <summary>Returns the otpauth:// URL to display as a QR code.</summary>
     public static string GetOtpAuthUrl(string secret, string email, string issuer = "BrixCMS")
     {
         var encodedIssuer = Uri.EscapeDataString(issuer);
@@ -59,7 +59,7 @@ public class AdminAuthService
         return $"otpauth://totp/{encodedIssuer}:{encodedEmail}?secret={secret}&issuer={encodedIssuer}&algorithm=SHA1&digits=6&period=30";
     }
 
-    /// <summary>Verifica un código TOTP (±1 ventana de tolerancia).</summary>
+    /// </summary>/// <summary>Verifies a TOTP code (±1 tolerance window).</summary>
     public static bool VerifyTotp(string secret, string code)
     {
         if (string.IsNullOrWhiteSpace(code) || code.Length != 6) return false;

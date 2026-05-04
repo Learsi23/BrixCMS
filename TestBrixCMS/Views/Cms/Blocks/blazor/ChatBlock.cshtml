@@ -1,0 +1,27 @@
+@model TestBrixCMS.Models.BlazorBlocks.ChatBlock
+
+@{
+    var logoUrl = Model.Logo?.Value ?? "/images/brix-logo.png";
+    var aiLogoUrl = Model.Ai_Logo?.Value ?? "/images/brix-logo.png";
+    var displayMode = Model.DisplayMode?.Value ?? "embedded";
+    var isFullscreen = displayMode == "fullscreen";
+    var blockData = (TestBrixCMS.Data.Block?)ViewData["RawBlock"];
+    var chatId = $"block_{(blockData?.Id.ToString() ?? "ai_assistant")}";
+}
+
+@if (isFullscreen)
+{
+    @* Fullscreen mode: no wrapper, takes entire viewport *@
+    @(await Html.RenderComponentAsync<TestBrixCMS.Components.BlazorBlocks.ChatBlockComponent>(
+        Microsoft.AspNetCore.Mvc.Rendering.RenderMode.ServerPrerendered,
+        new { Model = Model, ChatId = chatId }))
+}
+else
+{
+    @* Embedded mode: card-style with wrapper *@
+    <div class="max-w-full mx-auto border rounded-xl overflow-hidden bg-gray-50">
+        @(await Html.RenderComponentAsync<TestBrixCMS.Components.BlazorBlocks.ChatBlockComponent>(
+            Microsoft.AspNetCore.Mvc.Rendering.RenderMode.ServerPrerendered,
+            new { Model = Model, ChatId = chatId }))
+    </div>
+}

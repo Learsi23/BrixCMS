@@ -1,0 +1,61 @@
+@using TestBrixCMS.Models.Blocks
+
+@code {
+    [Parameter] public DropdownBlock Block { get; set; }
+
+    private bool isOpen = false;
+
+    protected override void OnInitialized()
+    {
+        if (Block?.OpenByDefault?.Value != null)
+        {
+            // Convert.ToBoolean es la forma más robusta de manejar
+            // campos que el CMS envía como string "True"/"False"
+            try
+            {
+                isOpen = Convert.ToBoolean(Block.OpenByDefault.Value);
+            }
+            catch
+            {
+                isOpen = false;
+            }
+        }
+    }
+
+    private void Toggle()
+    {
+        isOpen = !isOpen;
+    }
+
+    private string GetContentStyle()
+    {
+        return isOpen ? "max-height: 1000px; opacity: 1;" : "max-height: 0; opacity: 0;";
+    }
+}
+
+@{
+    var question = Block?.Question?.Value ?? "Click para expandir";
+    var answer = Block?.Answer?.Value ?? "Sin contenido disponible.";
+    var bgColor = Block?.DropdownBackgroundColor?.Value ?? "#f1f1f1";
+    var qSize = Block?.QuestionSize?.Value ?? "18px";
+    var aSize = Block?.AnswerSize?.Value ?? "16px";
+    var qColor = Block?.QuestionColor?.Value ?? "black";
+    var aColor = Block?.AnswerColor?.Value ?? "black";
+}
+
+<div class="w-full mb-4">
+    <button @onclick="Toggle" class="w-full flex justify-between items-center text-left py-4 px-4 rounded-xl transition-all"
+            style="background-color: @(bgColor); font-size: @(qSize);">
+        <span style="color: @(qColor); font-weight: 500;">@question</span>
+        <span class="transition-transform duration-200 @(isOpen ? "rotate-180" : "")">
+            @(isOpen ? "?" : "?")
+        </span>
+    </button>
+
+    <div class="overflow-hidden transition-all duration-300 ease-in-out px-4"
+         style="@GetContentStyle(); background-color: @(bgColor); font-size: @(aSize); border-bottom-left-radius: 0.75rem; border-bottom-right-radius: 0.75rem;">
+        <div class="py-4 text-left" style="color: @(aColor);">
+            @((MarkupString)answer)
+        </div>
+    </div>
+</div>

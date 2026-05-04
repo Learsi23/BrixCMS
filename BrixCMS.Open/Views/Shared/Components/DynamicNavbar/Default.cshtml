@@ -21,30 +21,28 @@
         }
 
         <div class="hidden md:flex items-center gap-4">
+            @* Published pages auto-injected (skip home slug="") *@
+            @foreach (var p in publishedPages.Where(p => p.Slug != ""))
+            {
+                <a href="/@p.Slug" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                    @p.Title
+                </a>
+            }
+
+            @* Custom menu items (internal pages, anchor links, external URLs) *@
             @foreach (var item in menuItems)
             {
-                var url = item.IsCustomUrl ? item.CustomUrl : (!string.IsNullOrEmpty(item.PageSlug) ? "/" + item.PageSlug : "#");
-                var text = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
-                <a href="@url" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                var url  = !string.IsNullOrEmpty(item.CustomUrl)  ? item.CustomUrl
+                         : !string.IsNullOrEmpty(item.PageSlug)   ? "/" + item.PageSlug
+                         : "#";
+                var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
+                var target = item.OpenInNewTab ? "_blank" : "_self";
+                var rel    = item.OpenInNewTab ? "noopener noreferrer" : null;
+                <a href="@url" target="@target" rel="@rel"
+                   class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
                     @text
                 </a>
             }
-            
-            @if (menuItems.Count == 0)
-            {
-                foreach (var p in publishedPages)
-                {
-                    <a href="/@p.Slug" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
-                        @p.Title
-                    </a>
-                }
-            }
-
-            @* 
-            <span class="text-gray-300" style="color: @Model.TextColor;">|</span>
-            <a href="/Manager/Manager" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded hover:bg-gray-200 no-underline">
-                ⚙️ Panel
-            </a> *@
         </div>
 
         <button class="md:hidden" style="color: @Model.TextColor;">

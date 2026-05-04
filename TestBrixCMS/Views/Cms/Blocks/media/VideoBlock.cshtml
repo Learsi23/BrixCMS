@@ -1,0 +1,85 @@
+@model TestBrixCMS.Models.Blocks.VideoBlock
+@{
+    // Extraer el embed URL a partir del URL original
+    string GetEmbedUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return "";
+
+        // YouTube
+        if (url.Contains("youtube.com/watch"))
+        {
+            var uri = new Uri(url);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var videoId = query["v"];
+            return $"https://www.youtube.com/embed/{videoId}?rel=0";
+        }
+        if (url.Contains("youtu.be/"))
+        {
+            var videoId = url.Split('/').Last().Split('?').First();
+            return $"https://www.youtube.com/embed/{videoId}?rel=0";
+        }
+
+        // Vimeo
+        if (url.Contains("vimeo.com/"))
+        {
+            var videoId = url.TrimEnd('/').Split('/').Last().Split('?').First();
+            return $"https://player.vimeo.com/video/{videoId}?title=0&byline=0";
+        }
+
+        return url; // devolver tal cual si ya es embed
+    }
+
+    var embedUrl   = GetEmbedUrl(Model.VideoUrl?.Value ?? "");
+    var textAlign  = Model.TextAlign?.Value ?? "center";
+    var bgColor    = Model.BackgroundColor?.Value ?? "transparent";
+    var padY       = Model.PaddingY?.Value ?? "2rem";
+    var maxWidth   = Model.MaxWidth?.Value ?? "900px";
+    var ratio      = Model.AspectRatio?.Value ?? "16/9";
+    var hasTitles  = !string.IsNullOrWhiteSpace(Model.Title?.Value) || !string.IsNullOrWhiteSpace(Model.Subtitle?.Value);
+}
+
+<section style="background-color:@bgColor; padding:@padY 1.5rem;">
+    <div class="container mx-auto" style="max-width:@maxWidth">
+
+        @if (hasTitles)
+        {
+            <div class="mb-6 text-@textAlign">
+                @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
+                {
+                    <h2 class="text-3xl font-bold mb-2" style="color:@(Model.TitleColor?.Value ?? "#111827")">
+                        @Html.Raw(Model.Title.Value)
+                    </h2>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
+                {
+                    <p class="text-lg" style="color:@(Model.SubtitleColor?.Value ?? "#6b7280")">
+                        @Html.Raw(Model.Subtitle.Value)
+                    </p>
+                }
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(embedUrl))
+        {
+            <div class="rounded-2xl overflow-hidden shadow-xl"
+                 style="position:relative; aspect-ratio:@ratio; width:100%;">
+                <iframe src="@embedUrl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;">
+                </iframe>
+            </div>
+        }
+        else
+        {
+            <div class="rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400"
+                 style="aspect-ratio:@ratio;">
+                <div class="text-center">
+                    <i class="fas fa-play-circle text-5xl mb-2 opacity-30"></i>
+                    <p class="text-sm">Introduce una URL de YouTube o Vimeo</p>
+                </div>
+            </div>
+        }
+
+    </div>
+</section>

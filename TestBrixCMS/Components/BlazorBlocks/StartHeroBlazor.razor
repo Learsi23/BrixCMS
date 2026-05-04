@@ -1,0 +1,199 @@
+@inject NavigationManager NavManager
+
+<div class="hero-container" style="background-color:@(BackgroundColor ?? "transparent"); @GetBorderStyle() @GetBorderRadius()">
+
+    @if (!string.IsNullOrEmpty(BackgroundImage))
+    {
+        <div class="hero-bg" style="@GetBgStyle()">
+            <img src="@ResolveUrl(BackgroundImage)" alt="Background" />
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(FirstImage) && !FirstImageNextToText)
+    {
+        <div class="hero-image @(FirstImageLayer == "behind" ? "z-behind" : "z-front")" 
+             style="@GetImageStyle(FirstImageSize, FirstImageOffsetTop, FirstImageOffsetBottom, FirstImageOffsetLeft, FirstImageOffsetRight)">
+            <img src="@ResolveUrl(FirstImage)" alt="" />
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(SecondImage) && !SecondImageNextToText)
+    {
+        <div class="hero-image @(SecondImageLayer == "behind" ? "z-behind" : "z-front")" 
+             style="@GetImageStyle(SecondImageSize, SecondImageOffsetTop, SecondImageOffsetBottom, SecondImageOffsetLeft, SecondImageOffsetRight)">
+            <img src="@ResolveUrl(SecondImage)" alt="" />
+        </div>
+    }
+
+    <div class="container mx-auto relative px-6 z-10">
+        <div class="flex @(FirstImageNextToText || SecondImageNextToText ? "flex-row items-center gap-8" : "flex-col")">
+            
+            @if(FirstImageNextToText && !string.IsNullOrEmpty(FirstImage)) 
+            {
+                <img src="@ResolveUrl(FirstImage)" style="width:@FirstImageSize; height:auto;" />
+            }
+
+            <div class="text-content w-full">
+                @if (!string.IsNullOrEmpty(TitleSida))
+                {
+                    <h4 style="color:@TitleSidaColor; font-size:@TitleSidaSize; font-weight:@TitleSidaWeight; text-align:@TitleSidaAlignment;">
+                        @((MarkupString)TitleSida)
+                    </h4>
+                }
+
+                @if (!string.IsNullOrEmpty(Title))
+                {
+                    <h1 style="color:@TitleColor; font-size:@TitleSize; font-weight:@TitleWeight; text-align:@TitleAlignment;" class="my-4 leading-tight">
+                        @((MarkupString)Title)
+                    </h1>
+                }
+
+                @if (!string.IsNullOrEmpty(Text))
+                {
+                    <div style="color:@TextColor; font-size:@TextSize; font-weight:@TextWeight; text-align:@TextAlignment;" class="mb-6">
+                        @((MarkupString)Text)
+                    </div>
+                }
+
+                <div class="flex items-center" style="justify-content:@GetAlignment(SubTitleAlignment)">
+                    <div class="flex-shrink-0 ">
+                        @if (!string.IsNullOrEmpty(LeftIcon)) 
+                        {
+                            <img src="@ResolveUrl(LeftIcon)" style="width:@LeftIconSize;" />
+                        }
+                        else if (!string.IsNullOrEmpty(LeftIconClass)) 
+                        {
+                            <i class="@LeftIconClass" style="color:@LeftIconColor; font-size:@LeftIconFaSize;"></i>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(SubTitle))
+                    {
+                        <h3 style="color:@SubTitleColor; font-size:@SubTitleSize; font-weight:@SubTitletWeight; margin:0;">
+                            @((MarkupString)SubTitle)
+                        </h3>
+                    }
+
+                    <div class="flex-shrink-0 mx-4">
+                        @if (!string.IsNullOrEmpty(RightIcon)) 
+                        {
+                            <img src="@ResolveUrl(RightIcon)" style="width:@RightIconSize;" />
+                        }
+                        else if (!string.IsNullOrEmpty(RightIconClass)) 
+                        {
+                            <i class="@RightIconClass" style="color:@RightIconColor;"></i>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if(SecondImageNextToText && !string.IsNullOrEmpty(SecondImage)) 
+            {
+                <img src="@ResolveUrl(SecondImage)" style="width:@SecondImageSize; height:auto;" />
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .hero-container { position: relative; width: 100%; display: flex; align-items: center; overflow: hidden; min-height: 600px; }
+    .hero-bg { position: absolute; inset: 0; z-index: 0; }
+    .hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-image { position: absolute; }
+    .hero-image img { width: 100%; height: auto; }
+    .z-behind { z-index: 1; }
+    .z-front { z-index: 20; }
+</style>
+
+@code {
+    [Parameter] public string? LeftIcon { get; set; }
+    [Parameter] public string? LeftIconSize { get; set; }
+    [Parameter] public string? LeftIconClass { get; set; }
+    [Parameter] public string? LeftIconColor { get; set; }
+    [Parameter] public string? LeftIconFaSize { get; set; }
+    [Parameter] public string? RightIcon { get; set; }
+    [Parameter] public string? RightIconSize { get; set; }
+    [Parameter] public string? RightIconClass { get; set; }
+    [Parameter] public string? RightIconColor { get; set; }
+    [Parameter] public string? TitleSida { get; set; }
+    [Parameter] public string? TitleSidaColor { get; set; }
+    [Parameter] public string? TitleSidaSize { get; set; }
+    [Parameter] public string? TitleSidaWeight { get; set; }
+    [Parameter] public string? TitleSidaAlignment { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? TitleColor { get; set; }
+    [Parameter] public string? TitleSize { get; set; }
+    [Parameter] public string? TitleWeight { get; set; }
+    [Parameter] public string? TitleAlignment { get; set; }
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string? TextColor { get; set; }
+    [Parameter] public string? TextSize { get; set; }
+    [Parameter] public string? TextWeight { get; set; }
+    [Parameter] public string? TextAlignment { get; set; }
+    [Parameter] public string? SubTitle { get; set; }
+    [Parameter] public string? SubTitleColor { get; set; }
+    [Parameter] public string? SubTitleSize { get; set; }
+    [Parameter] public string? SubTitletWeight { get; set; }
+    [Parameter] public string? SubTitleAlignment { get; set; }
+    [Parameter] public string? BackgroundColor { get; set; }
+    [Parameter] public string? BackgroundImage { get; set; }
+    [Parameter] public string? BackgroundOpacity { get; set; }
+    [Parameter] public string? BackgroundBlur { get; set; }
+    [Parameter] public string? Border { get; set; }
+    [Parameter] public string? BorderRadius { get; set; }
+    [Parameter] public string? FirstImage { get; set; }
+    [Parameter] public string? FirstImageSize { get; set; }
+    [Parameter] public string? FirstImageOffsetTop { get; set; }
+    [Parameter] public string? FirstImageOffsetBottom { get; set; }
+    [Parameter] public string? FirstImageOffsetLeft { get; set; }
+    [Parameter] public string? FirstImageOffsetRight { get; set; }
+    [Parameter] public string? FirstImageLayer { get; set; }
+    [Parameter] public bool FirstImageNextToText { get; set; }
+    [Parameter] public string? SecondImage { get; set; }
+    [Parameter] public string? SecondImageSize { get; set; }
+    [Parameter] public string? SecondImageOffsetTop { get; set; }
+    [Parameter] public string? SecondImageOffsetBottom { get; set; }
+    [Parameter] public string? SecondImageOffsetLeft { get; set; }
+    [Parameter] public string? SecondImageOffsetRight { get; set; }
+    [Parameter] public string? SecondImageLayer { get; set; }
+    [Parameter] public bool SecondImageNextToText { get; set; }
+
+    private string GetBgStyle()
+    {
+        var styles = new List<string>();
+        if (double.TryParse(BackgroundOpacity, out var opacity))
+            styles.Add($"opacity:{opacity / 100.0}");
+        if (double.TryParse(BackgroundBlur, out var blur))
+            styles.Add($"filter:blur({blur}px)");
+        return string.Join(";", styles);
+    }
+
+    private string GetBorderStyle() => string.IsNullOrEmpty(Border) ? "" : $"border:{Border};";
+    private string GetBorderRadius() => string.IsNullOrEmpty(BorderRadius) ? "" : $"border-radius:{BorderRadius};";
+
+    private string ResolveUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return "";
+        return url.StartsWith("~/") ? url.Replace("~/", NavManager.BaseUri) : url;
+    }
+
+    private string GetAlignment(string? align)
+    {
+        return align switch
+        {
+            "center" => "center",
+            "right" => "flex-end",
+            _ => "flex-start"
+        };
+    }
+
+    private string GetImageStyle(string? size, string? top, string? bottom, string? left, string? right)
+    {
+        var styles = new List<string> { $"width:{size ?? "30%"}" };
+        if (!string.IsNullOrEmpty(top)) styles.Add($"top:{top}");
+        if (!string.IsNullOrEmpty(bottom)) styles.Add($"bottom:{bottom}");
+        if (!string.IsNullOrEmpty(left)) styles.Add($"left:{left}");
+        if (!string.IsNullOrEmpty(right)) styles.Add($"right:{right}");
+        return string.Join(";", styles);
+    }
+}

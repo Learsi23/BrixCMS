@@ -1,0 +1,33 @@
+@model TestBrixCMS.Data.Fields.MarkdownField
+
+@{
+    // El nombre que BrixCMS usa para el input (ej: values[Content].Value)
+    var fieldName = ViewData.TemplateInfo.HtmlFieldPrefix;
+    var fieldId = fieldName.Replace("[", "_").Replace("]", "_").Replace(".", "_");
+}
+<script src="~/lib/tinymce/tinymce.min.js"></script>
+
+<div class="mb-3">
+    @* Textarea que TinyMCE va a transformar *@
+    <textarea id="@fieldId" name="@fieldName" class="form-control">@Model.Value</textarea>
+</div>
+
+@* Script de TinyMCE *@
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+<script>
+    (function() {
+        tinymce.init({
+            selector: '#@fieldId',
+            height: 400,
+            menubar: false,
+            plugins: 'advlist autolink lists link image charmap preview anchor code visualblocks wordcount',
+            toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | code | removeformat',
+            setup: function (editor) {
+                editor.on('change', function () {
+                    editor.save(); // Importante: guarda el contenido en el textarea real
+                });
+            }
+        });
+    })();
+</script>

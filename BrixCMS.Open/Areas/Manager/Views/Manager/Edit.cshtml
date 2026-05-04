@@ -84,6 +84,10 @@
                     <span class="bg-yellow-100 text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
                         <i class="fas fa-pencil mr-1"></i> Draft
                     </span>
+                    <button onclick="quickPublish()"
+                            class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold transition text-sm shadow-sm">
+                        <i class="fas fa-rocket mr-1"></i> Publish
+                    </button>
                 }
 
                 @*
@@ -412,6 +416,25 @@
 @Html.AntiForgeryToken()
 
 <script>
+    // -- Quick publish (flip IsPublished without touching blocks) --
+    function quickPublish() {
+        const pageId = document.querySelector('[data-page-id]').dataset.pageId;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Manager/Manager/QuickPublish';
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = 'pageId'; input.value = pageId;
+        form.appendChild(input);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            const t = document.createElement('input');
+            t.type = 'hidden'; t.name = '__RequestVerificationToken'; t.value = token;
+            form.appendChild(t);
+        }
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     // -- Save page settings (color + font + SEO) --
     function savePageSettings() {
         const color      = document.getElementById('pageColorInput').value;

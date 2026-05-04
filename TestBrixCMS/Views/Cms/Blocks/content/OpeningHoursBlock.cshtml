@@ -1,0 +1,104 @@
+@using TestBrixCMS.Models.Blocks
+@using System.Text.Json
+@model OpeningHoursBlock
+
+@{
+    var openColor   = Model.OpenColor?.Value ?? "#16a34a";
+    var closedColor = Model.ClosedColor?.Value ?? "#dc2626";
+    var highlight   = Model.HighlightToday?.IsTrue ?? true;
+    var closedLabel = Model.ClosedLabel?.Value ?? "Closed";
+    var nowOpenLbl  = Model.NowOpenLabel?.Value ?? "We're open now!";
+    var nowClosedLbl = Model.NowClosedLabel?.Value ?? "We're closed right now";
+    var hoursJson   = Model.HoursJson?.Value ?? "[]";
+
+    List<HourRow> rows = new();
+    try
+    {
+        rows = JsonSerializer.Deserialize<List<HourRow>>(hoursJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+    }
+    catch { }
+
+    var todayName = DateTime.Now.DayOfWeek.ToString();
+}
+
+@functions {
+    public class HourRow { public string Day { get; set; } = ""; public string Open { get; set; } = ""; public string Close { get; set; } = ""; }
+}
+
+<section class="w-full py-12 px-4">
+    <div class="max-w-lg mx-auto">
+        @if (!string.IsNullOrEmpty(Model.Title?.Value))
+        {
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">@Model.Title.Value</h2>
+        }
+
+        <div x-data="openingHours()" x-init="init()" class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <table class="w-full text-sm">
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        var isToday   = highlight && string.Equals(row.Day, todayName, StringComparison.OrdinalIgnoreCase);
+                        var isClosed  = string.IsNullOrEmpty(row.Open) || string.IsNullOrEmpty(row.Close);
+                        var rowBg     = isToday ? "bg-gray-50" : "bg-white";
+                        var dayWeight = isToday ? "font-bold" : "font-medium";
+                        <tr class="@rowBg border-b border-gray-100 last:border-0">
+                            <td class="px-5 py-3 @dayWeight text-gray-800 w-36">
+                                @row.Day
+                                @if (isToday)
+                                {
+                                    <span class="ml-1 text-xs font-normal text-gray-400">(today)</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3 text-right">
+                                @if (isClosed)
+                                {
+                                    <span class="font-semibold" style="color:@closedColor;">@closedLabel</span>
+                                }
+                                else
+                                {
+                                    <span class="text-gray-700">@row.Open &ndash; @row.Close</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p class="mt-4 text-center text-sm font-semibold"
+           x-data="openingHoursStatus(@Json.Serialize(rows), '@Html.Raw(nowOpenLbl.Replace("'", "\\'"))', '@Html.Raw(nowClosedLbl.Replace("'", "\\'"))', '@openColor', '@closedColor')"
+           x-init="check()"
+           :style="'color:' + color"
+           x-text="label">
+        </p>
+    </div>
+</section>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('openingHoursStatus', (rows, openLbl, closedLbl, openColor, closedColor) => ({
+        label: '',
+        color: closedColor,
+        check() {
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const now  = new Date();
+            const todayName = days[now.getDay()];
+            const row = rows.find(r => r.day?.toLowerCase() === todayName.toLowerCase());
+            if (!row || !row.open || !row.close) {
+                this.label = closedLbl; this.color = closedColor; return;
+            }
+            const [oh, om] = row.open.split(':').map(Number);
+            const [ch, cm] = row.close.split(':').map(Number);
+            const cur = now.getHours() * 60 + now.getMinutes();
+            const open  = oh * 60 + om;
+            const close = ch * 60 + cm;
+            if (cur >= open && cur < close) {
+                this.label = openLbl;  this.color = openColor;
+            } else {
+                this.label = closedLbl; this.color = closedColor;
+            }
+        }
+    }));
+});
+</script>

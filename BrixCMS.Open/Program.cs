@@ -110,7 +110,7 @@ builder.Services.AddSingleton<MarkdownPipeline>(_ =>
         .Build());
 
 // =====================================================
-// 5️⃣ AI — Dynamic provider (Gemini / DeepSeek / Mistral) with Ollama fallback
+// 5️⃣ AI — Ollama (local, free, open source)
 // =====================================================
 
 var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
@@ -142,42 +142,11 @@ builder.Services.AddScoped<IChatClient>(sp =>
 {
     var apiKeySvc = sp.GetRequiredService<ApiKeyService>();
     var loggerFac = sp.GetRequiredService<ILoggerFactory>();
-    var resolved = apiKeySvc.ResolveActiveClient();
+    var resolved  = apiKeySvc.ResolveActiveClient();
+    var endpoint  = resolved?.endpoint ?? ollamaUrl;
+    var model     = resolved?.model    ?? chatModel;
 
-    if (resolved.HasValue)
-    {
-        var (provider, endpoint, model) = resolved.Value;
-
-        // Ollama: no API key needed
-        if (provider == "ollama")
-        {
-            return ((IChatClient)new OllamaApiClient(new Uri(endpoint), model))
-                .AsBuilder()
-                .UseFunctionInvocation()
-                .UseLogging(loggerFac)
-                .Build();
-        }
-
-        var plainKey = apiKeySvc.GetDecryptedKeySync(provider)!;
-
-        var openAiClient = new OpenAI.OpenAIClient(
-            new System.ClientModel.ApiKeyCredential(plainKey),
-            new OpenAI.OpenAIClientOptions
-            {
-                Endpoint = new Uri(endpoint)
-            });
-
-        return openAiClient
-            .GetChatClient(model)
-            .AsIChatClient()
-            .AsBuilder()
-            .UseFunctionInvocation()
-            .UseLogging(loggerFac)
-            .Build();
-    }
-
-    // Fallback: Ollama
-    return ((IChatClient)new OllamaApiClient(new Uri(ollamaUrl), chatModel))
+    return ((IChatClient)new OllamaApiClient(new Uri(endpoint), model))
         .AsBuilder()
         .UseFunctionInvocation()
         .UseLogging(loggerFac)
@@ -298,12 +267,16 @@ using (var scope = app.Services.CreateScope())
         ["MetaDescription"] = "TEXT",
         ["OgImage"] = "TEXT",
         ["MetaKeywords"] = "TEXT",
+        ["IsSeed"] = "INTEGER NOT NULL DEFAULT 0",
     };
     foreach (var col in newPageColumns)
     {
         try { db.Database.ExecuteSqlRaw($"ALTER TABLE Pages ADD COLUMN \"{col.Key}\" {col.Value}"); }
         catch { }
     }
+    // Mark the existing demo page as seed (applies to DBs created before this column existed)
+    try { db.Database.ExecuteSqlRaw("UPDATE Pages SET IsSeed = 1 WHERE Title = 'Home' AND IsSeed = 0 AND (SELECT COUNT(*) FROM Pages WHERE IsSeed = 0 AND IsPublished = 1) <= 1"); }
+    catch { }
 
     // ── Seed BrixCMS landing page (first run) ──
     BrixCMS.Open.Services.BrixLandingSeeder.SeedIfEmpty(db);

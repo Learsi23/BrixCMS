@@ -19,7 +19,8 @@ public static class BrixLandingSeeder
 
     private static void SeedHomePage(BrixDbContext db)
     {
-        if (db.Pages.Any(p => p.Slug == ""))
+        // Only seed on a truly empty database (no pages AND no site config)
+        if (db.Pages.Any() || db.SiteConfig.Any(c => c.Key == "site"))
             return;
 
         var page = new Page
@@ -28,6 +29,7 @@ public static class BrixLandingSeeder
             Title       = "Home",
             Slug        = "",
             IsPublished = true,
+            IsSeed      = true,
             PublishedAt = DateTime.UtcNow,
             PageType    = "standard",
             JsonData    = JsonSerializer.Serialize(new { BackgroundColor = new { Value = "#ffffff" } }),
@@ -160,7 +162,7 @@ public static class BrixLandingSeeder
             Title           = V("PDF Chatbot built-in"),
             TitleColor      = V("#0f172a"),
             TitleSize       = V("1.15rem"),
-            Text            = V("Drop PDFs in wwwroot/Data and get an AI chatbot that answers from your documents. Works with Ollama (local), Gemini, Mistral, or DeepSeek."),
+            Text            = V("Drop PDFs in wwwroot/Data and get an AI chatbot that answers from your documents. Works with Ollama (local) and all its supported models — private, powerful, and ready to go."),
             TextColor       = V("#64748b"),
             TextSize        = V("0.95rem"),
             BackgroundColor = V("#f8fafc"),
@@ -204,11 +206,11 @@ public static class BrixLandingSeeder
             Subtitle         = V("Clone the repo, run dotnet run, and you're live in under 2 minutes."),
             SubtitleColor    = V("rgba(255,255,255,0.7)"),
             Btn1Text         = V("View on GitHub"),
-            Btn1Url          = V("https://github.com/Learsi23/BrixCMS.Open"),
+            Btn1Url          = V("https://github.com/Learsi23/BrixCMS"),
             Btn1BgColor      = V("#10b981"),
             Btn1TextColor    = V("#ffffff"),
             Btn2Text         = V("Open Admin Panel"),
-            Btn2Url          = V("/Manager"),
+            Btn2Url          = V("/Manager/login"),
             Btn2Color        = V("rgba(255,255,255,0.15)"),
             BackgroundColor  = V("#0f172a"),
             BackgroundColor2 = V("#1e293b"),
@@ -242,8 +244,8 @@ public static class BrixLandingSeeder
                 paddingVertical = "py-3",
                 menuItems       = new[]
                 {
-                    new { customText = "GitHub", customUrl = "https://github.com/Learsi23/BrixCMS.Open", isCustomUrl = true, pageSlug = "" },
-                    new { customText = "Admin",  customUrl = "/Manager", isCustomUrl = true, pageSlug = "" },
+                    new { customText = "GitHub", customUrl = "https://github.com/Learsi23/BrixCMS", isCustomUrl = true, pageSlug = "" },
+                    new { customText = "Admin",  customUrl = "/Manager/login", isCustomUrl = true, pageSlug = "" },
                 },
             },
             footer = new
@@ -261,10 +263,10 @@ public static class BrixLandingSeeder
                 socialMediaColumnTitle = "Links",
                 socialMedia           = new[]
                 {
-                    new { platform = "github", url = "https://github.com/Learsi23/BrixCMS.Open", iconClass = "fab fa-github" },
+                    new { platform = "github", url = "https://github.com/Learsi23/BrixCMS", iconClass = "fab fa-github" },
                 },
                 showCopyrightRow    = true,
-                companyName         = "BrixCMS.Open",
+                companyName         = "BrixCMS",
                 companyNumber       = "",
                 copyrightText       = "MIT License — free forever",
                 showHorizontalLine  = true,

@@ -1,0 +1,66 @@
+@model TestBrixCMS.Models.BlazorBlocks.TextWithButtonBlock
+@using TestBrixCMS.Models.BlazorBlocks
+@using TestBrixCMS.Models.Blocks
+
+@{
+    // Global
+    var globalFont = Model.GlobalFontFamily?.Value;
+
+    // Title
+    var title = Model.Title?.Value;
+    var titleColor = Model.TitleColor?.Value;
+    var titleSize = Model.TitleSize?.Value;
+    var titleWeight = Model.TitleWeight?.Value;
+
+    // Subtitle
+    var subtitle = Model.Subtitle?.Value;
+    var subtitleColor = Model.SubtitleColor?.Value;
+    var subtitleSize = Model.SubtitleSize?.Value;
+    var subtitleWeight = Model.SubtitleWeight?.Value;
+
+    // Description
+    var description = Model.Description?.Value;
+    var descriptionColor = Model.DescriptionColor?.Value;
+    var descriptionSize = Model.DescriptionSize?.Value;
+    var descriptionWeight = Model.DescriptionWeight?.Value;
+
+    // Button
+    var buttonText = Model.ButtonText?.Value;
+    var buttonUrl = Model.ButtonUrl?.Value;
+    var buttonColor = Model.ButtonColor?.Value;
+    var buttonHoverColor = Model.ButtonHoverColor?.Value;
+    var buttonBorderRadius = Model.ButtonBorderRadius?.Value;
+    var buttonBorder = Model.ButtonBorder?.Value;
+    var buttonWidth = Model.ButtonWidth?.Value;
+    var buttonPadding = Model.ButtonPadding?.Value;
+    var buttonTextColor = Model.ButtonTextColor?.Value;
+    var buttonPosition = Model.ButtonPosition?.Value;
+}
+
+<div class="container mx-auto my-16">
+    <component type="typeof(TextWithButtonBlock)"
+               render-mode="Static"
+               param-GlobalFontFamily="@globalFont"
+               param-Title="@title"
+               param-TitleColor="@titleColor"
+               param-TitleSize="@titleSize"
+               param-TitleWeight="@titleWeight"
+               param-Subtitle="@subtitle"
+               param-SubtitleColor="@subtitleColor"
+               param-SubtitleSize="@subtitleSize"
+               param-SubtitleWeight="@subtitleWeight"
+               param-Description="@description"
+               param-DescriptionColor="@descriptionColor"
+               param-DescriptionSize="@descriptionSize"
+               param-DescriptionWeight="@descriptionWeight"
+               param-ButtonText="@buttonText"
+               param-ButtonUrl="@buttonUrl"
+               param-ButtonColor="@buttonColor"
+               param-ButtonHoverColor="@buttonHoverColor"
+               param-ButtonBorderRadius="@buttonBorderRadius"
+               param-ButtonBorder="@buttonBorder"
+               param-ButtonWidth="@buttonWidth"
+               param-ButtonPadding="@buttonPadding"
+               param-ButtonTextColor="@buttonTextColor"
+               param-ButtonPosition="@buttonPosition" />
+</div>

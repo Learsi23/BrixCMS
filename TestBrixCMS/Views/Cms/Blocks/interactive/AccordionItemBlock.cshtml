@@ -1,0 +1,8 @@
+@using TestBrixCMS.Models.Blocks
+@model AccordionItemBlock
+
+@* AccordionItemBlock — rendered directly by AccordionBlock, this is a fallback *@
+<div class="border border-gray-200 rounded-xl p-4">
+    <p class="font-semibold text-gray-800">@(Model.Question?.Value ?? "")</p>
+    <p class="mt-2 text-gray-600 text-sm">@Html.Raw(Model.Answer?.Value ?? "")</p>
+</div>

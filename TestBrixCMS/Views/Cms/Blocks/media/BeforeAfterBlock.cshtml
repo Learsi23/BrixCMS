@@ -1,0 +1,58 @@
+@using TestBrixCMS.Models.Blocks
+@model BeforeAfterBlock
+
+@{
+    var beforeImage = Model.BeforeImage?.Value ?? "";
+    var afterImage = Model.AfterImage?.Value ?? "";
+    var beforeLabel = Model.BeforeLabel?.Value ?? "Before";
+    var afterLabel = Model.AfterLabel?.Value ?? "After";
+    var labelColor = Model.LabelColor?.Value ?? "#ffffff";
+    var labelBackground = Model.LabelBackground?.Value ?? "#000000";
+    var orientation = Model.Orientation?.Value ?? "horizontal";
+    var startingPosition = int.Parse(Model.StartingPosition?.Value ?? "50");
+    var width = Model.Width?.Value ?? "100%";
+    var height = Model.Height?.Value ?? "500px";
+    var borderRadius = Model.BorderRadius?.Value ?? "0";
+    var sectionId = Model.SectionId?.Value ?? "";
+    var paddingY = Model.PaddingY?.Value ?? "2rem";
+}
+
+<section id="@sectionId" class="py-8" style="padding:@paddingY 0;">
+    <div class="mx-auto" style="max-width:1200px; padding:0 1rem;">
+        
+        @if (string.IsNullOrEmpty(beforeImage) || string.IsNullOrEmpty(afterImage))
+        {
+            <div class="text-center text-gray-400 py-12" style="background:#f9fafb; border-radius:@borderRadius;">
+                <p>Configure before and after images in the block settings</p>
+            </div>
+        }
+        else
+        {
+            <div class="relative overflow-hidden select-none" style="width:@width; height:@height; border-radius:@borderRadius; cursor:@(orientation == "horizontal" ? "ew-resize" : "ns-resize");">
+                @* After Image (full) *@
+                <img src="@afterImage" alt="After" class="absolute inset-0 w-full h-full object-cover" />
+                
+                @* Before Image (clipped) *@
+                <div class="absolute inset-0 overflow-hidden" style="clip-path:@(orientation == "horizontal" ? $"inset(0 " + (100 - startingPosition) + "% 0 0)" : $"inset(0 0 " + (100 - startingPosition) + "% 0)")">
+                    <img src="@beforeImage" alt="Before" class="w-full h-full object-cover" />
+                </div>
+                
+                @* Slider Handle *@
+                <div class="absolute pointer-events-none bg-white shadow-lg rounded-full flex items-center justify-center"
+                     style="@(orientation == "horizontal" ? $"left:{startingPosition}%;top:0;bottom:0;width:2px;transform:translateX(-50%);" : $"top:{startingPosition}%;left:0;right:0;height:2px;transform:translateY(-50%);")">
+                    <div class="w-10 h-10 rounded-full bg-white shadow flex items-center justify-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+                        <span style="color:#000;">@(orientation == "horizontal" ? "↔" : "↕")</span>
+                    </div>
+                </div>
+                
+                @* Labels *@
+                <span class="absolute px-3 py-1 text-sm font-medium rounded" style="top:1rem;left:1rem;background-color:@labelBackground;color:@labelColor;">
+                    @beforeLabel
+                </span>
+                <span class="absolute px-3 py-1 text-sm font-medium rounded" style="top:1rem;right:1rem;background-color:@labelBackground;color:@labelColor;">
+                    @afterLabel
+                </span>
+            </div>
+        }
+    </div>
+</section>

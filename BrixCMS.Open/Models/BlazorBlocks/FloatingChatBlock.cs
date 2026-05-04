@@ -87,11 +87,8 @@ namespace BrixCMS.Open.Models.BlazorBlocks
         {
             Options = new List<SelectOption<string>>
             {
-                new() { Value = "auto",     Label = "Auto (site default)" },
-                new() { Value = "ollama",   Label = "Ollama (local)"      },
-                new() { Value = "gemini",   Label = "Gemini"              },
-                new() { Value = "deepseek", Label = "DeepSeek"            },
-                new() { Value = "mistral",  Label = "Mistral"             },
+                new() { Value = "auto",   Label = "Auto (site default)" },
+                new() { Value = "ollama", Label = "Ollama (local)"      },
             },
             Value = "auto"
         };

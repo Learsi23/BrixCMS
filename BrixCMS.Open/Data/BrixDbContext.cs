@@ -33,6 +33,7 @@ public class Page
     public bool IsPublished { get; set; } = false;
     public DateTime? PublishedAt { get; set; }
     public int SortOrder { get; set; } = 0;
+    public bool IsSeed { get; set; } = false;
 
     public string? PageType { get; set; } = "standard";
     public string? MetaDescription { get; set; }

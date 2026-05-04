@@ -48,10 +48,15 @@
                         {
                             @foreach (var item in pagesList)
                             {
-                                var url = item.IsCustomUrl ? item.CustomUrl : (!string.IsNullOrEmpty(item.PageSlug) ? "/" + item.PageSlug : "#");
-                                var text = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
+                                var url    = !string.IsNullOrEmpty(item.CustomUrl) ? item.CustomUrl
+                                           : !string.IsNullOrEmpty(item.PageSlug)  ? "/" + item.PageSlug
+                                           : "#";
+                                var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
+                                var target = item.OpenInNewTab ? "_blank" : "_self";
+                                var rel    = item.OpenInNewTab ? "noopener noreferrer" : null;
                                 <li>
-                                    <a href="@url" class="hover:opacity-75 transition-opacity">@text</a>
+                                    <a href="@url" target="@target" rel="@rel"
+                                       class="hover:opacity-75 transition-opacity">@text</a>
                                 </li>
                             }
                         }
