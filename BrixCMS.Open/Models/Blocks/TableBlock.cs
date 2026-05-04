@@ -6,8 +6,13 @@ namespace BrixCMS.Open.Models.Blocks
     [BlockType(Name = "Table", Category = "Content", Icon = "fas fa-table", Description = "Simple data table. Different from comparison table - optimized for displaying structured data.")]
     public class TableBlock : BlockBase
     {
-        [Field(Title = "Table Data (JSON)", Placeholder = "[{\"headers\":[\"Col1\",\"Col2\"],\"rows\":[[\"Data1\",\"Data2\"]}]")]
-        public TextAreaField TableData { get; set; } = new();
+        [Field(Title = "Table Content",
+               Description = "First line = column headers. Each next line = one row. Separate columns with the pipe character |",
+               Placeholder = "Product | Price | Status\nApple | €1.50 | Available\nBanana | €0.80 | Available")]
+        public TextAreaField TableData { get; set; } = new()
+        {
+            Value = "Product | Price | Status\nItem 1 | €10.00 | Available\nItem 2 | €20.00 | Available",
+        };
 
         [Field(Title = "Table Caption", Placeholder = "Optional table title")]
         public StringField Caption { get; set; }

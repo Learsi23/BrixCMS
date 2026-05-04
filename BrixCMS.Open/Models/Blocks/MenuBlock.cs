@@ -14,30 +14,21 @@ namespace BrixCMS.Open.Models.Blocks
         [Field(Title = "Subtitle", Placeholder = "Fresh ingredients, prepared with passion.")]
         public StringField Subtitle { get; set; } = new() { Value = "Fresh ingredients, prepared with passion." };
 
-        [Header("Menu Items (JSON)")]
-        [Field(Title = "Menu JSON",
-            Description = "JSON array of menu sections. Each section: { \"category\": \"Starters\", \"items\": [{ \"name\": \"...\", \"description\": \"...\", \"price\": \"€8\", \"badge\": \"New\" }] }",
-            Placeholder = "[]")]
-        public TextAreaField MenuJson { get; set; } = new()
+        [Header("Menu Items")]
+        [Field(Title = "Menu Content",
+               Description = "Write [Category Name] to start a section. Then one item per line: Name | Description | Price | Badge (badge is optional). Leave a blank line between sections.",
+               Placeholder = "[Starters]\nGarlic Bread | Toasted ciabatta with herb butter | €5\nSoup of the Day | Ask your server | €7 | Chef's pick\n\n[Mains]\nGrilled Chicken | Free-range chicken with seasonal vegetables | €16\nPasta Primavera | Fresh pasta with roasted vegetables | €14 | Vegan")]
+        public TextAreaField MenuContent { get; set; } = new()
         {
             Value = """
-[
-  {
-    "category": "Starters",
-    "items": [
-      { "name": "Garlic Bread", "description": "Toasted ciabatta with herb butter", "price": "€5" },
-      { "name": "Soup of the Day", "description": "Ask your server", "price": "€7", "badge": "Chef's pick" }
-    ]
-  },
-  {
-    "category": "Mains",
-    "items": [
-      { "name": "Grilled Chicken", "description": "Free-range chicken with seasonal vegetables", "price": "€16" },
-      { "name": "Pasta Primavera", "description": "Fresh pasta with roasted vegetables and pesto", "price": "€14", "badge": "Vegan" }
-    ]
-  }
-]
-"""
+[Starters]
+Garlic Bread | Toasted ciabatta with herb butter | €5
+Soup of the Day | Ask your server | €7 | Chef's pick
+
+[Mains]
+Grilled Chicken | Free-range chicken with seasonal vegetables | €16
+Pasta Primavera | Fresh pasta with roasted vegetables and pesto | €14 | Vegan
+""",
         };
 
         [Header("Style")]

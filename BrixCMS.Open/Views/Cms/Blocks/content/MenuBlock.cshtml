@@ -1,24 +1,56 @@
 @using BrixCMS.Open.Models.Blocks
-@using System.Text.Json
 @model MenuBlock
 
 @{
-    var accent      = Model.AccentColor?.Value ?? "#b45309";
-    var showDiv     = Model.ShowDividers?.IsTrue ?? true;
-    var menuJson    = Model.MenuJson?.Value ?? "[]";
+    // ── Parse plain-text menu format ────────────────────────────────────────
+    //
+    // Format:
+    //   [Category Name]
+    //   Dish Name | Description | Price | Badge (optional)
+    //   Dish Name | Description | Price
+    //
+    //   [Next Category]
+    //   ...
+    //
+    // Blank lines are ignored. [Category] lines start a new section.
 
-    List<MenuSection> sections = new();
-    try
+    var accent   = Model.AccentColor?.Value ?? "#b45309";
+    var showDiv  = Model.ShowDividers?.IsTrue ?? true;
+    var rawText  = Model.MenuContent?.Value ?? "";
+
+    // Build sections
+    var sections = new List<(string Category, List<(string Name, string Desc, string Price, string Badge)> Items)>();
+    string? currentCategory = null;
+    var currentItems = new List<(string, string, string, string)>();
+
+    foreach (var rawLine in rawText.Split('\n'))
     {
-        sections = JsonSerializer.Deserialize<List<MenuSection>>(menuJson,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-    }
-    catch { }
-}
+        var line = rawLine.Trim();
+        if (string.IsNullOrEmpty(line)) continue;
 
-@functions {
-    public class MenuItem  { public string Name { get; set; } = ""; public string Description { get; set; } = ""; public string Price { get; set; } = ""; public string? Badge { get; set; } }
-    public class MenuSection { public string Category { get; set; } = ""; public List<MenuItem> Items { get; set; } = new(); }
+        if (line.StartsWith("[") && line.EndsWith("]"))
+        {
+            // Save previous section
+            if (currentCategory != null)
+                sections.Add((currentCategory, new List<(string, string, string, string)>(currentItems)));
+
+            currentCategory = line[1..^1].Trim();
+            currentItems    = new();
+        }
+        else if (currentCategory != null)
+        {
+            var parts   = line.Split('|');
+            var name    = parts.Length > 0 ? parts[0].Trim() : "";
+            var desc    = parts.Length > 1 ? parts[1].Trim() : "";
+            var price   = parts.Length > 2 ? parts[2].Trim() : "";
+            var badge   = parts.Length > 3 ? parts[3].Trim() : "";
+            if (!string.IsNullOrEmpty(name))
+                currentItems.Add((name, desc, price, badge));
+        }
+    }
+    // Add last section
+    if (currentCategory != null)
+        sections.Add((currentCategory, currentItems));
 }
 
 <section class="w-full py-14 px-4">
@@ -32,35 +64,44 @@
             <p class="text-center text-gray-500 mb-10">@Model.Subtitle.Value</p>
         }
 
-        @foreach (var menuSection in sections)
+        @if (!sections.Any())
+        {
+            <div class="text-center text-gray-400 py-8 text-sm">
+                <i class="fas fa-utensils mb-2 block text-2xl text-gray-300"></i>
+                <p>Add menu content in block settings.</p>
+                <p class="text-xs mt-1 text-gray-300">Use [Category] lines and <code>Name | Desc | Price</code> rows.</p>
+            </div>
+        }
+
+        @foreach (var (category, items) in sections)
         {
             <div class="mb-10">
                 <h3 class="text-lg font-semibold uppercase tracking-widest mb-4 pb-2 border-b-2"
                     style="color:@accent; border-color:@accent;">
-                    @menuSection.Category
+                    @category
                 </h3>
                 <ul class="space-y-4">
-                    @foreach (var item in menuSection.Items)
+                    @foreach (var (name, desc, price, badge) in items)
                     {
                         <li class="@(showDiv ? "pb-4 border-b border-gray-100" : "")">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <div class="flex items-center gap-2">
-                                        <span class="font-semibold text-gray-900">@item.Name</span>
-                                        @if (!string.IsNullOrEmpty(item.Badge))
+                                        <span class="font-semibold text-gray-900">@name</span>
+                                        @if (!string.IsNullOrEmpty(badge))
                                         {
                                             <span class="text-xs px-2 py-0.5 rounded-full font-medium text-white"
-                                                  style="background-color:@accent;">@item.Badge</span>
+                                                  style="background-color:@accent;">@badge</span>
                                         }
                                     </div>
-                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    @if (!string.IsNullOrEmpty(desc))
                                     {
-                                        <p class="text-sm text-gray-500 mt-0.5">@item.Description</p>
+                                        <p class="text-sm text-gray-500 mt-0.5">@desc</p>
                                     }
                                 </div>
-                                @if (!string.IsNullOrEmpty(item.Price))
+                                @if (!string.IsNullOrEmpty(price))
                                 {
-                                    <span class="font-semibold text-gray-800 whitespace-nowrap">@item.Price</span>
+                                    <span class="font-semibold text-gray-800 whitespace-nowrap">@price</span>
                                 }
                             </div>
                         </li>

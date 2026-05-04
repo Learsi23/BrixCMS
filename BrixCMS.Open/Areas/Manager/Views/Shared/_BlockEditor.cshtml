@@ -173,11 +173,19 @@
                     }
                     else
                     {
-                        <div class="flex flex-col gap-1.5">
+                        @* TextAreaField always spans full width for readability *@
+                        var colSpan = prop.PropertyType == typeof(TextAreaField) ? "col-span-1 md:col-span-2" : "";
+                        <div class="flex flex-col gap-1.5 @colSpan">
                             @* No mostrar label para BoolField *@
                             @if (prop.PropertyType != typeof(BoolField))
                             {
                                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
+                                @if (!string.IsNullOrEmpty(fieldAttr?.Description))
+                                {
+                                    <p class="text-[10px] text-blue-500 bg-blue-50 border border-blue-100 rounded px-2 py-1 leading-snug -mt-0.5">
+                                        <i class="fas fa-circle-info mr-1"></i>@fieldAttr.Description
+                                    </p>
+                                }
                             }
 
                             @* -- COLOR FIELD -- *@
@@ -275,8 +283,9 @@
                             else if (prop.PropertyType == typeof(TextAreaField))
                             {
                                 <textarea name="values[@prop.Name].Value"
-                                          rows="5"
-                                          class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg">@currentVal</textarea>
+                                          rows="7"
+                                          placeholder="@(fieldAttr?.Placeholder ?? "")"
+                                          class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg font-mono leading-relaxed">@currentVal</textarea>
                             }
                             @* -- BOOL FIELD -- *@
                             else if (prop.PropertyType == typeof(BoolField))

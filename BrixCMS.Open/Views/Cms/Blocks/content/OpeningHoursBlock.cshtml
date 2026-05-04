@@ -1,29 +1,32 @@
 @using BrixCMS.Open.Models.Blocks
-@using System.Text.Json
 @model OpeningHoursBlock
 
 @{
-    var openColor   = Model.OpenColor?.Value ?? "#16a34a";
-    var closedColor = Model.ClosedColor?.Value ?? "#dc2626";
-    var highlight   = Model.HighlightToday?.IsTrue ?? true;
-    var closedLabel = Model.ClosedLabel?.Value ?? "Closed";
-    var nowOpenLbl  = Model.NowOpenLabel?.Value ?? "We're open now!";
+    var openColor    = Model.OpenColor?.Value   ?? "#16a34a";
+    var closedColor  = Model.ClosedColor?.Value ?? "#dc2626";
+    var highlight    = Model.HighlightToday?.IsTrue ?? true;
+    var closedLabel  = Model.ClosedLabel?.Value    ?? "Closed";
+    var nowOpenLbl   = Model.NowOpenLabel?.Value   ?? "We're open now!";
     var nowClosedLbl = Model.NowClosedLabel?.Value ?? "We're closed right now";
-    var hoursJson   = Model.HoursJson?.Value ?? "[]";
 
-    List<HourRow> rows = new();
-    try
+    // Build rows from individual fields (no JSON needed)
+    var schedule = new[]
     {
-        rows = JsonSerializer.Deserialize<List<HourRow>>(hoursJson,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-    }
-    catch { }
+        new { Day = "Monday",    Open = Model.MondayOpen?.Value    ?? "", Close = Model.MondayClose?.Value    ?? "" },
+        new { Day = "Tuesday",   Open = Model.TuesdayOpen?.Value   ?? "", Close = Model.TuesdayClose?.Value   ?? "" },
+        new { Day = "Wednesday", Open = Model.WednesdayOpen?.Value ?? "", Close = Model.WednesdayClose?.Value ?? "" },
+        new { Day = "Thursday",  Open = Model.ThursdayOpen?.Value  ?? "", Close = Model.ThursdayClose?.Value  ?? "" },
+        new { Day = "Friday",    Open = Model.FridayOpen?.Value    ?? "", Close = Model.FridayClose?.Value    ?? "" },
+        new { Day = "Saturday",  Open = Model.SaturdayOpen?.Value  ?? "", Close = Model.SaturdayClose?.Value  ?? "" },
+        new { Day = "Sunday",    Open = Model.SundayOpen?.Value    ?? "", Close = Model.SundayClose?.Value    ?? "" },
+    };
 
     var todayName = DateTime.Now.DayOfWeek.ToString();
-}
 
-@functions {
-    public class HourRow { public string Day { get; set; } = ""; public string Open { get; set; } = ""; public string Close { get; set; } = ""; }
+    // Build the JSON structure needed for the Alpine.js live status check
+    var rowsJson = System.Text.Json.JsonSerializer.Serialize(
+        schedule.Select(r => new { day = r.Day, open = r.Open, close = r.Close })
+    );
 }
 
 <section class="w-full py-12 px-4">
@@ -33,17 +36,18 @@
             <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">@Model.Title.Value</h2>
         }
 
-        <div x-data="openingHours()" x-init="init()" class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <table class="w-full text-sm">
                 <tbody>
-                    @foreach (var row in rows)
+                    @foreach (var row in schedule)
                     {
-                        var isToday   = highlight && string.Equals(row.Day, todayName, StringComparison.OrdinalIgnoreCase);
-                        var isClosed  = string.IsNullOrEmpty(row.Open) || string.IsNullOrEmpty(row.Close);
-                        var rowBg     = isToday ? "bg-gray-50" : "bg-white";
-                        var dayWeight = isToday ? "font-bold" : "font-medium";
+                        var isToday  = highlight && string.Equals(row.Day, todayName, StringComparison.OrdinalIgnoreCase);
+                        var isClosed = string.IsNullOrEmpty(row.Open) || string.IsNullOrEmpty(row.Close);
+                        var rowBg    = isToday ? "bg-gray-50" : "bg-white";
+                        var dayW     = isToday ? "font-bold"  : "font-medium";
+
                         <tr class="@rowBg border-b border-gray-100 last:border-0">
-                            <td class="px-5 py-3 @dayWeight text-gray-800 w-36">
+                            <td class="px-5 py-3 @dayW text-gray-800 w-36">
                                 @row.Day
                                 @if (isToday)
                                 {
@@ -67,7 +71,7 @@
         </div>
 
         <p class="mt-4 text-center text-sm font-semibold"
-           x-data="openingHoursStatus(@Json.Serialize(rows), '@Html.Raw(nowOpenLbl.Replace("'", "\\'"))', '@Html.Raw(nowClosedLbl.Replace("'", "\\'"))', '@openColor', '@closedColor')"
+           x-data="openingHoursStatus(@Html.Raw(rowsJson), '@Html.Raw(nowOpenLbl.Replace("'", "\\'"))', '@Html.Raw(nowClosedLbl.Replace("'", "\\'"))', '@openColor', '@closedColor')"
            x-init="check()"
            :style="'color:' + color"
            x-text="label">
@@ -90,7 +94,7 @@ document.addEventListener('alpine:init', () => {
             }
             const [oh, om] = row.open.split(':').map(Number);
             const [ch, cm] = row.close.split(':').map(Number);
-            const cur = now.getHours() * 60 + now.getMinutes();
+            const cur   = now.getHours() * 60 + now.getMinutes();
             const open  = oh * 60 + om;
             const close = ch * 60 + cm;
             if (cur >= open && cur < close) {

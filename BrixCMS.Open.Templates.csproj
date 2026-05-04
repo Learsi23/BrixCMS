@@ -17,6 +17,7 @@
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <ContentTargetFolders>content</ContentTargetFolders>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
@@ -25,6 +26,11 @@
   <ItemGroup>
     <Compile Remove="**\*" />
     <EmbeddedResource Remove="**\*" />
+  </ItemGroup>
+
+  <!-- NuGet package assets (README shown on nuget.org; icon optional) -->
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,7 +2,7 @@
 
 > Open-source, block-based CMS for .NET 10. Build pages visually, ship AI-powered chatbots, and run everything on a single SQLite file.
 
-[![NuGet](https://img.shields.io/badge/nuget-soon-blue)](https://nuget.org)
+[![NuGet](https://img.shields.io/nuget/v/BrixCMS.Open.Templates?label=nuget)](https://www.nuget.org/packages/BrixCMS.Open.Templates)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -24,7 +24,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 | | |
 |---|---|
 | **40+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
-| **AI chatbot** | Embed a PDF-trained chatbot on any page — runs locally via Ollama or via Gemini / DeepSeek / Mistral |
+| **AI chatbot** | Embed a PDF-trained chatbot on any page — runs locally via Ollama (free, private, no API key needed) |
 | **Visual editor** | Drag-and-drop block builder in the admin panel — no code required |
 | **Multi-admin** | Invite team members; the owner manages access |
 | **PDF semantic search** | Drop PDFs in `wwwroot/Data/` and the chatbot answers questions about them |
@@ -54,36 +54,44 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 
 **Prerequisites:** [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
+### Option A — dotnet new (recommended)
 ```bash
-git clone https://github.com/your-username/BrixCMS.Open
-cd BrixCMS.Open/BrixCMS.Open
+dotnet new install BrixCMS.Open.Templates
+dotnet new brixcms -n MyWebsite
+cd MyWebsite
+dotnet run
+```
+
+### Option B — clone the repo
+```bash
+git clone https://github.com/Learsi23/BrixCMS
+cd BrixCMS/BrixCMS.Open
 dotnet run
 ```
 
 Open `https://localhost:5001` — your site is running.
 
-Admin panel: `https://localhost:5001/admin/manager`
+Admin panel: `https://localhost:5001/Manager`  
 Default credentials: `admin@brix.com` / `admin123` — **change these immediately.**
 
 ---
 
 ## AI Chatbot Setup
 
-BrixCMS ships with a working AI chatbot. Three ways to use it:
+BrixCMS.Open ships with Ollama — local, free, and fully private.
 
-**Option 1 — Local (free, GDPR-safe)**
+**Install Ollama and pull models:**
 ```bash
-# Install Ollama from https://ollama.com
-ollama pull llama3.1:8b
-ollama pull all-minilm  # for PDF embeddings
+# Install Ollama from https://ollama.com, then:
+ollama pull llama3.1:8b   # chat model
+ollama pull all-minilm    # for PDF embeddings
 ```
-No configuration needed — BrixCMS connects to Ollama automatically.
+No configuration needed — BrixCMS connects to `localhost:11434` automatically.
 
-**Option 2 — Cloud API**
-Go to `/Manager/Configuration` and enter an API key for Gemini, DeepSeek, or Mistral.
+**PDF-trained chatbot:**  
+Drop any PDF into `wwwroot/Data/`. On startup, BrixCMS ingests it into the local vector store. The `ChatBlock` answers questions about it with source citations.
 
-**Option 3 — PDF-trained chatbot**
-Drop any PDF into `wwwroot/Data/`. On startup, BrixCMS ingests it into the vector store. The `ChatBlock` will answer questions about it with source citations.
+> **Need cloud AI (Gemini, DeepSeek, Mistral)?** That's available in [BrixCMS Pro](https://brixcms.se) via BYOK — you connect your own API keys.
 
 ---
 

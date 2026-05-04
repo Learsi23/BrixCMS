@@ -29,16 +29,19 @@
     
     var gridClass = columns == "2" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-4";
     
-    // Helper to extract Value from wrapped JSON like {"Value":"text"}
-    string ExtractValue(string? json)
+    // Extract "Question" from AccordionItemBlock JsonData: {"Question":{"Value":"..."},"Answer":{"Value":"..."}}
+    string ExtractQuestion(string? json)
     {
         if (string.IsNullOrEmpty(json)) return "";
         try {
-            var doc = JsonSerializer.Deserialize<JsonElement>(json);
-            if (doc.TryGetProperty("Value", out var val))
-                return val.GetString() ?? "";
-            return doc.GetString() ?? "";
-        } catch { return json; }
+            var d = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            if (d != null && d.TryGetValue("Question", out var qEl)) {
+                if (qEl.ValueKind == JsonValueKind.Object && qEl.TryGetProperty("Value", out var qv))
+                    return qv.GetString() ?? "";
+                return qEl.GetString() ?? "";
+            }
+        } catch { }
+        return "";
     }
 }
 
@@ -65,10 +68,9 @@
                 foreach (var item in childBlocks)
                 {
                     var itemDataStr = item.JsonData ?? "{}";
-                    var question = ExtractValue(itemDataStr);
-                    var answer = "";
-                    
-                    // Try to parse as dict to get Answer
+                    var question = ExtractQuestion(itemDataStr);
+                    var answer   = "";
+
                     try {
                         var itemData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(itemDataStr);
                         if (itemData != null && itemData.TryGetValue("Answer", out var ansEl)) {
