@@ -11,6 +11,7 @@ namespace BrixCMS.Open.Areas.Manager.Controllers;
 
 [Area("Manager")]
 [RequireAdminLogin]
+[AutoValidateAntiforgeryToken]
 public class ConfigurationController : Controller
 {
     private readonly BrixDbContext _db;

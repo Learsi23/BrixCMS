@@ -11,16 +11,8 @@ public class BrixDbContext : DbContext
     public DbSet<Block> Blocks { get; set; }
     public DbSet<SiteConfig> SiteConfig { get; set; }
     public DbSet<AdminUser> AdminUsers { get; set; }
-    public DbSet<ApiKey> ApiKeys { get; set; }
     public DbSet<PageView> PageViews { get; set; }
     public DbSet<Subscriber> Subscribers { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<ApiKey>()
-            .HasIndex(k => k.Provider)
-            .IsUnique();
-    }
 }
 
 public class Page

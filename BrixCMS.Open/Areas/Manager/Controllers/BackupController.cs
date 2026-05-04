@@ -8,6 +8,7 @@ namespace BrixCMS.Open.Areas.Manager.Controllers;
 
 [Area("Manager")]
 [RequireAdminLogin]
+[AutoValidateAntiforgeryToken]
 public class BackupController : Controller
 {
     private readonly BrixDbContext _db;

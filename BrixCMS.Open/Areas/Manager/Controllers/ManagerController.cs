@@ -13,6 +13,7 @@ namespace BrixCMS.Open.Areas.Manager.Controllers;
 
 [Area("Manager")]
 [RequireAdminLogin]
+[AutoValidateAntiforgeryToken]
 public class ManagerController : Controller
 {
     private readonly BrixDbContext _db;
@@ -137,7 +138,7 @@ public class ManagerController : Controller
 
     // ? PUBLICAR P�GINA DESDE PREVIEW
     [HttpPost]
-    [HttpPost]
+    [ValidateAntiForgeryToken]   // token sent in X-CSRF-TOKEN header by csrfHeaders() JS helper
     public async Task<IActionResult> PublishPage(Guid pageId, [FromBody] PublishPageDto data)
     {
         var page = await _db.Pages.FindAsync(pageId);

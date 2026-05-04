@@ -35,7 +35,8 @@
                       BrixCMS.Open\**\*.db-shm;
                       BrixCMS.Open\**\*.db-wal;
                       BrixCMS.Open\**\*.user;
-                      BrixCMS.Open\**\appsettings.Development.json" />
+                      BrixCMS.Open\**\appsettings.Development.json;
+                      BrixCMS.Open\Migrations\**" />
   </ItemGroup>
 
 </Project>

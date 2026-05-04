@@ -6,6 +6,7 @@ namespace BrixCMS.Open.Areas.Manager.Controllers
 {
     [Area("Manager")]
     [RequireAdminLogin]
+    [AutoValidateAntiforgeryToken]
     public class MediaController : Controller
     {
         private readonly IWebHostEnvironment _env;
@@ -325,7 +326,7 @@ namespace BrixCMS.Open.Areas.Manager.Controllers
 
         private string SanitizeFolderName(string name)
         {
-            // Eliminar caracteres no válidos
+            // Eliminar caracteres no vï¿½lidos
             foreach (char c in Path.GetInvalidFileNameChars())
             {
                 name = name.Replace(c.ToString(), "");

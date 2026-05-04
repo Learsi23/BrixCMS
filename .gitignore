@@ -361,3 +361,18 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ── BrixCMS.Open specific ────────────────────────────────────────────────────
+# SQLite runtime database
+*.db
+*.db-shm
+*.db-wal
+
+# User-uploaded content (runtime, not source)
+BrixCMS.Open/wwwroot/uploads/**
+!BrixCMS.Open/wwwroot/uploads/.gitkeep
+BrixCMS.Open/wwwroot/Data/**
+!BrixCMS.Open/wwwroot/Data/.gitkeep
+
+# NuGet template output
+nupkg/

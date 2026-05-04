@@ -73,8 +73,6 @@ builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddbrixBlocks();
 builder.Services.AddTransient<EmailSender>();
 
-// AI key management
-builder.Services.AddSingleton<EncryptionService>();
 builder.Services.AddScoped<ApiKeyService>();
 builder.Services.AddSingleton<PromptsService>();
 
@@ -86,9 +84,10 @@ builder.Services.AddSession(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.Name = ".BrixCMS.Open.Session";
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.IdleTimeout = TimeSpan.FromHours(24);
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.IdleTimeout = TimeSpan.FromMinutes(60);
 });
 
 // =====================================================
@@ -231,22 +230,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<BrixDbContext>();
     db.Database.EnsureCreated();
 
-    // Manual migration: ApiKeys table (safe if already exists)
-    try
-    {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""ApiKeys"" (
-                ""Id""           INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""Provider""     TEXT NOT NULL UNIQUE,
-                ""EncryptedKey"" TEXT NOT NULL,
-                ""Iv""           TEXT NOT NULL,
-                ""AuthTag""      TEXT NOT NULL,
-                ""CreatedAt""    TEXT NOT NULL,
-                ""UpdatedAt""    TEXT NOT NULL
-            )");
-    }
-    catch { /* already exists */ }
-
     // Manual migration: PageViews table
     try
     {
@@ -380,177 +363,3 @@ if (app.Environment.IsDevelopment())
 
 app.Run();
 
-//using BrixCMS.Open.Data;
-//using BrixCMS.Open.Extensions;
-//using BrixCMS.Open.Services;
-//using BrixCMS.Open.Services.Ingestion;
-//using Markdig;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.Extensions.AI;
-//using OpenAI;
-//using System.ClientModel;
-//using BlazorApp = BrixCMS.Web.Components.App;
-
-//var builder = WebApplication.CreateBuilder(args);
-
-//// =====================================================
-//// 1️⃣ BASE DE DATOS
-//// =====================================================
-//builder.Services.AddDbContext<brixDbContext>(options =>
-//    options.UseSqlite("Data Source=brix.db"));
-
-//// =====================================================
-//// 2️⃣ MVC + SERVICIOS CMS
-//// =====================================================
-//builder.Services.AddControllersWithViews();
-//builder.Services.AddScoped<ContentService>();
-//builder.Services.AddbrixBlocks();
-
-//// =====================================================
-//// 3️⃣ BLAZOR
-//// =====================================================
-//builder.Services
-//    .AddRazorComponents()
-//    .AddInteractiveServerComponents()
-//    .AddCircuitOptions(options => options.DetailedErrors = true);
-
-//// =====================================================
-//// 4️⃣ MARKDOWN
-//// =====================================================
-//builder.Services.AddSingleton<MarkdownPipeline>(_ =>
-//    new MarkdownPipelineBuilder()
-//        .UseAdvancedExtensions()
-//        .UseEmojiAndSmiley()
-//        .UseSoftlineBreakAsHardlineBreak()
-//        .Build());
-
-//// =====================================================
-//// 5️⃣ IA — MISTRAL VÍA OPENAI COMPATIBLE
-//// =====================================================
-//var mistralApiKey = builder.Configuration["Mistral:ApiKey"]
-//    ?? throw new InvalidOperationException("Falta 'Mistral:ApiKey' en appsettings.json");
-
-//var chatModel = builder.Configuration["Mistral:ChatModel"] ?? "mistral-small-latest";
-//var embeddingModel = builder.Configuration["Mistral:EmbeddingModel"] ?? "mistral-embed";
-
-//var openAIClient = new OpenAIClient(
-//    new ApiKeyCredential(mistralApiKey),
-//    new OpenAIClientOptions { Endpoint = new Uri("https://api.mistral.ai/v1") }
-//);
-
-//var chatClient = openAIClient
-//    .GetChatClient(chatModel)
-//    .AsIChatClient()
-//    .AsBuilder()
-//    .UseFunctionInvocation()
-//    .Build();
-
-//var embeddingClient = openAIClient
-//    .GetEmbeddingClient(embeddingModel)
-//    .AsIEmbeddingGenerator();
-
-//builder.Services.AddChatClient(chatClient);
-//builder.Services.AddEmbeddingGenerator(embeddingClient);
-
-//// =====================================================
-//// 6️⃣ VECTOR STORE (SQLiteVec)
-//// =====================================================
-//var vectorStorePath = Path.Combine(AppContext.BaseDirectory, "vector-store.db");
-//var vectorStoreConnectionString = $"Data Source={vectorStorePath}";
-
-//builder.Services.AddSqliteCollection<string, IngestedChunk>("data-chunks", vectorStoreConnectionString);
-//builder.Services.AddSqliteCollection<string, IngestedDocument>("data-documents", vectorStoreConnectionString);
-
-//// =====================================================
-//// 7️⃣ SERVICIOS DE INGESTA Y BÚSQUEDA
-//// =====================================================
-//builder.Services.AddScoped<DataIngestor>();
-//builder.Services.AddSingleton<SemanticSearch>();
-
-//// =====================================================
-//// 8️⃣ PIPELINE HTTP
-//// =====================================================
-//var app = builder.Build();
-
-//if (app.Environment.IsDevelopment())
-//    app.UseDeveloperExceptionPage();
-//else
-//{
-//    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-//    app.UseHsts();
-//}
-
-//app.UseHttpsRedirection();
-//app.UseStaticFiles();
-//app.UseRouting();
-//app.UseAntiforgery();
-
-//// =====================================================
-//// 9️⃣ ROUTING
-//// =====================================================
-//app.MapControllerRoute(
-//    name: "areas",
-//    pattern: "{area:exists}/{controller=Manager}/{action=Index}/{id?}");
-
-//app.MapControllerRoute(
-//    name: "cms",
-//    pattern: "{slug?}",
-//    defaults: new { controller = "Cms", action = "Index" });
-
-//app.MapRazorComponents<BlazorApp>()
-//    .AddInteractiveServerRenderMode();
-
-//// =====================================================
-//// 🔟 INICIALIZACIÓN — BD + INGESTA DE PDFs
-//// =====================================================
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<brixDbContext>();
-//    db.Database.EnsureCreated();
-
-//    var dataPath = Path.Combine(builder.Environment.WebRootPath ?? "wwwroot", "Data");
-
-//    // ✅ Logs de diagnóstico
-//    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-//    logger.LogInformation("📁 Buscando PDFs en: {path}", dataPath);
-//    logger.LogInformation("📁 Carpeta existe: {exists}", Directory.Exists(dataPath));
-
-//    if (Directory.Exists(dataPath))
-//    {
-//        var pdfs = Directory.GetFiles(dataPath, "*.pdf");
-//        logger.LogInformation("📄 PDFs encontrados: {count}", pdfs.Length);
-//        foreach (var pdf in pdfs)
-//            logger.LogInformation("📄 Archivo: {file}", pdf);
-
-//        await DataIngestor.IngestDataAsync(
-//            app.Services,
-//            new PDFDirectorySource(dataPath)
-//        );
-//    }
-//    else
-//    {
-//        logger.LogWarning("⚠️ La carpeta Data no existe en: {path}", dataPath);
-//    }
-//}
-
-//// =====================================================
-//// 🔍 DEBUG ENDPOINT (solo desarrollo)
-//// =====================================================
-//if (app.Environment.IsDevelopment())
-//{
-//    app.MapPost("/api/debug-chat", async (IChatClient chat, [FromBody] string prompt) =>
-//    {
-//        try
-//        {
-//            var response = await chat.GetResponseAsync(prompt);
-//            return Results.Ok(new { ok = true, text = response.Text });
-//        }
-//        catch (Exception ex)
-//        {
-//            return Results.Ok(new { ok = false, error = ex.Message, type = ex.GetType().Name });
-//        }
-//    });
-//}
-
-//app.Run();
