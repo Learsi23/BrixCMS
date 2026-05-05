@@ -53,9 +53,9 @@
                                            : "#";
                                 var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
                                 var target = item.OpenInNewTab ? "_blank" : "_self";
-                                var rel    = item.OpenInNewTab ? "noopener noreferrer" : null;
+                                var rel    = item.OpenInNewTab ? "noopener noreferrer" : "";
                                 <li>
-                                    <a href="@url" target="@target" rel="@rel"
+                                    <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
                                        class="hover:opacity-75 transition-opacity">@text</a>
                                 </li>
                             }
@@ -65,7 +65,8 @@
                             @foreach (var p in publishedPages)
                             {
                                 <li>
-                                    <a href="/@p.Slug" class="hover:opacity-75 transition-opacity">@p.Title</a>
+                                    <a href="/@p.Slug" data-enhance-nav="false"
+                                       class="hover:opacity-75 transition-opacity">@p.Title</a>
                                 </li>
                             }
                         }
@@ -80,7 +81,7 @@
                     <div class="flex space-x-4">
                         @foreach (var social in socialMediaList)
                         {
-                            <a href="@social.Url" target="_blank" class="hover:opacity-75 transition-opacity">
+                            <a href="@social.Url" target="_blank" rel="noopener noreferrer" class="hover:opacity-75 transition-opacity">
                                 @if (social.IconType == "class" && !string.IsNullOrEmpty(social.IconClass))
                                 {
                                     <i class="@social.IconClass text-xl"></i>

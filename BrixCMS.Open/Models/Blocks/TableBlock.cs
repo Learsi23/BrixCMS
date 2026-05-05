@@ -36,6 +36,9 @@ namespace BrixCMS.Open.Models.Blocks
         [Field(Title = "Header Text Color")]
         public ColorField HeaderColor { get; set; } = new() { Value = "#000000" };
 
+        [Field(Title = "Cell Text Color")]
+        public ColorField CellColor { get; set; } = new() { Value = "#111827" };
+
         [Field(Title = "Row Background")]
         public ColorField RowBackground { get; set; } = new() { Value = "#ffffff" };
 

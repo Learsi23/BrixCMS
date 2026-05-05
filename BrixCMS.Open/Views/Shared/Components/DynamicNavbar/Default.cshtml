@@ -1,54 +1,72 @@
 @model BrixCMS.Open.Models.NavbarSettings
-@using BrixCMS.Open.Data
 
 @{
-    var logoUrl = Model.Logo?.TrimStart('~');
-    var publishedPages = ViewContext.HttpContext.RequestServices.GetService<BrixDbContext>()?.Pages.Where(x => x.IsPublished).OrderBy(x => x.Title).ToList() ?? new List<Page>();
+    var logoUrl   = Model.Logo?.TrimStart('~');
     var menuItems = Model.MenuItems ?? new List<MenuItemConfig>();
+    var navId     = "mobile-nav-" + Guid.NewGuid().ToString("N")[..8];
 }
 
 <nav class="@Model.PaddingVertical @(Model.IsSticky ? "sticky top-0 z-50" : "") @(Model.HasShadow ? "shadow-md" : "")" style="background-color: @Model.BackgroundColor;">
     <div class="container mx-auto px-4 flex items-center justify-between">
+
+        @* ── Logo ── *@
         @if (!string.IsNullOrEmpty(logoUrl))
         {
-            <a href="@Model.LogoLink" class="flex-shrink-0">
+            <a href="@Model.LogoLink" data-enhance-nav="false" class="flex-shrink-0">
                 <img src="@logoUrl" alt="@Model.LogoAltText" style="width: @Model.LogoWidth;" />
             </a>
         }
         else
         {
-            <a href="/" class="text-xl font-bold text-emerald-600">BrixCMS</a>
+            <a href="/" data-enhance-nav="false" class="text-xl font-bold text-emerald-600">BrixCMS</a>
         }
 
+        @* ── Desktop menu ── *@
         <div class="hidden md:flex items-center gap-4">
-            @* Published pages auto-injected (skip home slug="") *@
-            @foreach (var p in publishedPages.Where(p => p.Slug != ""))
-            {
-                <a href="/@p.Slug" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
-                    @p.Title
-                </a>
-            }
-
-            @* Custom menu items (internal pages, anchor links, external URLs) *@
             @foreach (var item in menuItems)
             {
-                var url  = !string.IsNullOrEmpty(item.CustomUrl)  ? item.CustomUrl
-                         : !string.IsNullOrEmpty(item.PageSlug)   ? "/" + item.PageSlug
-                         : "#";
+                var url    = !string.IsNullOrEmpty(item.CustomUrl) ? item.CustomUrl
+                           : !string.IsNullOrEmpty(item.PageSlug)  ? "/" + item.PageSlug
+                           : "#";
                 var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
                 var target = item.OpenInNewTab ? "_blank" : "_self";
-                var rel    = item.OpenInNewTab ? "noopener noreferrer" : null;
-                <a href="@url" target="@target" rel="@rel"
+                var rel    = item.OpenInNewTab ? "noopener noreferrer" : "";
+                <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
                    class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
                     @text
                 </a>
             }
         </div>
 
-        <button class="md:hidden" style="color: @Model.TextColor;">
+        @* ── Hamburger (mobile only) ── *@
+        <button onclick="(function(){var m=document.getElementById('@navId');m.classList.toggle('hidden');})()"
+                aria-label="Toggle menu"
+                class="md:hidden p-2 rounded-lg hover:opacity-75 transition-opacity"
+                style="color: @Model.TextColor;">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
+
+    </div>
+
+    @* ── Mobile menu (hidden by default) ── *@
+    <div id="@navId" class="hidden md:hidden border-t" style="border-color: @Model.TextColor + '22';">
+        <div class="container mx-auto px-4 py-3 flex flex-col gap-1">
+            @foreach (var item in menuItems)
+            {
+                var url    = !string.IsNullOrEmpty(item.CustomUrl) ? item.CustomUrl
+                           : !string.IsNullOrEmpty(item.PageSlug)  ? "/" + item.PageSlug
+                           : "#";
+                var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
+                var target = item.OpenInNewTab ? "_blank" : "_self";
+                var rel    = item.OpenInNewTab ? "noopener noreferrer" : "";
+                <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
+                   class="block py-2 px-2 rounded hover:opacity-75 transition-opacity"
+                   style="color: @Model.TextColor;">
+                    @text
+                </a>
+            }
+        </div>
     </div>
 </nav>

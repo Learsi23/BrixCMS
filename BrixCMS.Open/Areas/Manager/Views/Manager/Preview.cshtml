@@ -72,7 +72,7 @@
             <i class="fas fa-arrow-left mr-1"></i> Back to Editor
         </a>
 
-        <button onclick="publishFromPreview()"
+        <button onclick="publishFromPreview(this)"
                 class="bg-green-600 px-4 py-1.5 rounded text-sm hover:bg-green-700 font-bold transition-colors">
             <i class="fas fa-globe mr-1"></i> Publish
         </button>
@@ -121,57 +121,46 @@
     </main>
 
     <script>
-        async function publishFromPreview() {
-        if (!confirm('Publish this page? It will be publicly visible.')) return;
+        async function publishFromPreview(btn) {
+            if (!confirm('Publish this page? It will be publicly visible.')) return;
 
-        const pageId = '@Model.Id';
+            const pageId = '@Model.Id';
+            const blocks = @Html.Raw(allBlocksJson);
+            const data = {
+                Title:    '@Html.Raw(titleJs)',
+                Slug:     '@Html.Raw(slugJs)',
+                JsonData: '@Html.Raw(jsonDataJs)',
+                Blocks:   blocks
+            };
 
-        // ? ALL blocks (roots + children + grandchildren) serialized on server
-        const blocks = @Html.Raw(allBlocksJson);
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Publishing...';
 
-        const data = {
-        Title:    '@Html.Raw(titleJs)',
-        Slug:     '@Html.Raw(slugJs)',
-        JsonData: '@Html.Raw(jsonDataJs)',
-        Blocks:   blocks
-        };
+            try {
+                const res = await fetch(`/Manager/Manager/PublishPage?pageId=${pageId}`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(data)
+                });
 
-        // Button in loading state
-        const btn = event.currentTarget;
-        btn.disabled = true;
-        btn.textContent = '? Publishing...';
+                const result = await res.json();
 
-        try {
-        const res = await fetch(`/Manager/Manager/PublishPage?pageId=${pageId}`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(data)
-        });
-
-        const result = await res.json();
-
-        if (result.success) {
-        btn.textContent = '? Published';
-        btn.classList.replace('bg-green-600', 'bg-green-800');
-
-        // Redirect to editor after 1 second
-        setTimeout(() => {
-        window.location.href = '/Manager/Manager/Edit/' + pageId;
-        }, 1000);
-        } else {
-        alert('Error publishing: ' + result.error);
-        btn.disabled = false;
-        btn.textContent = 'Publish';
-        } catch (e) {
-        alert('Network error: ' + e.message);
-        btn.disabled = false;
-        btn.textContent = 'Publish';
-        }
-        } catch (e) {
-        alert('? Network error: ' + e.message);
-        btn.disabled = false;
-        btn.textContent = '?? Publish';
-        }
+                if (result.success) {
+                    btn.innerHTML = '<i class="fas fa-check mr-1"></i> Published!';
+                    btn.classList.replace('bg-green-600', 'bg-green-800');
+                    setTimeout(() => {
+                        window.location.href = '/Manager/Manager/Edit/' + pageId;
+                    }, 1500);
+                } else {
+                    alert('Error publishing: ' + (result.error ?? 'Unknown error'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-globe mr-1"></i> Publish';
+                }
+            } catch (e) {
+                alert('Network error: ' + e.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-globe mr-1"></i> Publish';
+            }
         }
     </script>
 

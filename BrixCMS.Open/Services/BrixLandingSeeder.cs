@@ -584,7 +584,7 @@ public static class BrixLandingSeeder
         var page = new Page
         {
             Id              = id,
-            Title           = "BrixCMS Pro",
+            Title           = "Pro",
             Slug            = "pro",
             IsPublished     = true,
             IsSeed          = true,
@@ -732,6 +732,7 @@ public static class BrixLandingSeeder
             Style                  = V("striped"),
             HeaderBackground       = V(SURFACE2),
             HeaderColor            = V(TEXT),
+            CellColor              = V(TEXT),
             RowBackground          = V(SURFACE),
             RowAlternateBackground = V(BG),
             BorderColor            = V(BORDER),
@@ -859,10 +860,10 @@ public static class BrixLandingSeeder
                 paddingVertical = "py-3",
                 menuItems       = new object[]
                 {
-                    new { customText = "Features",  customUrl = "/features",                          isCustomUrl = true, pageSlug = "", openInNewTab = false },
-                    new { customText = "Pro",        customUrl = "/pro",                               isCustomUrl = true, pageSlug = "", openInNewTab = false },
-                    new { customText = "GitHub",     customUrl = "https://github.com/Learsi23/BrixCMS", isCustomUrl = true, pageSlug = "", openInNewTab = true  },
-                    new { customText = "Admin",      customUrl = "/Manager/login",                     isCustomUrl = true, pageSlug = "", openInNewTab = false },
+                    new { customText = "Features", customUrl = "/features",                              isCustomUrl = true, pageSlug = "", openInNewTab = false },
+                    new { customText = "Pro",      customUrl = "/pro",                                   isCustomUrl = true, pageSlug = "", openInNewTab = false },
+                    new { customText = "GitHub",   customUrl = "https://github.com/Learsi23/BrixCMS",   isCustomUrl = true, pageSlug = "", openInNewTab = true  },
+                    new { customText = "Admin",    customUrl = "/Manager/login",                         isCustomUrl = true, pageSlug = "", openInNewTab = false },
                 },
             },
             footer = new

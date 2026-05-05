@@ -27,9 +27,21 @@ window.customElements.define('chat-messages', class ChatMessages extends HTMLEle
     }
 
     _elemIsNearScrollBoundary(elem, threshold) {
-        const maxScrollPos = document.body.scrollHeight - window.innerHeight;
-        const remainingScrollDistance = maxScrollPos - window.scrollY;
-        return remainingScrollDistance < elem.offsetHeight + threshold;
+        // Walk up to find the nearest scrollable ancestor (works in both
+        // embedded card mode and fullscreen page mode)
+        let container = this.parentElement;
+        while (container && container !== document.documentElement) {
+            const oy = getComputedStyle(container).overflowY;
+            if (oy === 'auto' || oy === 'scroll') break;
+            container = container.parentElement;
+        }
+        if (!container || container === document.documentElement) {
+            // Fall back to page scroll (fullscreen mode)
+            const remaining = document.body.scrollHeight - window.innerHeight - window.scrollY;
+            return remaining < elem.offsetHeight + threshold;
+        }
+        const remaining = container.scrollHeight - container.scrollTop - container.clientHeight;
+        return remaining < elem.offsetHeight + threshold;
     }
 });
 

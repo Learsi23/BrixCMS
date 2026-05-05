@@ -107,41 +107,53 @@
 }
 else
 {
-    @* Embedded mode: card-style widget *@
-    <div class="w-full max-w-2xl mx-auto overflow-hidden"
-         style="background: @bgColor; border: 1px solid @borderColor; border-radius: @borderRadius; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
-        
+    @* Embedded mode: card-style widget with fixed height so input stays pinned at bottom *@
+    <div class="w-full max-w-2xl mx-auto"
+         style="background: @bgColor; border: 1px solid @borderColor; border-radius: @borderRadius; box-shadow: 0 4px 24px rgba(0,0,0,0.06); display: flex; flex-direction: column; height: 620px; overflow: hidden;">
+
         @* Header *@
-        <div class="px-6 py-5 flex items-center gap-4"
+        <div class="px-5 py-4 flex items-center gap-3 flex-shrink-0"
              style="background: linear-gradient(135deg, @headerBg, @headerGradient);">
             @if (!string.IsNullOrEmpty(logoUrl))
             {
-                <img src="@logoUrl" alt="logo" style="height: @logoSize; width: auto;" class="rounded-lg object-contain bg-white/10 p-1.5" />
+                <img src="@logoUrl" alt="logo" style="height: @logoSize; width: auto; max-height: 30px;" class="rounded-lg object-contain bg-white/10 p-1" />
             }
             else
             {
-                <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
                     <span class="text-lg">🤖</span>
                 </div>
             }
-            <div>
-                <h2 style="color: @headerText; font-size: @titleSize;" class="font-bold">@titleText</h2>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
-                    <svg width="10" height="10" viewBox="0 0 18 18" fill="none" style="opacity:0.8;flex-shrink:0">
-                        <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#22c55e"/>
-                        <rect x="10" y="1" width="7" height="7" rx="1.5" fill="@headerText" opacity="0.9"/>
-                        <rect x="1" y="10" width="7" height="7" rx="1.5" fill="@headerText" opacity="0.9"/>
-                        <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#22c55e" opacity="0.5"/>
-                    </svg>
-                    <span class="text-[11px] font-black tracking-tight" style="color: @headerText; opacity: 0.8;"><span>BRIX</span><span style="color:#22c55e">cms</span></span>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold truncate" style="color: @headerText; font-size: @titleSize;">@titleText</span>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                        <svg width="9" height="9" viewBox="0 0 18 18" fill="none" style="opacity:0.8;flex-shrink:0">
+                            <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#22c55e"/>
+                            <rect x="10" y="1" width="7" height="7" rx="1.5" fill="@headerText" opacity="0.9"/>
+                            <rect x="1" y="10" width="7" height="7" rx="1.5" fill="@headerText" opacity="0.9"/>
+                            <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#22c55e" opacity="0.5"/>
+                        </svg>
+                        <span class="text-[10px] font-black tracking-tight" style="color: @headerText; opacity: 0.75;"><span>BRIX</span><span style="color:#22c55e">cms</span></span>
+                    </div>
                 </div>
             </div>
+            @* New Chat button *@
+            <button @onclick="NewEmbeddedChatAsync" title="New conversation"
+                    class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold hover:bg-white/20 active:bg-white/30 transition-all flex-shrink-0"
+                    style="color: @headerText; border: 1px solid rgba(255,255,255,0.25);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                <span class="hidden sm:inline">New</span>
+            </button>
         </div>
 
-        @* Chat body *@
-        <div class="overflow-hidden" style="background: @chatBg;">
-            <Chat CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
+        @* Chat body — flex-1 so it fills remaining height; Chat itself uses height:100% internally *@
+        <div style="flex: 1; min-height: 0; background: @chatBg; display: flex; flex-direction: column; overflow: hidden;">
+            <Chat @ref="embeddedChatRef"
+                  CustomSystemPrompt="@(Model.CustomPrompt?.Value)"
                   WelcomeMessage="@(Model.WelcomeMessage?.Value)"
                   AiProvider="@(Model.AiProvider?.Value)"
                   PdfFilter="@(Model.PdfFiles?.Value)"
@@ -151,6 +163,7 @@ else
                   AiLogoSize="@aiLogoSize"
                   Title="@titleText"
                   ChatId="@effectiveChatId"
+                  ShowHeader="false"
                   Theme="@CreateTheme()" />
         </div>
     </div>
@@ -161,11 +174,18 @@ else
     [Parameter] public string? ChatId { get; set; }
 
     private Chat? fullscreenChatRef;
+    private Chat? embeddedChatRef;
 
     private async Task NewChatAsync()
     {
         if (fullscreenChatRef is not null)
             await fullscreenChatRef.ResetConversationAsync();
+    }
+
+    private async Task NewEmbeddedChatAsync()
+    {
+        if (embeddedChatRef is not null)
+            await embeddedChatRef.ResetConversationAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

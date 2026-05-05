@@ -3,4 +3,20 @@
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
+    <NotFound>
+        <PageTitle>Not Found — BrixCMS</PageTitle>
+        <LayoutView Layout="typeof(Layout.MainLayout)">
+            <div class="min-h-[60vh] flex items-center justify-center px-4">
+                <div class="text-center">
+                    <p class="text-8xl font-black text-emerald-600 mb-2">404</p>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">Page not found</h1>
+                    <p class="text-gray-500 mb-8">The page you are looking for does not exist or has been moved.</p>
+                    <a href="/" data-enhance-nav="false"
+                       class="inline-block bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors">
+                        ← Back to Home
+                    </a>
+                </div>
+            </div>
+        </LayoutView>
+    </NotFound>
 </Router>

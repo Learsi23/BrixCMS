@@ -57,10 +57,29 @@ builder.WebHost.ConfigureKestrel(o =>
     o.Limits.MaxRequestBodySize = 52_428_800);
 
 // =====================================================
-// 1️⃣ DATABASE
+// 1️⃣ DATABASE  — sqlite | sqlserver | postgres
 // =====================================================
+var dbProvider = (builder.Configuration["DatabaseProvider"] ?? "sqlite").ToLowerInvariant();
+
 builder.Services.AddDbContext<BrixDbContext>(options =>
-    options.UseSqlite("Data Source=brix.db"));
+{
+    switch (dbProvider)
+    {
+        case "sqlserver":
+            options.UseSqlServer(
+                builder.Configuration.GetConnectionString("SqlServer")
+                ?? throw new InvalidOperationException("ConnectionStrings:SqlServer is required when DatabaseProvider=sqlserver"));
+            break;
+        case "postgres":
+            options.UseNpgsql(
+                builder.Configuration.GetConnectionString("Postgres")
+                ?? throw new InvalidOperationException("ConnectionStrings:Postgres is required when DatabaseProvider=postgres"));
+            break;
+        default:
+            options.UseSqlite("Data Source=brix.db");
+            break;
+    }
+});
 
 // =====================================================
 // 2️⃣ MVC + CMS SERVICES
@@ -233,14 +252,13 @@ using (var scope = app.Services.CreateScope())
     // Manual migration: PageViews table
     try
     {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""PageViews"" (
-                ""Id""        INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""ViewedAt""  TEXT NOT NULL,
-                ""Slug""      TEXT NOT NULL,
-                ""UserAgent"" TEXT,
-                ""Referrer""  TEXT
-            )");
+        var sqlPageViews = dbProvider switch
+        {
+            "sqlserver" => "IF OBJECT_ID(N'PageViews', N'U') IS NULL CREATE TABLE [PageViews] ([Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY, [ViewedAt] NVARCHAR(50) NOT NULL, [Slug] NVARCHAR(500) NOT NULL, [UserAgent] NVARCHAR(MAX) NULL, [Referrer] NVARCHAR(MAX) NULL)",
+            "postgres"  => @"CREATE TABLE IF NOT EXISTS ""PageViews"" (""Id"" SERIAL PRIMARY KEY, ""ViewedAt"" TEXT NOT NULL, ""Slug"" TEXT NOT NULL, ""UserAgent"" TEXT, ""Referrer"" TEXT)",
+            _           => @"CREATE TABLE IF NOT EXISTS ""PageViews"" (""Id"" INTEGER PRIMARY KEY AUTOINCREMENT, ""ViewedAt"" TEXT NOT NULL, ""Slug"" TEXT NOT NULL, ""UserAgent"" TEXT, ""Referrer"" TEXT)",
+        };
+        db.Database.ExecuteSqlRaw(sqlPageViews);
     }
     catch { }
 
@@ -253,10 +271,7 @@ using (var scope = app.Services.CreateScope())
         ["IsSeed"] = "INTEGER NOT NULL DEFAULT 0",
     };
     foreach (var col in newPageColumns)
-    {
-        try { db.Database.ExecuteSqlRaw($"ALTER TABLE Pages ADD COLUMN \"{col.Key}\" {col.Value}"); }
-        catch { }
-    }
+        AddColumnIfNotExists(db.Database, dbProvider, "Pages", col.Key, col.Value);
     // Mark the existing demo page as seed (applies to DBs created before this column existed)
     try { db.Database.ExecuteSqlRaw("UPDATE Pages SET IsSeed = 1 WHERE Title = 'Home' AND IsSeed = 0 AND (SELECT COUNT(*) FROM Pages WHERE IsSeed = 0 AND IsPublished = 1) <= 1"); }
     catch { }
@@ -267,13 +282,13 @@ using (var scope = app.Services.CreateScope())
     // Manual migration: Subscribers table
     try
     {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""Subscribers"" (
-                ""Id""        INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""Email""     TEXT NOT NULL UNIQUE,
-                ""Name""      TEXT,
-                ""CreatedAt"" TEXT NOT NULL DEFAULT (datetime('now'))
-            )");
+        var sqlSubscribers = dbProvider switch
+        {
+            "sqlserver" => "IF OBJECT_ID(N'Subscribers', N'U') IS NULL CREATE TABLE [Subscribers] ([Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY, [Email] NVARCHAR(500) NOT NULL UNIQUE, [Name] NVARCHAR(MAX) NULL, [CreatedAt] NVARCHAR(50) NOT NULL DEFAULT (CONVERT(NVARCHAR(50), GETUTCDATE(), 126)))",
+            "postgres"  => @"CREATE TABLE IF NOT EXISTS ""Subscribers"" (""Id"" SERIAL PRIMARY KEY, ""Email"" TEXT NOT NULL UNIQUE, ""Name"" TEXT, ""CreatedAt"" TEXT NOT NULL DEFAULT (NOW()::text))",
+            _           => @"CREATE TABLE IF NOT EXISTS ""Subscribers"" (""Id"" INTEGER PRIMARY KEY AUTOINCREMENT, ""Email"" TEXT NOT NULL UNIQUE, ""Name"" TEXT, ""CreatedAt"" TEXT NOT NULL DEFAULT (datetime('now')))",
+        };
+        db.Database.ExecuteSqlRaw(sqlSubscribers);
     }
     catch { /* already exists */ }
 
@@ -285,18 +300,18 @@ using (var scope = app.Services.CreateScope())
         ["CreatedAt"] = "TEXT NOT NULL DEFAULT '2024-01-01T00:00:00'"
     };
     foreach (var col in adminNewColumns)
-    {
-        try { db.Database.ExecuteSqlRaw($"ALTER TABLE AdminUsers ADD COLUMN \"{col.Key}\" {col.Value}"); }
-        catch { }
-    }
+        AddColumnIfNotExists(db.Database, dbProvider, "AdminUsers", col.Key, col.Value);
     // Ensure the first admin is always owner
     try { db.Database.ExecuteSqlRaw("UPDATE AdminUsers SET IsOwner = 1 WHERE Id = (SELECT MIN(Id) FROM AdminUsers)"); }
     catch { }
 
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
     // ── Seed admin on first run ──
     if (!db.AdminUsers.Any())
     {
-        var hash = BrixCMS.Open.Services.AdminAuthService.HashPassword("admin123", out var salt);
+        const string defaultPassword = "admin123";
+        var hash = BrixCMS.Open.Services.AdminAuthService.HashPassword(defaultPassword, out var salt);
         db.AdminUsers.Add(new BrixCMS.Open.Data.AdminUser
         {
             Email        = "admin@brix.com",
@@ -308,12 +323,35 @@ using (var scope = app.Services.CreateScope())
         });
         db.SaveChanges();
 
-        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         startupLogger.LogWarning("==========================================================");
-        startupLogger.LogWarning("ADMIN CREATED — email: admin@brix.com  password: admin123");
-        startupLogger.LogWarning("Change this immediately at /Manager/Login after first login.");
+        startupLogger.LogWarning("ADMIN CREATED — email: admin@brix.com  /  password: admin123");
+        startupLogger.LogWarning("IMPORTANT: Change the password at /Manager/Admins after first login!");
         startupLogger.LogWarning("==========================================================");
     }
+
+    // ── Password recovery: if AdminRecoveryPassword is set in appsettings, reset admin password ──
+    var recoveryPassword = builder.Configuration["AdminRecoveryPassword"];
+    if (!string.IsNullOrWhiteSpace(recoveryPassword))
+    {
+        var adminToReset = db.AdminUsers.OrderBy(u => u.Id).FirstOrDefault();
+        if (adminToReset != null)
+        {
+            adminToReset.PasswordHash = BrixCMS.Open.Services.AdminAuthService.HashPassword(recoveryPassword, out var rSalt);
+            adminToReset.PasswordSalt = rSalt;
+            db.SaveChanges();
+            startupLogger.LogWarning("==========================================================");
+            startupLogger.LogWarning("ADMIN PASSWORD RESET via AdminRecoveryPassword");
+            startupLogger.LogWarning("Email:    {Email}", adminToReset.Email);
+            startupLogger.LogWarning("Password: {Password}", recoveryPassword);
+            startupLogger.LogWarning("IMPORTANT: Remove AdminRecoveryPassword from appsettings.json after login!");
+            startupLogger.LogWarning("==========================================================");
+        }
+    }
+
+    // ── Always log admin email on startup so it's never forgotten ──
+    var currentAdmin = db.AdminUsers.OrderBy(u => u.Id).FirstOrDefault();
+    if (currentAdmin != null)
+        startupLogger.LogInformation("Admin login email: {Email}", currentAdmin.Email);
 
     var dataPath = Path.Combine(builder.Environment.WebRootPath ?? "wwwroot", "Data");
 
@@ -362,4 +400,45 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOCAL HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// <summary>Adds a column to a table only if it does not already exist, compatible with SQLite, SQL Server and Postgres.</summary>
+static void AddColumnIfNotExists(
+    Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade db,
+    string provider, string table, string column, string sqliteTypeDef)
+{
+    try
+    {
+        switch (provider)
+        {
+            case "sqlserver":
+                // Map SQLite type tokens to SQL Server equivalents
+                var ssDef = sqliteTypeDef
+                    .Replace("INTEGER NOT NULL DEFAULT 0", "INT NOT NULL DEFAULT 0")
+                    .Replace("INTEGER", "INT")
+                    .Replace("TEXT NOT NULL DEFAULT ''", "NVARCHAR(MAX) NOT NULL DEFAULT ''")
+                    .Replace("TEXT NOT NULL DEFAULT '2024-01-01T00:00:00'", "NVARCHAR(50) NOT NULL DEFAULT '2024-01-01T00:00:00'")
+                    .Replace("TEXT NOT NULL", "NVARCHAR(MAX) NOT NULL")
+                    .Replace("TEXT", "NVARCHAR(MAX)");
+                db.ExecuteSqlRaw(
+                    $"IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=N'{table}' AND COLUMN_NAME=N'{column}') " +
+                    $"ALTER TABLE [{table}] ADD [{column}] {ssDef}");
+                break;
+
+            case "postgres":
+                db.ExecuteSqlRaw(
+                    $@"ALTER TABLE ""{table}"" ADD COLUMN IF NOT EXISTS ""{column}"" {sqliteTypeDef}");
+                break;
+
+            default: // sqlite — throws if column already exists; catch suppresses it
+                db.ExecuteSqlRaw(
+                    $@"ALTER TABLE ""{table}"" ADD COLUMN ""{column}"" {sqliteTypeDef}");
+                break;
+        }
+    }
+    catch { /* column already exists — safe to ignore */ }
+}
 

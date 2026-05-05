@@ -149,9 +149,12 @@ public class AdminAuthService
     public async Task<AdminUser?> GetAdminAsync() =>
         await _db.AdminUsers.FirstOrDefaultAsync();
 
-    public async Task<AdminUser?> GetAdminByEmailAsync(string email) =>
-        await _db.AdminUsers.FirstOrDefaultAsync(u =>
-            u.Email.ToLower() == email.ToLower());
+    public async Task<AdminUser?> GetAdminByEmailAsync(string email)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        return await _db.AdminUsers.FirstOrDefaultAsync(u =>
+            u.Email.ToLower() == normalized);
+    }
 
     public async Task<AdminUser?> GetAdminByIdAsync(int id) =>
         await _db.AdminUsers.FindAsync(id);
