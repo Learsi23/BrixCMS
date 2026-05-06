@@ -72,15 +72,18 @@
                     }
                 }
 
-                @Html.Raw(NavLink("/Manager", "fas fa-file-alt", "Pages"))
-                @Html.Raw(NavLink("/Manager/Media", "fas fa-images", "Media"))
-                @Html.Raw(NavLink("/Manager/Configuration", "fas fa-paint-brush", "Navbar &amp; Footer"))
-                @Html.Raw(NavLink("/Manager/Configuration/Chatbot", "fas fa-robot", "Chatbot"))
-                @Html.Raw(NavLink("/Manager/Backup", "fas fa-database", "Backup"))
-                @if (Context.Session.GetString("AdminIsOwner") == "1")
-                {
-                    @Html.Raw(NavLink("/Manager/Admins", "fas fa-users", "Team"))
+                @{
+                    var _role         = Context.Session.GetString("AdminRole") ?? "admin";
+                    var _isFullAccess = _role is "owner" or "admin";
+                    var _perms        = Context.Session.GetString("AdminPermissions") ?? "";
+                    bool CanAccess(string p) => _isFullAccess || _perms.Contains($"\"{p}\"");
                 }
+                @Html.Raw(NavLink("/Manager", "fas fa-file-alt", "Pages"))
+                @if (CanAccess("media"))         { @Html.Raw(NavLink("/Manager/Media",                 "fas fa-images",      "Media")) }
+                @if (CanAccess("configuration")) { @Html.Raw(NavLink("/Manager/Configuration",         "fas fa-paint-brush", "Navbar &amp; Footer")) }
+                @if (CanAccess("chatbot"))       { @Html.Raw(NavLink("/Manager/Configuration/Chatbot", "fas fa-robot",       "Chatbot")) }
+                @if (CanAccess("backup"))        { @Html.Raw(NavLink("/Manager/Backup",                "fas fa-database",    "Backup")) }
+                @Html.Raw(NavLink("/Manager/Admins", "fas fa-shield-alt", "Security"))
 
             </nav>
 

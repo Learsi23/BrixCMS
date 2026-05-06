@@ -62,6 +62,8 @@ public class AdminUser
     public bool TwoFactorEnabled { get; set; } = false;
     public string? TwoFactorSecret { get; set; }
     public bool IsOwner { get; set; } = false;
+    public string? Role { get; set; }        // "owner" | "admin" | "member" — null treated as "admin"
+    public string? Permissions { get; set; } // JSON array, e.g. ["media","backup"] — used when Role=="member"
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 

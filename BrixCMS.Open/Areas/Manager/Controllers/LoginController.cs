@@ -50,6 +50,8 @@ public class LoginController : Controller
         HttpContext.Session.SetString("AdminAuth", "1");
         HttpContext.Session.SetString("AdminEmail", admin.Email);
         HttpContext.Session.SetString("AdminIsOwner", admin.IsOwner ? "1" : "0");
+        HttpContext.Session.SetString("AdminRole", admin.IsOwner ? "owner" : (admin.Role ?? "admin"));
+        HttpContext.Session.SetString("AdminPermissions", admin.Permissions ?? "[]");
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
@@ -92,6 +94,8 @@ public class LoginController : Controller
         HttpContext.Session.SetString("AdminAuth", "1");
         HttpContext.Session.SetString("AdminEmail", admin.Email);
         HttpContext.Session.SetString("AdminIsOwner", admin.IsOwner ? "1" : "0");
+        HttpContext.Session.SetString("AdminRole", admin.IsOwner ? "owner" : (admin.Role ?? "admin"));
+        HttpContext.Session.SetString("AdminPermissions", admin.Permissions ?? "[]");
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);

@@ -14,9 +14,18 @@ public class BackupController : Controller
     private readonly BrixDbContext _db;
     public BackupController(BrixDbContext db) => _db = db;
 
+    private bool HasPermission(string perm)
+    {
+        var role = HttpContext.Session.GetString("AdminRole") ?? "admin";
+        if (role is "owner" or "admin") return true;
+        var perms = HttpContext.Session.GetString("AdminPermissions") ?? "";
+        return perms.Contains($"\"{perm}\"");
+    }
+
     // GET /Manager/Backup — shows the backup/restore UI
     public IActionResult Index()
     {
+        if (!HasPermission("backup")) return RedirectToAction("Index", "Manager");
         return View();
     }
 

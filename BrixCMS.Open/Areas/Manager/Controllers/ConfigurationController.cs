@@ -5,6 +5,7 @@ using BrixCMS.Open.Services;
 using BrixCMS.Open.Services.Ingestion;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QRCoder;
 using System.Text.Json;
 
 namespace BrixCMS.Open.Areas.Manager.Controllers;
@@ -40,10 +41,19 @@ public class ConfigurationController : Controller
         _logger   = logger;
     }
 
+    private bool HasPermission(string perm)
+    {
+        var role = HttpContext.Session.GetString("AdminRole") ?? "admin";
+        if (role is "owner" or "admin") return true;
+        var perms = HttpContext.Session.GetString("AdminPermissions") ?? "";
+        return perms.Contains($"\"{perm}\"");
+    }
+
     // ── Navbar & Footer ───────────────────────────────────────────────────────
 
     public IActionResult Index()
     {
+        if (!HasPermission("configuration")) return RedirectToAction("Index", "Manager");
         var siteConfig = _db.SiteConfig.FirstOrDefault(c => c.Key == "site");
         SiteSettings siteSettings = new();
 
@@ -130,6 +140,7 @@ public class ConfigurationController : Controller
 
     public async Task<IActionResult> Chatbot()
     {
+        if (!HasPermission("chatbot")) return RedirectToAction("Index", "Manager");
         var dataPath = Path.Combine(_env.WebRootPath, "Data");
         if (!Directory.Exists(dataPath)) Directory.CreateDirectory(dataPath);
 
@@ -348,12 +359,13 @@ public class ConfigurationController : Controller
         HttpContext.Session.SetString("PendingTotpSecret", secret);
         var email  = HttpContext.Session.GetString("AdminEmail") ?? "admin";
         var otpUrl = AdminAuthService.GetOtpAuthUrl(secret, email);
-        return Json(new
-        {
-            secret,
-            otpUrl,
-            qrUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={Uri.EscapeDataString(otpUrl)}",
-        });
+
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrData      = qrGenerator.CreateQrCode(otpUrl, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode      = new PngByteQRCode(qrData);
+        var qrBase64          = Convert.ToBase64String(qrCode.GetGraphic(10));
+
+        return Json(new { secret, otpUrl, qrBase64 });
     }
 
     [HttpPost]

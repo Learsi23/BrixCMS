@@ -19,8 +19,17 @@ namespace BrixCMS.Open.Areas.Manager.Controllers
             if (!Directory.Exists(_basePath)) Directory.CreateDirectory(_basePath);
         }
 
+        private bool HasPermission(string perm)
+        {
+            var role = HttpContext.Session.GetString("AdminRole") ?? "admin";
+            if (role is "owner" or "admin") return true;
+            var perms = HttpContext.Session.GetString("AdminPermissions") ?? "";
+            return perms.Contains($"\"{perm}\"");
+        }
+
         public IActionResult Index(string folder = "", bool picker = false)
         {
+            if (!HasPermission("media")) return RedirectToAction("Index", "Manager");
             ViewBag.PickerMode = picker;
 
             var currentPath = Path.Combine(_basePath, folder ?? "");

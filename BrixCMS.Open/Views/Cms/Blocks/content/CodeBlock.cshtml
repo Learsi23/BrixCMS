@@ -27,7 +27,7 @@
     var lines = code.Split('\n');
 }
 
-<section id="@sectionId" class="py-4">
+<section id="@sectionId" class="container mx-auto py-4">
     <div class="overflow-hidden rounded-lg" style="background-color:@bgColor;border-radius:@borderRadius;@(string.IsNullOrEmpty(maxHeight) ? "" : $"max-height:{maxHeight};overflow:auto;")">
         @if (!string.IsNullOrEmpty(title) || showCopy == "true")
         {

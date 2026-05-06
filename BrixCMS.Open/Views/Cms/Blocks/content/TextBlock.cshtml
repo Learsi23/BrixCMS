@@ -106,43 +106,45 @@
 }
 
 <div style="@GetContainerStyles()">
-    <div class="@GetContentWidthClass()" style="max-width: 100%;">
+    <div class="@GetContentWidthClass() " style="max-width: 100%;">
         
-        @* Título *@
-        @if (!string.IsNullOrEmpty(Model.Title?.Value))
-        {
-            var styles = BuildTextStyles(
-                Model.TitleColor?.Value,
-                Model.TitleSize?.Value,
-                Model.TitleWeight?.Value,
-                Model.TitleAlignment?.Value
-            );
-            <h2 style="@styles">@RichText.Render(Model.Title.Value)</h2>
-        }
+      <div class="container mx-auto">
+            @* Título *@
+            @if (!string.IsNullOrEmpty(Model.Title?.Value))
+            {
+                var styles = BuildTextStyles(
+                    Model.TitleColor?.Value,
+                    Model.TitleSize?.Value,
+                    Model.TitleWeight?.Value,
+                    Model.TitleAlignment?.Value
+                );
+                <h2 style="@styles">@RichText.Render(Model.Title.Value)</h2>
+            }
         
-        @* Subtítulo *@
-        @if (!string.IsNullOrEmpty(Model.Subtitle?.Value))
-        {
-            var styles = BuildTextStyles(
-                Model.SubtitleColor?.Value,
-                Model.SubtitleSize?.Value,
-                Model.SubtitleWeight?.Value,
-                Model.SubtitleAlignment?.Value
-            );
-            <h3 style="@styles; margin-top: 0.5rem;">@RichText.Render(Model.Subtitle.Value)</h3>
-        }
+            @* Subtítulo *@
+            @if (!string.IsNullOrEmpty(Model.Subtitle?.Value))
+            {
+                var styles = BuildTextStyles(
+                    Model.SubtitleColor?.Value,
+                    Model.SubtitleSize?.Value,
+                    Model.SubtitleWeight?.Value,
+                    Model.SubtitleAlignment?.Value
+                );
+                <h3 style="@styles; margin-top: 0.5rem;">@RichText.Render(Model.Subtitle.Value)</h3>
+            }
         
-        @* Body *@
-        @if (!string.IsNullOrEmpty(Model.Body?.Value))
-        {
-            var styles = BuildTextStyles(
-                Model.BodyColor?.Value,
-                Model.BodySize?.Value,
-                Model.BodyWeight?.Value,
-                Model.BodyAlignment?.Value
-            );
-            <div style="@styles; margin-top: 1rem;">@Html.Raw(Model.Body.Value)</div>
-        }
+            @* Body *@
+            @if (!string.IsNullOrEmpty(Model.Body?.Value))
+            {
+                var styles = BuildTextStyles(
+                    Model.BodyColor?.Value,
+                    Model.BodySize?.Value,
+                    Model.BodyWeight?.Value,
+                    Model.BodyAlignment?.Value
+                );
+                <div style="@styles; margin-top: 1rem;">@Html.Raw(Model.Body.Value)</div>
+            }
+      </div>
         
     </div>
 </div>

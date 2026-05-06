@@ -162,7 +162,7 @@ public class AdminAuthService
     public async Task<List<AdminUser>> GetAllAdminsAsync() =>
         await _db.AdminUsers.OrderBy(u => u.Id).ToListAsync();
 
-    public async Task<AdminUser> CreateAdminAsync(string email, string name, string password)
+    public async Task<AdminUser> CreateAdminAsync(string email, string name, string password, string role = "member", string permissions = "[]")
     {
         var hash = HashPassword(password, out var salt);
         var user = new AdminUser
@@ -172,11 +172,21 @@ public class AdminAuthService
             PasswordHash = hash,
             PasswordSalt = salt,
             IsOwner      = false,
+            Role         = role,
+            Permissions  = permissions,
             CreatedAt    = DateTime.UtcNow
         };
         _db.AdminUsers.Add(user);
         await _db.SaveChangesAsync();
         return user;
+    }
+
+    public async Task UpdatePermissionsAsync(int id, string permissionsJson)
+    {
+        var u = await _db.AdminUsers.FindAsync(id);
+        if (u == null) return;
+        u.Permissions = permissionsJson;
+        await _db.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteAdminAsync(int id)

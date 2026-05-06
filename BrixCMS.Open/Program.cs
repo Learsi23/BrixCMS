@@ -295,9 +295,11 @@ using (var scope = app.Services.CreateScope())
     // Manual migration: AdminUser new columns (safe if already exist)
     var adminNewColumns = new Dictionary<string, string>
     {
-        ["Name"]      = "TEXT NOT NULL DEFAULT ''",
-        ["IsOwner"]   = "INTEGER NOT NULL DEFAULT 0",
-        ["CreatedAt"] = "TEXT NOT NULL DEFAULT '2024-01-01T00:00:00'"
+        ["Name"]        = "TEXT NOT NULL DEFAULT ''",
+        ["IsOwner"]     = "INTEGER NOT NULL DEFAULT 0",
+        ["CreatedAt"]   = "TEXT NOT NULL DEFAULT '2024-01-01T00:00:00'",
+        ["Role"]        = "TEXT",
+        ["Permissions"] = "TEXT",
     };
     foreach (var col in adminNewColumns)
         AddColumnIfNotExists(db.Database, dbProvider, "AdminUsers", col.Key, col.Value);
