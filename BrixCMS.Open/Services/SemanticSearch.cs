@@ -22,7 +22,7 @@ public class SemanticSearch(
         Expression<Func<IngestedChunk, bool>>? filterExpr = filters.Count switch
         {
             0 => null,
-            1 => record => record.DocumentId == documentIdFilter,
+            1 => record => record.DocumentId == filters.First(),
             _ => null
         };
 
@@ -61,7 +61,8 @@ public class SemanticSearch(
             await chunksCollection.DeleteAsync(toDelete);
 
         var docs = new List<IngestedDocument>();
-        await foreach (var result in documentsCollection.SearchAsync(dummy, 1000))
+        var docDummy = new ReadOnlyMemory<float>(new float[2]);
+        await foreach (var result in documentsCollection.SearchAsync(docDummy, 1000))
             docs.Add(result.Record);
 
         var doc = docs.FirstOrDefault(d => d.DocumentId == documentId);

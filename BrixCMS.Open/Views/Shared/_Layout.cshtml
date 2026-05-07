@@ -40,9 +40,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    @* ? Bootstrap solo CSS � sin JS ni jQuery *@
     <script defer src="~/js/cookieBanner.js"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
         [x-cloak] {
@@ -63,8 +61,6 @@
     @* FOOTER DIN�MICO GLOBAL *@
     @await Component.InvokeAsync("DynamicFooter")
 
-    @* ? Sin jQuery � no existe en el proyecto *@
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/Script.js?v=@DateTime.UtcNow.Ticks"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>

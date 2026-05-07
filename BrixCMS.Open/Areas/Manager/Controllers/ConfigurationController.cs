@@ -209,32 +209,58 @@ public class ConfigurationController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> PullOllamaModel([FromBody] JsonElement body)
+    public async Task PullOllamaModel([FromBody] JsonElement body)
     {
-        var modelName = body.GetProperty("model").GetString()?.Trim();
+        Response.Headers.ContentType  = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+
+        var modelName = body.TryGetProperty("model", out var prop) ? prop.GetString()?.Trim() : null;
         if (string.IsNullOrWhiteSpace(modelName))
-            return Json(new { ok = false, error = "Model name required" });
+        {
+            await Response.WriteAsync("data: {\"error\":\"Model name required\"}\n\n");
+            return;
+        }
 
         try
         {
             var url = _apiKeys.GetOllamaUrl();
-            using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-            var content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(new { name = modelName, stream = false }),
-                System.Text.Encoding.UTF8, "application/json");
+            using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(60) };
 
-            var response = await client.PostAsync($"{url}/api/pull", content);
-            if (!response.IsSuccessStatusCode)
+            var req = new HttpRequestMessage(HttpMethod.Post, $"{url}/api/pull")
             {
-                var errBody = await response.Content.ReadAsStringAsync();
-                return Json(new { ok = false, error = errBody });
+                Content = new StringContent(
+                    JsonSerializer.Serialize(new { name = modelName, stream = true }),
+                    System.Text.Encoding.UTF8, "application/json")
+            };
+
+            using var ollamaResp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, HttpContext.RequestAborted);
+
+            if (!ollamaResp.IsSuccessStatusCode)
+            {
+                var err = await ollamaResp.Content.ReadAsStringAsync();
+                await Response.WriteAsync($"data: {{\"error\":{JsonSerializer.Serialize(err)}}}\n\n");
+                return;
             }
 
-            return Json(new { ok = true, model = modelName });
+            using var stream = await ollamaResp.Content.ReadAsStreamAsync();
+            using var reader = new System.IO.StreamReader(stream);
+
+            while (!reader.EndOfStream && !HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                await Response.WriteAsync($"data: {line}\n\n");
+                await Response.Body.FlushAsync();
+            }
+
+            if (!HttpContext.RequestAborted.IsCancellationRequested)
+                await Response.WriteAsync($"data: {{\"done\":true,\"model\":{JsonSerializer.Serialize(modelName)}}}\n\n");
         }
+        catch (OperationCanceledException) { /* client disconnected */ }
         catch (Exception ex)
         {
-            return Json(new { ok = false, error = ex.Message });
+            await Response.WriteAsync($"data: {{\"error\":{JsonSerializer.Serialize(ex.Message)}}}\n\n");
         }
     }
 

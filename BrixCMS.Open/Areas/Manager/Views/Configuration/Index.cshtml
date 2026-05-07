@@ -60,33 +60,34 @@
                             </div>
                         </div>
                     </div>
+                    @* ── Logo fields ── *@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                        <div class="md:col-span-2">
                             <label class="block text-xs font-black text-gray-500 uppercase mb-2">Logo URL</label>
                             <input type="text" name="NavbarLogo" value="@nav.Logo"
-                                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg font-mono" />
-                            @if (!string.IsNullOrEmpty(nav.Logo))
-                            {
-                                <img src="@nav.Logo" class="w-20 h-20 object-contain rounded-lg border mt-2" />
-                            }
+                                   placeholder="/images/logo.png or https://..."
+                                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                            <p class="text-xs text-gray-400 mt-1">Relative path (e.g. <code>/images/logo.png</code>) or absolute URL. Leave empty to hide the logo.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase mb-2">Logo Alt Text</label>
+                            <input type="text" name="NavbarLogoAltText" value="@nav.LogoAltText"
+                                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                         </div>
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase mb-2">Logo Width</label>
                             <input type="text" name="NavbarLogoWidth" value="@nav.LogoWidth"
-                                   placeholder="150px" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                                   placeholder="150px"
+                                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <label class="block text-xs font-black text-gray-500 uppercase mb-2">Logo Alt Text</label>
-                            <input type="text" name="NavbarLogoAltText" value="@nav.LogoAltText"
-                                   placeholder="Logo" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                        </div>
-                        <div>
+                        <div class="md:col-span-2">
                             <label class="block text-xs font-black text-gray-500 uppercase mb-2">Logo Link</label>
                             <input type="text" name="NavbarLogoLink" value="@nav.LogoLink"
-                                   placeholder="/" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+                                   placeholder="/"
+                                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                         </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase mb-2">Vertical Padding</label>
                             <select name="NavbarPaddingVertical" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">

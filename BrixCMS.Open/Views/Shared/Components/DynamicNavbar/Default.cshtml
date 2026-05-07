@@ -9,16 +9,13 @@
 <nav class="@Model.PaddingVertical @(Model.IsSticky ? "sticky top-0 z-50" : "") @(Model.HasShadow ? "shadow-md" : "")" style="background-color: @Model.BackgroundColor;">
     <div class="container mx-auto px-4 flex items-center justify-between">
 
-        @* ── Logo ── *@
+        @* ── Logo (configurable from Navbar settings) ── *@
         @if (!string.IsNullOrEmpty(logoUrl))
         {
-            <a href="@Model.LogoLink" data-enhance-nav="false" class="flex-shrink-0">
-                <img src="@logoUrl" alt="@Model.LogoAltText" style="width: @Model.LogoWidth;" />
+            <a href="@(Model.LogoLink ?? "/")" data-enhance-nav="false" class="flex items-center flex-shrink-0">
+                <img src="@logoUrl" alt="@(Model.LogoAltText ?? "Logo")"
+                     style="width: @(Model.LogoWidth ?? "150px"); height: auto;" />
             </a>
-        }
-        else
-        {
-            <a href="/" data-enhance-nav="false" class="text-xl font-bold text-emerald-600">BrixCMS</a>
         }
 
         @* ── Desktop menu ── *@
