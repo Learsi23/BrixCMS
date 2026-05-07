@@ -31,6 +31,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 | **SEO ready** | Meta, OG tags, canonical URLs, XML sitemap |
 | **GDPR-friendly** | AI defaults to local Ollama — zero data to external services |
 | **Single SQLite file** | No Postgres, no Redis, no infra overhead |
+| **Headless API** | `GET /api/content/pages/{slug}` — serve content to Next.js, Nuxt or any frontend |
 | **Newsletter** | Built-in subscriber capture and API endpoint |
 | **Cookie banner** | GDPR cookie consent block out of the box |
 
@@ -45,7 +46,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 | Database | SQLite via EF Core 10 |
 | AI | Microsoft.Extensions.AI (Ollama · Gemini · DeepSeek · Mistral) |
 | Semantic search | In-memory vector store (Semantic Kernel) |
-| Styling | Tailwind CSS (CDN) + Bootstrap 5 |
+| Styling | Tailwind CSS (CDN) + Alpine.js |
 | Rich text | TinyMCE |
 
 ---
