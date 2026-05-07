@@ -29,14 +29,28 @@
                 </a>
             }
 
-            @* Custom menu items (external links, admin link, etc.) *@
+            @* Custom menu items (external links, icon links, etc.) *@
             @foreach (var item in menuItems)
             {
-                var url = item.IsCustomUrl ? item.CustomUrl : (!string.IsNullOrEmpty(item.PageSlug) ? "/" + item.PageSlug : "#");
+                var url  = item.IsCustomUrl ? item.CustomUrl : (!string.IsNullOrEmpty(item.PageSlug) ? "/" + item.PageSlug : "#");
                 var text = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
-                <a href="@url" class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
-                    @text
-                </a>
+                var target = item.OpenInNewTab ? "_blank" : "_self";
+                var rel    = item.OpenInNewTab ? "noopener noreferrer" : "";
+                @if (!string.IsNullOrEmpty(item.IconClass))
+                {
+                    <a href="@url" target="@target" rel="@rel"
+                       aria-label="@(item.IconAriaLabel ?? item.IconClass)"
+                       class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                        <i class="@item.IconClass text-xl"></i>
+                    </a>
+                }
+                else
+                {
+                    <a href="@url" target="@target" rel="@rel"
+                       class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                        @text
+                    </a>
+                }
             }
         </div>
 

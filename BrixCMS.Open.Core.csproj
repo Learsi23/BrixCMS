@@ -1,0 +1,125 @@
+<!--
+  BrixCMS.Open.Core — Headless NuGet Library
+  ============================================
+  This project packs the BrixCMS core (models, services, DB, AI, block registry)
+  as a standalone installable NuGet library.
+
+  Usage once published:
+    dotnet add package BrixCMS.Open.Core
+
+  Then in Program.cs:
+    builder.Services.AddBrixCms(builder.Configuration);
+    var app = builder.Build();
+    await app.InitializeBrixCmsAsync();
+    app.MapBrixCmsAdmin();   // /Manager admin panel
+    app.MapBrixCmsApi();     // /api/content/* headless endpoints
+    app.MapBrixCmsPages();   // /{slug?} server-side rendering (optional)
+    app.Run();
+
+  NOTE: This project compiles the source files from BrixCMS.Open/ directly,
+  excluding web-only items (Controllers, Views, Blazor, Areas, TagHelpers).
+  The host application keeps its own Views/Controllers/Blazor components.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BrixCMS.Open</RootNamespace>
+    <AssemblyName>BrixCMS.Open.Core</AssemblyName>
+
+    <!-- NuGet package metadata -->
+    <PackageId>BrixCMS.Open.Core</PackageId>
+    <PackageVersion>1.2.0</PackageVersion>
+    <Title>BrixCMS Open — Headless Core Library</Title>
+    <Authors>BrixCMS</Authors>
+    <Description>Headless CMS library for ASP.NET Core 10.
+
+Install and wire up BrixCMS in any existing project:
+
+  dotnet add package BrixCMS.Open.Core
+
+  // Program.cs
+  builder.Services.AddBrixCms(builder.Configuration);
+  var app = builder.Build();
+  await app.InitializeBrixCmsAsync();
+  app.MapBrixCmsAdmin();   // /Manager
+  app.MapBrixCmsApi();     // /api/content/*
+  app.MapBrixCmsPages();   // /{slug?}  (optional — for SSR)
+  app.Run();
+
+Includes: 40+ block types, page management, visual admin editor,
+Ollama AI chatbot, PDF semantic search, Content Delivery API,
+SQLite / SQL Server / PostgreSQL, newsletter, image optimisation,
+CSRF protection and rate limiting.</Description>
+    <PackageTags>cms;headless;blazor;aspnetcore;ollama;ai;brixcms;sqlite;blocks;dotnet10;content-api</PackageTags>
+    <PackageProjectUrl>https://github.com/Learsi23/BrixCMS</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Learsi23/BrixCMS</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- NuGet package assets -->
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png"  Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Compile source from the main project, excluding web-only code -->
+  <ItemGroup>
+    <Compile Include="BrixCMS.Open\Models\**\*.cs" />
+    <Compile Include="BrixCMS.Open\Data\**\*.cs" />
+    <Compile Include="BrixCMS.Open\Services\**\*.cs" />
+    <Compile Include="BrixCMS.Open\Extensions\**\*.cs" />
+    <Compile Include="BrixCMS.Open\DTOs\**\*.cs" />
+
+    <!-- Exclude web-specific code that requires MVC / Razor / Blazor -->
+    <Compile Remove="BrixCMS.Open\**\bin\**" />
+    <Compile Remove="BrixCMS.Open\**\obj\**" />
+  </ItemGroup>
+
+  <!-- Same dependencies as the main project (non-web subset) -->
+  <ItemGroup>
+    <!-- Database -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite"     Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer"  Version="10.0.7" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"    Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design"     Version="10.0.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+
+    <!-- AI -->
+    <PackageReference Include="Microsoft.Extensions.AI"                           Version="10.4.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI"                   Version="10.4.0" />
+    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions"     Version="10.1.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.InMemory"     Version="1.74.0-preview" />
+    <PackageReference Include="OllamaSharp"                                       Version="5.4.25" />
+
+    <!-- Content -->
+    <PackageReference Include="PdfPig"          Version="0.1.14" />
+    <PackageReference Include="Markdig"         Version="1.1.3"  />
+    <PackageReference Include="HtmlSanitizer"   Version="9.0.892" />
+    <PackageReference Include="System.Linq.Async" Version="7.0.1" />
+
+    <!-- Image optimisation -->
+    <PackageReference Include="SixLabors.ImageSharp.Web" Version="3.2.0" />
+
+    <!-- QR Codes -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+
+    <!-- Email -->
+    <PackageReference Include="MailKit" Version="4.16.0" />
+
+  </ItemGroup>
+
+  <!-- ASP.NET Core framework (provides IServiceCollection, WebApplication, IConfiguration, etc.) -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

@@ -31,10 +31,21 @@
                 var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
                 var target = item.OpenInNewTab ? "_blank" : "_self";
                 var rel    = item.OpenInNewTab ? "noopener noreferrer" : "";
-                <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
-                   class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
-                    @text
-                </a>
+                @if (!string.IsNullOrEmpty(item.IconClass))
+                {
+                    <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
+                       aria-label="@(item.IconAriaLabel ?? item.IconClass)"
+                       class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                        <i class="@item.IconClass text-xl"></i>
+                    </a>
+                }
+                else
+                {
+                    <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
+                       class="hover:opacity-75 transition-opacity" style="color: @Model.TextColor;">
+                        @text
+                    </a>
+                }
             }
         </div>
 
@@ -61,11 +72,23 @@
                 var text   = !string.IsNullOrEmpty(item.CustomText) ? item.CustomText : "Link";
                 var target = item.OpenInNewTab ? "_blank" : "_self";
                 var rel    = item.OpenInNewTab ? "noopener noreferrer" : "";
-                <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
-                   class="block py-2 px-2 rounded hover:opacity-75 transition-opacity"
-                   style="color: @Model.TextColor;">
-                    @text
-                </a>
+                @if (!string.IsNullOrEmpty(item.IconClass))
+                {
+                    <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
+                       aria-label="@(item.IconAriaLabel ?? item.IconClass)"
+                       class="block py-2 px-2 rounded hover:opacity-75 transition-opacity"
+                       style="color: @Model.TextColor;">
+                        <i class="@item.IconClass text-xl"></i>
+                    </a>
+                }
+                else
+                {
+                    <a href="@url" target="@target" rel="@rel" data-enhance-nav="false"
+                       class="block py-2 px-2 rounded hover:opacity-75 transition-opacity"
+                       style="color: @Model.TextColor;">
+                        @text
+                    </a>
+                }
             }
         </div>
     </div>

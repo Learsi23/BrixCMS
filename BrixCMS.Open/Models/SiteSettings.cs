@@ -30,6 +30,10 @@ namespace BrixCMS.Open.Models
         public bool IsCustomUrl { get; set; } = true;
         public string PageSlug { get; set; } = "";
         public bool OpenInNewTab { get; set; } = false;
+        /// <summary>FontAwesome class (e.g. "fab fa-github"). When set, renders an icon instead of text.</summary>
+        public string IconClass { get; set; } = "";
+        /// <summary>Accessible label for icon-only links.</summary>
+        public string IconAriaLabel { get; set; } = "";
     }
 
     public class FooterSettings

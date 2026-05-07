@@ -1,11 +1,13 @@
 {
   "$schema": "http://json.schemastore.org/template",
   "author": "BrixCMS",
-  "classifications": [ "Web", "CMS", "Blazor", "MVC" ],
+  "classifications": [ "Web", "CMS", "Blazor", "MVC", "ASP.NET Core" ],
   "identity": "BrixCMS.Open.Web",
   "name": "BrixCMS Open — Block-based CMS",
   "shortName": "brixcms",
   "description": "Open-source .NET 10 block-based CMS with Blazor Server, MVC, SQLite and local Ollama AI chatbot. 40+ pre-built blocks, visual page editor, PDF chatbot — zero config.",
+  "groupIdentity": "BrixCMS.Open",
+  "precedence": "100",
   "tags": {
     "language": "C#",
     "type": "project"
@@ -54,5 +56,23 @@
         "format": "D"
       }
     }
-  }
+  },
+  "ide": {
+    "default": {
+      "VisualStudio": {
+        "defaultProjectNameRegex": ".*",
+        "icon": {
+          "name": "browser"
+        }
+      }
+    }
+  },
+  "postActions": [
+    {
+      "description": "Restore NuGet packages",
+      "manualInstructions": [ { "text": "Run 'dotnet restore'" } ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "continueOnError": true
+    }
+  ]
 }

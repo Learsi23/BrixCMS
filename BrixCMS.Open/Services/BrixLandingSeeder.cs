@@ -860,10 +860,10 @@ public static class BrixLandingSeeder
                 paddingVertical = "py-3",
                 menuItems       = new object[]
                 {
-                    new { customText = "Features", customUrl = "/features",                              isCustomUrl = true, pageSlug = "", openInNewTab = false },
-                    new { customText = "Pro",      customUrl = "/pro",                                   isCustomUrl = true, pageSlug = "", openInNewTab = false },
-                    new { customText = "GitHub",   customUrl = "https://github.com/Learsi23/BrixCMS",   isCustomUrl = true, pageSlug = "", openInNewTab = true  },
-                    new { customText = "Admin",    customUrl = "/Manager/login",                         isCustomUrl = true, pageSlug = "", openInNewTab = false },
+                    new { customText = "Features", customUrl = "/features",                            isCustomUrl = true, pageSlug = "", openInNewTab = false, iconClass = "", iconAriaLabel = "" },
+                    new { customText = "Pro",      customUrl = "/pro",                                 isCustomUrl = true, pageSlug = "", openInNewTab = false, iconClass = "", iconAriaLabel = "" },
+                    new { customText = "",         customUrl = "https://github.com/Learsi23/BrixCMS", isCustomUrl = true, pageSlug = "", openInNewTab = true,  iconClass = "fab fa-github",  iconAriaLabel = "BrixCMS on GitHub"  },
+                    new { customText = "",         customUrl = "https://www.youtube.com/@BrixCMS",    isCustomUrl = true, pageSlug = "", openInNewTab = true,  iconClass = "fab fa-youtube", iconAriaLabel = "BrixCMS on YouTube" },
                 },
             },
             footer = new

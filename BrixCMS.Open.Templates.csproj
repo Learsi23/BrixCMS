@@ -2,12 +2,17 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.1.0</PackageVersion>
+    <PackageVersion>1.2.0</PackageVersion>
     <PackageId>BrixCMS.Open.Templates</PackageId>
-    <Title>BrixCMS Open Templates</Title>
+    <Title>BrixCMS Open — Block-based CMS Template</Title>
     <Authors>BrixCMS</Authors>
-    <Description>dotnet new template for BrixCMS Open — open-source .NET 10 block-based CMS with Blazor Server, visual page editor, 40+ blocks, and local Ollama AI chatbot. Zero config, SQLite, MIT license.</Description>
-    <PackageTags>dotnet-new;template;cms;blazor;mvc;ollama;ai;brixcms;sqlite</PackageTags>
+    <Description>Project template for BrixCMS Open — open-source .NET 10 block-based CMS with Blazor Server, MVC, visual page editor, 40+ blocks, headless Content API and local Ollama AI chatbot. Zero config, SQLite, MIT license.
+
+Install: dotnet new install BrixCMS.Open.Templates
+Create:  dotnet new brixcms -n MyWebsite
+
+Also available in Visual Studio 2022 via New Project → Search "BrixCMS".</Description>
+    <PackageTags>dotnet-new;template;cms;blazor;mvc;ollama;ai;brixcms;sqlite;headless;aspnetcore</PackageTags>
     <PackageProjectUrl>https://github.com/Learsi23/BrixCMS</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/Learsi23/BrixCMS</RepositoryUrl>
