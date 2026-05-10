@@ -3,16 +3,21 @@
     Layout = "_ManagerLayout";
 
     var pdfFiles = ViewBag.PdfFiles as List<PdfFileInfo> ?? new();
-    var twoFactorEnabled = (bool)(ViewBag.TwoFactorEnabled ?? false);
     var ollamaUrl   = ViewBag.OllamaUrl   as string ?? "http://localhost:11434";
     var ollamaModel = ViewBag.OllamaModel as string ?? "llama3.2:3b";
+    var savedKeys    = ViewBag.SavedApiKeys   as List<ApiKeyInfo> ?? new();
+    var activeProvider = ViewBag.ActiveProvider as string ?? "";
+    var activeModel    = ViewBag.ActiveModel    as string ?? "";
+
+    bool HasGeminiKey() => savedKeys.Any(k => k.Provider == "gemini");
+    bool IsActive(string p) => string.Equals(activeProvider, p, StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="p-8 max-w-5xl mx-auto space-y-8">
 
     <div class="mb-2">
         <h1 class="text-3xl font-black text-gray-900 mb-2">Chatbot &amp; Security</h1>
-        <p class="text-gray-500">Configure the PDF chatbot, Ollama connection and account settings</p>
+        <p class="text-gray-500">Configure the AI chatbot — local Ollama or cloud Gemini (free tier)</p>
     </div>
 
     @if (TempData["ChatbotSuccess"] != null)
@@ -27,6 +32,142 @@
             <i class="fas fa-times-circle text-red-600"></i> @TempData["ChatbotError"]
         </div>
     }
+    @if (TempData["AiSuccess"] != null)
+    {
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl flex items-center gap-2">
+            <i class="fas fa-check-circle text-emerald-600"></i> @TempData["AiSuccess"]
+        </div>
+    }
+    @if (TempData["AiError"] != null)
+    {
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+            <i class="fas fa-times-circle text-red-600"></i> @TempData["AiError"]
+        </div>
+    }
+
+    @* ── GEMINI CONFIG ── *@
+    @{
+        var geminiKeySaved = HasGeminiKey();
+        var geminiActive   = IsActive("gemini");
+    }
+    <div class="bg-white rounded-2xl border @(geminiActive ? "border-indigo-300" : "border-gray-200") shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-900 to-violet-900 px-6 py-4">
+            <h2 class="text-xl font-black text-white flex items-center gap-3">
+                <i class="fas fa-cloud"></i> Gemini (cloud)
+            </h2>
+            <p class="text-indigo-200 text-sm mt-1">Free tier — bring your own API key from Google AI Studio</p>
+        </div>
+        <div class="p-6 space-y-4">
+            @* Status badge *@
+            <div class="flex items-center gap-3">
+                @if (geminiKeySaved)
+                {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Key saved
+                    </span>
+                }
+                else
+                {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full">
+                        No key
+                    </span>
+                }
+                @if (geminiActive)
+                {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">
+                        ⚡ Active
+                    </span>
+                }
+            </div>
+
+            @* Key input *@
+            <form asp-action="SaveApiKey" method="post" class="flex gap-2 items-center">
+                <input type="hidden" name="provider" value="gemini" />
+                <input type="password" name="apiKey"
+                       placeholder="@(geminiKeySaved ? "Leave blank to keep existing key" : "Paste your Gemini API key")"
+                       class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 outline-none font-mono" />
+                <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition">
+                    Save
+                </button>
+                @if (geminiKeySaved)
+                {
+                    <form asp-action="DeleteApiKey" method="post" style="display:inline">
+                        <input type="hidden" name="provider" value="gemini" />
+                        <button type="submit" onclick="return confirm('Delete saved Gemini key?')"
+                                class="bg-red-100 hover:bg-red-500 text-red-500 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                }
+            </form>
+
+            @if (geminiKeySaved)
+            {
+                <div x-data="{ testing: false, result: null }">
+                    <button type="button" @@click="testing=true; result=null; fetch('/Manager/Configuration/TestApiKey?provider=gemini').then(r=>r.json()).then(d=>{ result=d; testing=false; }).catch(e=>{ result={ok:false,error:e.message}; testing=false; })"
+                            :disabled="testing"
+                            class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 transition disabled:opacity-50">
+                        <span x-show="!testing"><i class="fas fa-plug text-xs"></i> Test connection</span>
+                        <span x-show="testing"><i class="fas fa-spinner fa-spin text-xs"></i> Testing...</span>
+                    </button>
+                    <div x-show="result !== null" x-transition class="mt-1.5 text-xs px-3 py-1.5 rounded-lg"
+                         :class="result && result.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'">
+                        <span x-show="result && result.ok"><i class="fas fa-check-circle mr-1"></i> Connection OK</span>
+                        <span x-show="result && !result.ok"><i class="fas fa-times-circle mr-1"></i> <span x-text="result && result.error"></span></span>
+                    </div>
+                </div>
+
+                @* Set active + model *@
+                <form asp-action="SetActiveProvider" method="post"
+                      class="flex gap-2 items-center flex-wrap border-t border-gray-100 pt-3">
+                    <input type="hidden" name="provider" value="gemini" />
+                    <select name="model"
+                            class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-300 outline-none bg-white">
+                        @foreach (var m in new[] { "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro" })
+                        {
+                            if (geminiActive && activeModel == m)
+                            {
+                                <option value="@m" selected>@m</option>
+                            }
+                            else
+                            {
+                                <option value="@m">@m</option>
+                            }
+                        }
+                    </select>
+                    <button type="submit"
+                            class="@(geminiActive ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-indigo-600 hover:text-white") px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition">
+                        @(geminiActive ? "Active" : "Set Active")
+                    </button>
+                </form>
+            }
+
+            <div class="text-xs text-gray-400 flex items-start gap-2">
+                <i class="fas fa-info-circle mt-0.5 text-indigo-400"></i>
+                <span>
+                    Get a free API key at
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline">aistudio.google.com/app/apikey</a>.
+                    Gemini 2.5 Flash Lite is free (60 req/min, 1M tokens). The key is stored encrypted (AES-256-GCM).
+                </span>
+            </div>
+        </div>
+    </div>
+
+    @* ── Status summary *@
+    <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-500 flex items-start gap-2">
+        <i class="fas fa-info-circle mt-0.5 text-indigo-400"></i>
+        <span>
+            The <strong>active provider</strong> is used for all AI features: chat and PDF Q&amp;A.
+            @if (!string.IsNullOrEmpty(activeProvider))
+            {
+                <span>Currently active: <strong>@activeProvider</strong> (@activeModel).</span>
+            }
+            Otherwise the system falls back to <strong>Ollama</strong> (local).
+            Keys never leave the server — stored with AES-256-GCM encryption.
+        </span>
+    </div>
+
     @* ── OLLAMA CONFIG ── *@
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4">

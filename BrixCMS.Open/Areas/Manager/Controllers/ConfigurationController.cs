@@ -5,7 +5,10 @@ using BrixCMS.Open.Services;
 using BrixCMS.Open.Services.Ingestion;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
+using OpenAI;
 using QRCoder;
+using System.ClientModel;
 using System.Text.Json;
 
 namespace BrixCMS.Open.Areas.Manager.Controllers;
@@ -21,6 +24,7 @@ public class ConfigurationController : Controller
     private readonly SemanticSearch _search;
     private readonly AdminAuthService _auth;
     private readonly ApiKeyService _apiKeys;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<ConfigurationController> _logger;
 
     public ConfigurationController(
@@ -30,15 +34,17 @@ public class ConfigurationController : Controller
         SemanticSearch search,
         AdminAuthService auth,
         ApiKeyService apiKeys,
+        IConfiguration configuration,
         ILogger<ConfigurationController> logger)
     {
-        _db       = db;
-        _ingestor = ingestor;
-        _env      = env;
-        _search   = search;
-        _auth     = auth;
-        _apiKeys  = apiKeys;
-        _logger   = logger;
+        _db           = db;
+        _ingestor     = ingestor;
+        _env          = env;
+        _search       = search;
+        _auth         = auth;
+        _apiKeys      = apiKeys;
+        _configuration = configuration;
+        _logger       = logger;
     }
 
     private bool HasPermission(string perm)
@@ -136,7 +142,7 @@ public class ConfigurationController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ── Chatbot (PDFs + Ollama + Account security) ────────────────────────────
+    // ── Chatbot (PDFs + Ollama + Gemini + Account security) ───────────────────
 
     public async Task<IActionResult> Chatbot()
     {
@@ -149,7 +155,8 @@ public class ConfigurationController : Controller
             .OrderByDescending(f => f.LastWriteTime)
             .ToList();
 
-        var activeConfig    = _apiKeys.GetActiveProviderConfig();
+        var savedKeys      = await _apiKeys.GetAllAsync();
+        var activeConfig   = _apiKeys.GetActiveProviderConfig();
 
         ViewBag.OllamaUrl        = _apiKeys.GetOllamaUrl();
         ViewBag.OllamaModel      = activeConfig?.Provider == "ollama" ? activeConfig.Model : "";
@@ -160,6 +167,9 @@ public class ConfigurationController : Controller
             LastModified = f.LastWriteTime,
             FullPath     = f.FullName,
         }).ToList();
+        ViewBag.SavedApiKeys     = savedKeys;
+        ViewBag.ActiveProvider   = activeConfig?.Provider ?? "";
+        ViewBag.ActiveModel      = activeConfig?.Model    ?? "";
 
         return View();
     }
@@ -261,6 +271,71 @@ public class ConfigurationController : Controller
         catch (Exception ex)
         {
             await Response.WriteAsync($"data: {{\"error\":{JsonSerializer.Serialize(ex.Message)}}}\n\n");
+        }
+    }
+
+    // ── Gemini API key management ────────────────────────────────────────────
+
+    [HttpPost]
+    public async Task<IActionResult> SaveApiKey(string provider, string apiKey)
+    {
+        if (provider != "gemini" || string.IsNullOrWhiteSpace(apiKey))
+        {
+            TempData["AiError"] = "Invalid provider or empty key.";
+            return RedirectToAction(nameof(Chatbot));
+        }
+
+        await _apiKeys.SaveKeyAsync(provider.ToLower(), apiKey.Trim());
+        TempData["AiSuccess"] = "Gemini API key saved.";
+        return RedirectToAction(nameof(Chatbot));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteApiKey(string provider)
+    {
+        await _apiKeys.DeleteKeyAsync(provider.ToLower());
+        TempData["AiSuccess"] = "Gemini API key deleted.";
+        return RedirectToAction(nameof(Chatbot));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SetActiveProvider(string provider, string model)
+    {
+        if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(model))
+        {
+            TempData["AiError"] = "Provider and model are required.";
+            return RedirectToAction(nameof(Chatbot));
+        }
+
+        await _apiKeys.SetActiveProviderAsync(provider.ToLower(), model.Trim());
+        TempData["AiSuccess"] = $"Active provider set to {provider} ({model}).";
+        return RedirectToAction(nameof(Chatbot));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> TestApiKey([FromQuery] string provider)
+    {
+        var resolved = ApiKeyService.KnownProviders.TryGetValue(provider.ToLower(), out var info);
+        if (!resolved)
+            return Json(new { ok = false, error = "Unknown provider." });
+
+        var key = _apiKeys.GetDecryptedKeySync(provider.ToLower());
+        if (key == null)
+            return Json(new { ok = false, error = "No key saved for this provider." });
+
+        try
+        {
+            var oai = new OpenAIClient(
+                new ApiKeyCredential(key),
+                new OpenAIClientOptions { Endpoint = new Uri(info.Endpoint) });
+            var chat = oai.GetChatClient(info.DefaultModel).AsIChatClient();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var resp = await chat.GetResponseAsync("Reply with just: OK", cancellationToken: cts.Token);
+            return Json(new { ok = true, reply = resp.Text?.Trim() });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { ok = false, error = ex.Message });
         }
     }
 
