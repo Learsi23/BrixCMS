@@ -67,22 +67,25 @@ public class SemanticSearch(
 
     public async Task DeleteDocumentAsync(string documentId)
     {
-        var chunks = new List<IngestedChunk>();
+        var chunkIds = new List<string>();
         var dummy = new ReadOnlyMemory<float>(new float[384]);
         await foreach (var result in chunksCollection.SearchAsync(dummy, 10000))
-            chunks.Add(result.Record);
+        {
+            if (result.Record.DocumentId == documentId)
+                chunkIds.Add(result.Record.Key);
+        }
 
-        var toDelete = chunks.Where(r => r.DocumentId == documentId).Select(r => r.Key).ToList();
-        if (toDelete.Any())
-            await chunksCollection.DeleteAsync(toDelete);
+        if (chunkIds.Count != 0)
+            await chunksCollection.DeleteAsync(chunkIds);
 
-        var docs = new List<IngestedDocument>();
         var docDummy = new ReadOnlyMemory<float>(new float[2]);
         await foreach (var result in documentsCollection.SearchAsync(docDummy, 1000))
-            docs.Add(result.Record);
-
-        var doc = docs.FirstOrDefault(d => d.DocumentId == documentId);
-        if (doc != null)
-            await documentsCollection.DeleteAsync(doc.Key);
+        {
+            if (result.Record.DocumentId == documentId)
+            {
+                await documentsCollection.DeleteAsync(result.Record.Key);
+                break;
+            }
+        }
     }
 }

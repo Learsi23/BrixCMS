@@ -8,29 +8,21 @@ namespace BrixCMS.Open.Services.Email
     {
         private readonly IConfiguration _config;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<EmailSender> _logger;
 
-        public EmailSender(IConfiguration config, IHttpClientFactory httpClientFactory)
+        public EmailSender(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<EmailSender> logger)
         {
             _config = config;
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
-        // ── Plain text ────────────────────────────────────────────────────────
         public Task SendEmailAsync(string senderName, string senderEmail, string toName, string toEmail, string subject, string textContent)
             => SendViaResendAsync(senderName, toEmail, subject, textContent, null);
 
-        // ── HTML ──────────────────────────────────────────────────────────────
         public Task SendHtmlEmailAsync(string senderName, string senderEmail, string toName, string toEmail, string subject, string htmlContent, string? plainText = null)
             => SendViaResendAsync(senderName, toEmail, subject, plainText ?? StripHtml(htmlContent), htmlContent);
 
-        // ── Sync wrappers (kept for compatibility) ────────────────────────────
-        public void SendEmail(string senderName, string senderEmail, string toName, string toEmail, string subject, string textContent)
-            => SendEmailAsync(senderName, senderEmail, toName, toEmail, subject, textContent).GetAwaiter().GetResult();
-
-        public void SendHtmlEmail(string senderName, string senderEmail, string toName, string toEmail, string subject, string htmlContent, string? plainText = null)
-            => SendHtmlEmailAsync(senderName, senderEmail, toName, toEmail, subject, htmlContent, plainText).GetAwaiter().GetResult();
-
-        // ── Resend HTTP API ───────────────────────────────────────────────────
         private async Task SendViaResendAsync(string senderName, string toEmail, string subject, string? text, string? html)
         {
             var apiKey  = _config.GetValue<string>("SmtpSettings:SmtpPassword") ?? "";
@@ -55,11 +47,11 @@ namespace BrixCMS.Open.Services.Email
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"[EmailSender] Resend error {(int)response.StatusCode}: {body}");
+                _logger.LogError("Resend error {StatusCode}: {Body}", (int)response.StatusCode, body);
                 throw new Exception($"Resend error {(int)response.StatusCode}: {body}");
             }
 
-            Console.WriteLine($"[EmailSender] Email sent successfully to {toEmail}");
+            _logger.LogInformation("Email sent successfully to {ToEmail}", toEmail);
         }
 
         private static string StripHtml(string html)

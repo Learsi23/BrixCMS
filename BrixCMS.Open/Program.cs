@@ -92,8 +92,10 @@ builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddbrixBlocks();
 builder.Services.AddTransient<EmailSender>();
 
+builder.Services.AddSingleton<EncryptionService>();
 builder.Services.AddScoped<ApiKeyService>();
 builder.Services.AddSingleton<PromptsService>();
+builder.Services.AddScoped<IAiClientFactory, AiClientFactory>();
 
 // =====================================================
 // 2️⃣ SESSION
@@ -115,7 +117,11 @@ builder.Services.AddSession(options =>
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents()
-    .AddCircuitOptions(options => options.DetailedErrors = true);
+    .AddCircuitOptions(options =>
+    {
+        if (builder.Environment.IsDevelopment())
+            options.DetailedErrors = true;
+    });
 
 // =====================================================
 // 4️⃣ MARKDOWN
@@ -128,43 +134,30 @@ builder.Services.AddSingleton<MarkdownPipeline>(_ =>
         .Build());
 
 // =====================================================
-// 5️⃣ AI — Ollama (local, free, open source)
+// 5️⃣ AI — Dynamic provider (Gemini / DeepSeek / Mistral) with Ollama fallback
 // =====================================================
 
-var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
-var chatModel = builder.Configuration["Ollama:ChatModel"] ?? "llama3.1:8b";
 var embeddingModel = builder.Configuration["Ollama:EmbeddingModel"]!;
+var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
 
-// Embeddings always use Ollama (needed for PDF semantic search)
+// Embeddings always use local Ollama (needed for PDF semantic search)
 var embeddingGenerator = new OllamaApiClient(new Uri(ollamaUrl), embeddingModel);
 
-// =====================================================
-// VECTOR STORE (InMemory — SK connector + VectorData 10.1.0)
-// Los datos se reingresan al arranque via la lógica de ingesta existente.
-// =====================================================
+// Vector store
 builder.Services.AddInMemoryVectorStore();
 builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedChunk>("data-chatappollama-chunks");
 builder.Services.AddInMemoryVectorStoreRecordCollection<string, IngestedDocument>("data-chatappollama-documents");
 
-// =====================================================
-// EMBEDDINGS
-// =====================================================
-
+// Embeddings
 builder.Services.AddEmbeddingGenerator(embeddingGenerator);
 
-// =====================================================
-// CHAT CLIENT
-// =====================================================
-
+// Chat client — resolves provider dynamically via AiClientFactory
 builder.Services.AddScoped<IChatClient>(sp =>
 {
-    var apiKeySvc = sp.GetRequiredService<ApiKeyService>();
+    var factory = sp.GetRequiredService<IAiClientFactory>();
     var loggerFac = sp.GetRequiredService<ILoggerFactory>();
-    var resolved  = apiKeySvc.ResolveActiveClient();
-    var endpoint  = resolved?.endpoint ?? ollamaUrl;
-    var model     = resolved?.model    ?? chatModel;
-
-    return ((IChatClient)new OllamaApiClient(new Uri(endpoint), model))
+    var (client, _, _) = factory.BuildJsonClient();
+    return client
         .AsBuilder()
         .UseFunctionInvocation()
         .UseLogging(loggerFac)
@@ -248,6 +241,19 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BrixDbContext>();
     db.Database.EnsureCreated();
+
+    // Manual migration: ApiKeys table (encrypted cloud AI keys)
+    try
+    {
+        var sqlApiKeys = dbProvider switch
+        {
+            "sqlserver" => "IF OBJECT_ID(N'ApiKeys', N'U') IS NULL CREATE TABLE [ApiKeys] ([Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY, [Provider] NVARCHAR(50) NOT NULL, [EncryptedKey] NVARCHAR(MAX) NOT NULL, [Iv] NVARCHAR(MAX) NOT NULL, [AuthTag] NVARCHAR(MAX) NOT NULL, [CreatedAt] NVARCHAR(50) NOT NULL, [UpdatedAt] NVARCHAR(50) NOT NULL)",
+            "postgres"  => @"CREATE TABLE IF NOT EXISTS ""ApiKeys"" (""Id"" SERIAL PRIMARY KEY, ""Provider"" TEXT NOT NULL UNIQUE, ""EncryptedKey"" TEXT NOT NULL, ""Iv"" TEXT NOT NULL, ""AuthTag"" TEXT NOT NULL, ""CreatedAt"" TEXT NOT NULL, ""UpdatedAt"" TEXT NOT NULL)",
+            _           => @"CREATE TABLE IF NOT EXISTS ""ApiKeys"" (""Id"" INTEGER PRIMARY KEY AUTOINCREMENT, ""Provider"" TEXT NOT NULL UNIQUE, ""EncryptedKey"" TEXT NOT NULL, ""Iv"" TEXT NOT NULL, ""AuthTag"" TEXT NOT NULL, ""CreatedAt"" TEXT NOT NULL, ""UpdatedAt"" TEXT NOT NULL)",
+        };
+        db.Database.ExecuteSqlRaw(sqlApiKeys);
+    }
+    catch { }
 
     // Manual migration: PageViews table
     try

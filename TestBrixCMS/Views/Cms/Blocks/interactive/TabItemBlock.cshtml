@@ -1,7 +1,0 @@
-@using TestBrixCMS.Models.Blocks
-@model TabItemBlock
-
-<div class="p-4 border border-gray-200 rounded-xl">
-    <p class="font-semibold mb-2">@(Model.TabLabel?.Value ?? "Tab")</p>
-    <div class="text-gray-600 text-sm">@Html.Raw(Model.Content?.Value ?? "")</div>
-</div>

@@ -19,7 +19,7 @@
     }
     else
     {
-        @* Corregido: Toda la lógica de la clase dentro de un solo bloque @() *@
+        @* Corregido: Toda la lï¿½gica de la clase dentro de un solo bloque @() *@
         <EditForm Model="@contactModel" 
                   OnValidSubmit="HandleValidSubmit" 
                   class="@(isSending ? "opacity-50 pointer-events-none transition-opacity duration-500" : "transition-opacity duration-500")">
@@ -120,17 +120,14 @@
 
         try
         {
-            await Task.Run(() =>
-            {
-                EmailService.SendEmail(
-                    senderName: contactModel.Name,
-                    senderEmail: contactModel.Email,
-                    toName: "Admin",
-                    toEmail: RecipientEmail ?? "support@yourweb.com",
-                    subject: $"?? New Lead: {contactModel.Name}",
-                    textContent: $"Contact Details:\nName: {contactModel.Name}\nEmail: {contactModel.Email}\n\nMessage:\n{contactModel.Message}"
-                );
-            });
+            await EmailService.SendEmailAsync(
+                senderName: contactModel.Name,
+                senderEmail: contactModel.Email,
+                toName: "Admin",
+                toEmail: RecipientEmail ?? "support@yourweb.com",
+                subject: $"?? New Lead: {contactModel.Name}",
+                textContent: $"Contact Details:\nName: {contactModel.Name}\nEmail: {contactModel.Email}\n\nMessage:\n{contactModel.Message}"
+            );
 
             isSending = false;
             submitted = true;

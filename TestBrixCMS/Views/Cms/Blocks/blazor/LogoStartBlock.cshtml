@@ -1,7 +1,0 @@
-@model TestBrixCMS.Models.BlazorBlocks.LogoStartBlock
-
-<div class="w-full @(Model.BackgroundWidth?.Value == "full" ? "-mx-[calc(50%-50vw)]" : "")">
-    <component type="typeof(TestBrixCMS.Components.BlazorBlocks.LogoStartTemplate)"
-               render-mode="ServerPrerendered"
-               param-Model="@Model" />
-</div>

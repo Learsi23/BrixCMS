@@ -13,6 +13,15 @@ public class BrixDbContext : DbContext
     public DbSet<AdminUser> AdminUsers { get; set; }
     public DbSet<PageView> PageViews { get; set; }
     public DbSet<Subscriber> Subscribers { get; set; }
+    public DbSet<AiUsageLog> AiUsageLogs { get; set; }
+    public DbSet<ApiKey> ApiKeys { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApiKey>()
+            .HasIndex(k => k.Provider)
+            .IsUnique();
+    }
 }
 
 public class Page
@@ -82,5 +91,17 @@ public class Subscriber
     [Required, EmailAddress] public string Email { get; set; } = "";
     public string? Name { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class AiUsageLog
+{
+    public int Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string Operation { get; set; } = "";
+    public string Provider { get; set; } = "";
+    public string Model { get; set; } = "";
+    public int InputTokens { get; set; }
+    public int OutputTokens { get; set; }
+    public decimal EstimatedCostUsd { get; set; }
 }
 
