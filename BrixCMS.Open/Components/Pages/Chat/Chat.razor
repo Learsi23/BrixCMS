@@ -83,7 +83,10 @@
     {
         systemPrompt = Prompts.GenerateChatSystemPrompt(CustomSystemPrompt);
         _ownedClient = BuildClientForProvider(AiProvider);
-        chatOptions.Tools = [AIFunctionFactory.Create(SearchAsync, "SearchAsync")];
+        chatOptions.Tools = [
+            AIFunctionFactory.Create(SearchAsync, "SearchAsync"),
+            AIFunctionFactory.Create(ListDocumentsAsync, "ListDocumentsAsync")
+        ];
         effectiveChatId = !string.IsNullOrWhiteSpace(ChatId) ? ChatId : "default";
     }
 
@@ -243,15 +246,37 @@
         await AddWelcomeMessage();
     }
 
+    private const int MaxToolResponseChars = 600;
+
     [Description("Searches the knowledge-base documents (PDFs) for information.")]
     private async Task<IEnumerable<string>> SearchAsync(
-        [Description("The phrase or question to search for")] string searchPhrase,
-        [Description("Optional: limit search to a specific filename")] string? filenameFilter = null)
+        [Description("What to look for")] string searchPhrase,
+        [Description("Optional: limit to a specific filename")] string? filenameFilter = null,
+        [Description("Results count (default 5, max 15). If count matches max, more may exist.")] int maxResults = 5)
     {
         await InvokeAsync(StateHasChanged);
+        maxResults = Math.Clamp(maxResults, 1, 15);
         var effectiveFilter = !string.IsNullOrWhiteSpace(PdfFilter) ? PdfFilter : filenameFilter;
-        var results = await Search.SearchAsync(searchPhrase, effectiveFilter, maxResults: 5);
-        return results.Select(r => $"<result filename=\"{r.DocumentId}\" page_number=\"{r.PageNumber}\">{r.Text}</result>");
+        var results = await Search.SearchAsync(searchPhrase, effectiveFilter, maxResults);
+
+        var budgetPerResult = Math.Max(60, MaxToolResponseChars / Math.Max(1, results.Count()));
+        return results.Select(r =>
+        {
+            var text = r.Text.Length > budgetPerResult
+                ? r.Text[..budgetPerResult] + "..."
+                : r.Text;
+            return $"<r f=\"{r.DocumentId}\" p=\"{r.PageNumber}\">{text}</r>";
+        });
+    }
+
+    [Description("Lists all available PDF document filenames in the knowledge base.")]
+    private async Task<IEnumerable<string>> ListDocumentsAsync()
+    {
+        await InvokeAsync(StateHasChanged);
+        var docs = await Search.GetAllDocumentIdsAsync();
+        return docs.Any()
+            ? docs.Select(d => $"<d>{d}</d>")
+            : Enumerable.Empty<string>();
     }
 
     public void Dispose()

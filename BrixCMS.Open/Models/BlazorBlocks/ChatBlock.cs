@@ -104,12 +104,11 @@ namespace BrixCMS.Open.Models.BlazorBlocks
             },
             Value = "auto"
         };
-
         // ── Chat behaviour ────────────────────────────────────────────────────────
-        [Field(Title = "Custom System Prompt (persona only)", Placeholder = "Dile a la IA cómo actuar...")]
+        [Field(Title = "Custom System Prompt (persona only)", Placeholder = "Tell the AI how to behave...")]
         public StringField CustomPrompt { get; set; } = new();
 
-        [Field(Title = "Welcome Message", Placeholder = "¡Hola! ¿En qué puedo ayudarte?")]
+        [Field(Title = "Welcome Message", Placeholder = "Hello! How can I help you?")]
         public StringField WelcomeMessage { get; set; } = new();
 
         [Field(Title = "Restrict PDF Search (select documents)")]

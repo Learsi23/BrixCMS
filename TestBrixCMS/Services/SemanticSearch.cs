@@ -11,9 +11,6 @@ public class SemanticSearch(
 {
     public async Task<IReadOnlyList<IngestedChunk>> SearchAsync(string text, string? documentIdFilter, int maxResults)
     {
-        var embedding = await embeddingGenerator.GenerateAsync(text);
-        var queryVector = embedding.Vector;
-
         var filters = (documentIdFilter ?? "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(f => f.Length > 0)
@@ -28,15 +25,34 @@ public class SemanticSearch(
 
         var options = new VectorSearchOptions<IngestedChunk> { Filter = filterExpr };
 
-        var results = new List<IngestedChunk>();
-        var searchCount = filters.Count > 1 ? maxResults * 3 : maxResults;
-        await foreach (var result in chunksCollection.SearchAsync(queryVector, searchCount, options))
-            results.Add(result.Record);
+        // When search phrase is very short/empty, skip semantic search and return chunks
+        // in document/page order for comprehensive listing
+        if (string.IsNullOrWhiteSpace(text) || text.Length < 3)
+        {
+            var results = new List<IngestedChunk>();
+            var dummy = new ReadOnlyMemory<float>(new float[384]);
+            var searchCount = filters.Count > 1 ? maxResults * 3 : maxResults + 50;
+            await foreach (var result in chunksCollection.SearchAsync(dummy, searchCount, options))
+                results.Add(result.Record);
+
+            if (filters.Count > 1)
+                results = results.Where(r => filters.Contains(r.DocumentId)).Take(maxResults).ToList();
+
+            return results.OrderBy(r => r.DocumentId).ThenBy(r => r.PageNumber).Take(maxResults).ToList();
+        }
+
+        var embedding = await embeddingGenerator.GenerateAsync(text);
+        var queryVector = embedding.Vector;
+
+        var rankedResults = new List<IngestedChunk>();
+        var searchCount2 = filters.Count > 1 ? maxResults * 3 : maxResults;
+        await foreach (var result in chunksCollection.SearchAsync(queryVector, searchCount2, options))
+            rankedResults.Add(result.Record);
 
         if (filters.Count > 1)
-            results = results.Where(r => filters.Contains(r.DocumentId)).Take(maxResults).ToList();
+            rankedResults = rankedResults.Where(r => filters.Contains(r.DocumentId)).Take(maxResults).ToList();
 
-        return results;
+        return rankedResults;
     }
 
     public async Task<List<string>> GetAllDocumentIdsAsync()

@@ -6,20 +6,21 @@ public class PromptsService
     {
         const string toolInstructions = """
 
-            ── TOOLS (MANDATORY USAGE) ──────────────────────────────────────────────────
-            You have access to ONE tool. You MUST call it instead of guessing:
+            You have two tools:
 
-            1. SearchAsync — searches uploaded PDF documents for factual information.
-                Call it whenever the user asks about services, policies, hours,
-                menus, ingredients, or any topic that might be covered in the docs.
+            1. ListDocumentsAsync — lists available PDF filenames.
+            2. SearchAsync(query, filenameFilter?, maxResults=5) — searches PDFs.
+               maxResults: 1-15 (default 5). Text is truncated when truncated shows "...".
 
             Rules:
-            • NEVER answer from your own training knowledge if the info could be in a tool.
-            • ALWAYS call SearchAsync before discussing any specific topic covered in docs.
-            • After calling SearchAsync, cite results: <citation filename='..'>quote</citation>
-            • Be concise, friendly, and helpful.
-            • Answer in the same language as the user.
-            ─────────────────────────────────────────────────────────────────────────────
+            - Always call a tool first; never guess.
+            - Call ListDocumentsAsync first to discover available files.
+            - Start with maxResults=5. If you get exactly 5, more may exist.
+              Tell the user and offer to search with specific terms.
+            - For more results or full details, call SearchAsync again with
+              a more specific query or filenameFilter.
+            - Cite sources: <citation filename='..'>text</citation>
+            - Be concise. Answer in the user's language.
             """;
 
         if (!string.IsNullOrWhiteSpace(customPrompt))
