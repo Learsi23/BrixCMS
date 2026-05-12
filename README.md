@@ -24,7 +24,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 | | |
 |---|---|
 | **40+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
-| **AI chatbot** | Embed a PDF-trained chatbot on any page — runs locally via Ollama (free, private, no API key needed) |
+| **AI chatbot** | Embed a PDF-trained chatbot on any page — Ollama (local, free, private) or Gemini (cloud, free tier) |
 | **Visual editor** | Drag-and-drop block builder in the admin panel — no code required |
 | **Multi-admin** | Invite team members; the owner manages access |
 | **PDF semantic search** | Drop PDFs in `wwwroot/Data/` and the chatbot answers questions about them |
@@ -44,7 +44,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 | Framework | ASP.NET Core 10 |
 | UI | Blazor Server + Razor Views |
 | Database | SQLite via EF Core 10 |
-| AI | Microsoft.Extensions.AI (Ollama · Gemini · DeepSeek · Mistral) |
+| AI | Microsoft.Extensions.AI (Ollama local · Gemini cloud) |
 | Semantic search | In-memory vector store (Semantic Kernel) |
 | Styling | Tailwind CSS (CDN) + Alpine.js |
 | Rich text | TinyMCE |
@@ -79,20 +79,30 @@ Default credentials: `admin@brix.com` / `admin123` — **change these immediatel
 
 ## AI Chatbot Setup
 
-BrixCMS.Open ships with Ollama — local, free, and fully private.
+BrixCMS.Open supports two AI modes: **local** (Ollama, free, zero data leaves your server) and **cloud** (Gemini — BYOK). You can switch between them from the admin panel at **Configuration → Chatbot & Security**, no code changes needed.
 
-**Install Ollama and pull models:**
+### Option A — Ollama (local, default)
+
 ```bash
 # Install Ollama from https://ollama.com, then:
 ollama pull llama3.1:8b   # chat model
-ollama pull all-minilm    # for PDF embeddings
+ollama pull all-minilm    # embeddings for PDF search
 ```
-No configuration needed — BrixCMS connects to `localhost:11434` automatically.
 
-**PDF-trained chatbot:**  
-Drop any PDF into `wwwroot/Data/`. On startup, BrixCMS ingests it into the local vector store. The `ChatBlock` answers questions about it with source citations.
+No configuration needed — BrixCMS connects to `http://localhost:11434` automatically. You can also download models directly from the admin panel.
 
-> **Need cloud AI (Gemini, DeepSeek, Mistral)?** That's available in [BrixCMS Pro](https://brixcms.se) via BYOK — you connect your own API keys.
+### Option B — Gemini (cloud, free tier available)
+
+1. Get a free API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) — Gemini 2.5 Flash Lite is free (60 req/min, 1 M tokens/day).
+2. Open the admin panel → **Configuration → Chatbot & Security**.
+3. Paste your key in the Gemini section and click **Save**.
+4. Pick a model (`gemini-2.5-flash-lite` / `gemini-2.5-flash` / `gemini-2.5-pro`) and click **Set Active**.
+
+The key is stored encrypted at rest (AES-256-GCM) and never leaves your server. If Gemini is unavailable the system falls back to Ollama automatically.
+
+### PDF-trained chatbot
+
+Drop any PDF into `wwwroot/Data/` (or upload via the admin panel). On startup BrixCMS ingests it into the local vector store and the `ChatBlock` answers questions about it with source citations. Works with both Ollama and Gemini.
 
 ---
 
@@ -112,6 +122,220 @@ Drop any PDF into `wwwroot/Data/`. On startup, BrixCMS ingests it into the local
 
 ### AI / Blazor
 `ChatBlock` · `FloatingChatBlock` · `ContactFormBlock`
+
+---
+
+## Headless API
+
+BrixCMS exposes a read-only JSON API so you can use it as a backend for any frontend — Next.js, Nuxt, React, Vue, Flutter, or anything that speaks HTTP.
+
+All endpoints return JSON. No authentication required for published content.
+
+---
+
+### `GET /api/content/pages`
+
+Returns all published pages with their SEO metadata. Use this to build navigation, sitemaps, or a page list in your frontend.
+
+**Response**
+```json
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "title": "Home",
+    "slug": "",
+    "metaDescription": "Welcome to my site — built with BrixCMS.",
+    "ogImage": "/images/og-home.jpg",
+    "metaKeywords": "cms, dotnet, open source",
+    "publishedAt": "2025-01-15T10:30:00Z",
+    "sortOrder": 0,
+    "pageType": "standard"
+  },
+  {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "title": "About",
+    "slug": "about",
+    "metaDescription": "Learn more about us.",
+    "ogImage": null,
+    "metaKeywords": null,
+    "publishedAt": "2025-01-16T08:00:00Z",
+    "sortOrder": 1,
+    "pageType": "standard"
+  }
+]
+```
+
+---
+
+### `GET /api/content/pages/{slug}`
+
+Returns a single published page with its full **nested block tree**. The home page has an empty slug (`""`).
+
+```
+GET /api/content/pages/about
+GET /api/content/pages/        ← home page
+```
+
+**Response**
+```json
+{
+  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "title": "About",
+  "slug": "about",
+  "metaDescription": "Learn more about us.",
+  "ogImage": "/images/about-og.jpg",
+  "metaKeywords": "about, team",
+  "publishedAt": "2025-01-16T08:00:00Z",
+  "pageType": "standard",
+  "blocks": [
+    {
+      "id": "a1b2c3d4-0000-0000-0000-000000000001",
+      "parentId": null,
+      "type": "HeroBlock",
+      "sortOrder": 0,
+      "data": {
+        "title": "We build great products",
+        "subtitle": "A small team with big ambitions.",
+        "buttonText": "Get started",
+        "buttonUrl": "/contact",
+        "backgroundImage": "/images/hero-bg.jpg"
+      },
+      "children": []
+    },
+    {
+      "id": "a1b2c3d4-0000-0000-0000-000000000002",
+      "parentId": null,
+      "type": "GridColumn",
+      "sortOrder": 1,
+      "data": { "columns": 2 },
+      "children": [
+        {
+          "id": "a1b2c3d4-0000-0000-0000-000000000003",
+          "parentId": "a1b2c3d4-0000-0000-0000-000000000002",
+          "type": "TextBlock",
+          "sortOrder": 0,
+          "data": { "content": "<p>Our mission is...</p>" },
+          "children": []
+        },
+        {
+          "id": "a1b2c3d4-0000-0000-0000-000000000004",
+          "parentId": "a1b2c3d4-0000-0000-0000-000000000002",
+          "type": "ImageBlock",
+          "sortOrder": 1,
+          "data": { "src": "/images/team.jpg", "alt": "Our team" },
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+Blocks that act as containers (e.g. `GridColumn`) nest their child blocks under `children`. Leaf blocks have an empty `children` array.
+
+---
+
+### `GET /api/content/pages/{slug}/blocks`
+
+Returns a **flat list** of all blocks for a page, without nesting. Use this when you want to build your own tree or render blocks in a custom order.
+
+```json
+[
+  {
+    "id": "a1b2c3d4-0000-0000-0000-000000000001",
+    "parentId": null,
+    "type": "HeroBlock",
+    "sortOrder": 0,
+    "data": {
+      "title": "We build great products",
+      "buttonText": "Get started",
+      "buttonUrl": "/contact"
+    }
+  },
+  {
+    "id": "a1b2c3d4-0000-0000-0000-000000000002",
+    "parentId": null,
+    "type": "GridColumn",
+    "sortOrder": 1,
+    "data": { "columns": 2 }
+  },
+  {
+    "id": "a1b2c3d4-0000-0000-0000-000000000003",
+    "parentId": "a1b2c3d4-0000-0000-0000-000000000002",
+    "type": "TextBlock",
+    "sortOrder": 0,
+    "data": { "content": "<p>Our mission is...</p>" }
+  }
+]
+```
+
+---
+
+### `POST /api/newsletter/subscribe`
+
+Subscribe an email address to the newsletter.
+
+**Request body**
+```json
+{ "email": "user@example.com", "name": "Alice" }
+```
+
+**Responses**
+
+| Status | Body |
+|--------|------|
+| `200 OK` | `{ "ok": true }` |
+| `400 Bad Request` | `{ "error": "Invalid email address." }` |
+| `409 Conflict` | `{ "error": "You are already subscribed." }` |
+
+---
+
+### Error responses
+
+All error responses follow the same shape:
+```json
+{ "error": "Page not found." }
+```
+
+404 is returned when a page does not exist or is unpublished.
+
+---
+
+### Consuming the API from Next.js
+
+```ts
+// lib/brixcms.ts
+const BASE = process.env.BRIX_URL ?? 'https://your-brixcms-host.com';
+
+export async function getPage(slug: string) {
+  const res = await fetch(`${BASE}/api/content/pages/${slug}`, {
+    next: { revalidate: 60 },   // ISR — revalidate every 60 seconds
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function getAllPages() {
+  const res = await fetch(`${BASE}/api/content/pages`);
+  return res.json();
+}
+```
+
+```tsx
+// app/[slug]/page.tsx
+import { getPage, getAllPages } from '@/lib/brixcms';
+
+export async function generateStaticParams() {
+  const pages = await getAllPages();
+  return pages.map((p: any) => ({ slug: p.slug || '' }));
+}
+
+export default async function CmsPage({ params }: { params: { slug: string } }) {
+  const page = await getPage(params.slug);
+  if (!page) notFound();
+  // render page.blocks however you like
+}
+```
 
 ---
 
@@ -178,10 +402,14 @@ BrixCMS.Open/
 
 | Feature | Open | Pro |
 |---|---|---|
-| All 40+ blocks | ✅ | ✅ |
-| AI chatbot | ✅ | ✅ |
-| Multi-admin | ✅ | ✅ |
-| Visual page editor | ✅ | ✅ |
+| All 45+ blocks | ✅ | ✅ |
+| AI chatbot (Ollama local) | ✅ | ✅ |
+| Cloud AI — Gemini (BYOK, free tier) | ✅ | ✅ |
+| Multi-admin with role-based permissions | ✅ | ✅ |
+| Visual drag-and-drop editor | ✅ | ✅ |
+| Headless REST API | ✅ | ✅ |
+| PDF semantic search | ✅ | ✅ |
+| SQLite / SQL Server / PostgreSQL | ✅ | ✅ |
 | Figma import | — | ✅ |
 | AI page generator | — | ✅ |
 | E-commerce (Stripe) | — | ✅ |
