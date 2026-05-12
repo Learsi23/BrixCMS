@@ -55,6 +55,14 @@
       "parameters": {
         "format": "D"
       }
+    },
+    "EncryptionKey": {
+      "type": "generated",
+      "generator": "guid",
+      "replaces": "BRIX_ENCRYPTION_KEY_PLACEHOLDER",
+      "parameters": {
+        "format": "N"
+      }
     }
   },
   "ide": {

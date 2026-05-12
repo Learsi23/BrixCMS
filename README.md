@@ -416,7 +416,7 @@ BrixCMS.Open/
 | White-label (remove attribution) | — | ✅ |
 | Priority support | — | ✅ |
 
-[BrixCMS Pro →](https://brixcms.se)
+[BrixCMS Pro →](https://brixc-ms.com)
 
 ---
 
@@ -432,4 +432,4 @@ BrixCMS.Open/
 
 ## License
 
-MIT — free to use, modify, and distribute. Attribution required in the OSS version (footer bar). Remove it by upgrading to [BrixCMS Pro](https://brixcms.se).
+MIT — free to use, modify, and distribute. Attribution required in the OSS version (footer bar). Remove it by upgrading to [BrixCMS Pro](https://brixc-ms.com).

@@ -2,21 +2,43 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.2.0</PackageVersion>
+    <PackageVersion>1.2.1</PackageVersion>
     <PackageId>BrixCMS.Open.Templates</PackageId>
-    <Title>BrixCMS Open — Block-based CMS Template</Title>
-    <Authors>BrixCMS</Authors>
-    <Description>Project template for BrixCMS Open — open-source .NET 10 block-based CMS with Blazor Server, MVC, visual page editor, 40+ blocks, headless Content API and local Ollama AI chatbot. Zero config, SQLite, MIT license.
+    <Title>BrixCMS Open — .NET 10 CMS Template (Blazor, Headless, AI)</Title>
+    <Authors>Lear23</Authors>
+    <Copyright>Copyright © 2025 BrixCMS Contributors</Copyright>
+    <Description>dotnet new template for BrixCMS — a free, open-source, block-based CMS for ASP.NET Core 10.
 
-Install: dotnet new install BrixCMS.Open.Templates
-Create:  dotnet new brixcms -n MyWebsite
+✅ 45+ drag-and-drop content blocks (Hero, Gallery, FAQ, Cards, Map, Video, QR, Countdown…)
+✅ AI chatbot — local Ollama (free, private) or Gemini cloud (free tier, BYOK)
+✅ PDF semantic search with vector embeddings
+✅ Headless REST API — serve content to Next.js, Nuxt, React, Vue or Flutter
+✅ Visual page editor — no code required
+✅ Multi-admin with role-based permissions
+✅ SQLite (zero-config) · SQL Server · PostgreSQL
+✅ Newsletter, Cookie banner, XML Sitemap, SEO meta
+✅ AES-256-GCM key encryption · TOTP 2FA · PBKDF2 passwords
+✅ MIT license — free to use, modify, distribute
 
-Also available in Visual Studio 2022 via New Project → Search "BrixCMS".</Description>
-    <PackageTags>dotnet-new;template;cms;blazor;mvc;ollama;ai;brixcms;sqlite;headless;aspnetcore</PackageTags>
-    <PackageProjectUrl>https://github.com/Learsi23/BrixCMS</PackageProjectUrl>
+Install template:
+  dotnet new install BrixCMS.Open.Templates
+
+Create a new site:
+  dotnet new brixcms -n MyWebsite
+  cd MyWebsite
+  dotnet run
+
+Also available in Visual Studio 2022: New Project → search "BrixCMS".
+
+Docs: https://github.com/Learsi23/BrixCMS
+Pro: https://brixc-ms.com</Description>
+    <PackageTags>cms;content-management;content-management-system;headless-cms;dotnet-cms;aspnetcore-cms;blazor-cms;net10;dotnet-new;template;page-builder;visual-editor;block-editor;ai-chatbot;ollama;gemini;sqlite;self-hosted;open-source;brixcms;aspnetcore;blazor;headless;mvc;web-cms;dotnet10</PackageTags>
+    <PackageProjectUrl>https://brixc-ms.com</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/Learsi23/BrixCMS</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>v1.2.1 — Auto-generate EncryptionKey on project creation (no manual config needed). v1.2.0 — Gemini cloud AI (free tier BYOK), Headless REST API, 45+ blocks.</PackageReleaseNotes>
     <!-- Minimal target — no code is compiled, only content is packed -->
     <TargetFramework>net10.0</TargetFramework>
     <IncludeContentInPack>true</IncludeContentInPack>

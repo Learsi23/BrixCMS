@@ -132,8 +132,8 @@ public static class BrixLandingSeeder
             Stat3Number     = V(".NET 10"),
             Stat3Label      = V("Blazor Server + MVC"),
             Stat3Icon       = V("fas fa-bolt"),
-            Stat4Number     = V("Ollama"),
-            Stat4Label      = V("Local AI — free, private"),
+            Stat4Number     = V("AI"),
+            Stat4Label      = V("Ollama local · Gemini cloud"),
             Stat4Icon       = V("fas fa-robot"),
             NumberColor     = V(ACCENT),
             LabelColor      = V(TEXT2),
@@ -174,8 +174,8 @@ public static class BrixLandingSeeder
              "40+ pre-built blocks",
              "Hero, Stats, FAQ, Testimonials, Gallery, Map, Countdown, Timeline, Tabs, Team, Table, QR, Code and more. Add your own in minutes."),
             ("fas fa-robot", SUCCESS,
-             "Ollama AI chatbot — local & private",
-             "Drop PDFs in /wwwroot/Data and get an instant knowledge-base chatbot. Runs 100% locally via Ollama — no API key, no cost, no data leaving your server."),
+             "AI chatbot — Ollama local or Gemini cloud",
+             "Drop PDFs in /wwwroot/Data for an instant knowledge-base chatbot. Use Ollama locally (free, private, no API key) or connect a free Gemini API key for cloud AI. Switch between them in the admin panel — no code changes needed."),
             ("fas fa-database", WARNING,
              "SQLite — zero config",
              "Ships with SQLite out of the box. No database server to install or configure. Schema migrations run automatically at startup."),
@@ -272,7 +272,7 @@ public static class BrixLandingSeeder
             TitleSize      = V("2.2rem"),
             TitleWeight    = V("800"),
             TitleAlignment = V("center"),
-            Subtitle       = V("BrixCMS.Open is free forever. BrixCMS Pro adds multi-tenant management, white label branding, BYOK AI (Gemini · DeepSeek · Mistral), Stripe e-commerce and Figma import."),
+            Subtitle       = V("BrixCMS.Open is free forever. BrixCMS Pro adds multi-tenant management, white label branding, additional AI providers, Stripe e-commerce and Figma import."),
             SubtitleColor  = V(TEXT2),
             SubtitleAlignment = V("center"),
             BackgroundColor = V(BG),
@@ -331,7 +331,7 @@ public static class BrixLandingSeeder
             Btn1Url          = V("/features"),
             Btn1BgColor      = V(ACCENT),
             Btn1TextColor    = V("#ffffff"),
-            Btn2Text         = V("BrixCMS Pro →"),
+            Btn2Text         = V("Pro — Coming Soon →"),
             Btn2Url          = V("/pro"),
             Btn2Color        = V(SUCCESS),
             BackgroundColor  = V(SURFACE),
@@ -399,7 +399,7 @@ public static class BrixLandingSeeder
         // ── AI Section ───────────────────────────────────────────────────────
         B("TextBlock", new
         {
-            Title          = V("AI — local, private, completely free"),
+            Title          = V("AI — local or cloud, your choice"),
             TitleColor     = V(TEXT),
             TitleSize      = V("1.9rem"),
             TitleWeight    = V("800"),
@@ -410,7 +410,7 @@ public static class BrixLandingSeeder
 
         var aiGrid = B("GridColumn", new
         {
-            MaxColumns      = V("2"),
+            MaxColumns      = V("3"),
             Gap             = V("gap-5"),
             PaddingY        = V("1rem"),
             PaddingX        = V("1.5rem"),
@@ -419,15 +419,15 @@ public static class BrixLandingSeeder
 
         B("IconCardBlock", new
         {
-            LeftIconClass   = V("fas fa-robot"),
+            LeftIconClass   = V("fas fa-server"),
             LeftIconColor   = V(SUCCESS),
             LeftIconFaSize  = V("1.75rem"),
             IconPosition    = V("left"),
             TextAlign       = V("left"),
-            Title           = V("Ollama chatbot — PDF knowledge base"),
+            Title           = V("Ollama — local, free, private"),
             TitleColor      = V(TEXT),
             TitleSize       = V("1.05rem"),
-            Text            = V("Drop any PDF files into /wwwroot/Data. The chatbot reads them and answers questions — grounded in your documents. Works with Llama 3, Mistral, Phi-3, Gemma or any Ollama-compatible model. No API key, no cost, no data leaving your server."),
+            Text            = V("Pull any model (Llama 3, Phi-3, Gemma, Mistral…) and run the chatbot 100% on your server. No API key, no cost, no data leaving your infrastructure. Default when no cloud key is configured."),
             TextColor       = V(TEXT2),
             BackgroundColor = V(SURFACE),
             BorderColor     = V(BORDER),
@@ -438,15 +438,34 @@ public static class BrixLandingSeeder
 
         B("IconCardBlock", new
         {
-            LeftIconClass   = V("fas fa-comments"),
+            LeftIconClass   = V("fas fa-cloud"),
             LeftIconColor   = V(ACCENT),
             LeftIconFaSize  = V("1.75rem"),
             IconPosition    = V("left"),
             TextAlign       = V("left"),
-            Title           = V("Inline chat block + floating widget"),
+            Title           = V("Gemini — cloud, free tier"),
             TitleColor      = V(TEXT),
             TitleSize       = V("1.05rem"),
-            Text            = V("Add the ChatBlock anywhere on a page for inline chat, or enable the FloatingChatBlock for a persistent chat bubble across all pages. Both powered by your local Ollama model."),
+            Text            = V("Paste a free Google AI Studio key in Admin → Chatbot & Security. Gemini 2.5 Flash Lite is free (60 req/min). Your key is stored AES-256-GCM encrypted. Falls back to Ollama automatically if unreachable."),
+            TextColor       = V(TEXT2),
+            BackgroundColor = V(SURFACE),
+            BorderColor     = V(BORDER),
+            BorderWidth     = V("1px"),
+            BorderRadius    = V("12px"),
+            Padding         = V("1.5rem"),
+        }, aiGrid.Id);
+
+        B("IconCardBlock", new
+        {
+            LeftIconClass   = V("fas fa-file-pdf"),
+            LeftIconColor   = V(WARNING),
+            LeftIconFaSize  = V("1.75rem"),
+            IconPosition    = V("left"),
+            TextAlign       = V("left"),
+            Title           = V("PDF knowledge base"),
+            TitleColor      = V(TEXT),
+            TitleSize       = V("1.05rem"),
+            Text            = V("Drop any PDF into /wwwroot/Data (or upload via the admin panel). On startup BrixCMS ingests it into an in-memory vector store. The ChatBlock answers questions grounded in your documents — with source citations. Works with both Ollama and Gemini."),
             TextColor       = V(TEXT2),
             BackgroundColor = V(SURFACE),
             BorderColor     = V(BORDER),
@@ -555,7 +574,7 @@ public static class BrixLandingSeeder
             Title            = V("Want the full platform?"),
             TitleColor       = V(TEXT),
             TitleSize        = V("2rem"),
-            Subtitle         = V("Multi-tenant · White label · BYOK (Gemini, DeepSeek, Mistral) · Stripe · Figma import"),
+            Subtitle         = V("Multi-tenant · White label · Additional AI providers (BYOK) · Stripe e-commerce · Figma import"),
             SubtitleColor    = V(TEXT2),
             Btn1Text         = V("See BrixCMS Pro →"),
             Btn1Url          = V("/pro"),
@@ -605,13 +624,25 @@ public static class BrixLandingSeeder
             return b;
         }
 
+        // ── Coming Soon Banner ────────────────────────────────────────────────
+        B("BannerBlock", new
+        {
+            Icon            = V("🚀"),
+            Text            = V("BrixCMS Pro is currently in development. Join the waitlist to get early access."),
+            LinkText        = V(""),
+            LinkUrl         = V(""),
+            BackgroundColor = V(ACCENT),
+            TextColor       = V("#ffffff"),
+            Closeable       = V("false"),
+        });
+
         // ── Hero ──────────────────────────────────────────────────────────────
         B("HeroBlock", new
         {
-            Title              = V("BrixCMS Pro"),
+            Title              = V("BrixCMS Pro — Coming Soon"),
             TitleColor         = V(TEXT),
             TitleSize          = V("3.5rem"),
-            Subtitle           = V("Multi-tenant · White label · BYOK AI · Stripe · Figma import. The full CMS platform for agencies and professional developers."),
+            Subtitle           = V("The full CMS platform for agencies and professional developers is on its way. Multi-tenant · White label · BYOK AI · Stripe · Figma import."),
             SubtitleColor      = V(TEXT2),
             SubtitleSize       = V("1.15rem"),
             BackgroundColor    = V(BG),
@@ -621,10 +652,10 @@ public static class BrixLandingSeeder
             TextAlign          = V("center"),
             ShowGridPattern    = V("true"),
             GridPatternColor   = V(BORDER),
-            ButtonText         = V("Get BrixCMS Pro →"),
-            ButtonUrl          = V("https://github.com/Learsi23/BrixCMS"),
-            ButtonColor        = V(ACCENT),
-            ButtonTextColor    = V("#ffffff"),
+            ButtonText         = V("← Back to Open"),
+            ButtonUrl          = V("/"),
+            ButtonColor        = V(SURFACE2),
+            ButtonTextColor    = V(TEXT),
         });
 
         // ── Stats ─────────────────────────────────────────────────────────────
@@ -747,8 +778,9 @@ public static class BrixLandingSeeder
                 "Admin panel + 2FA | ✅ Yes | ✅ Yes\n" +
                 "Media manager | ✅ Yes | ✅ Yes\n" +
                 "Self-hosted | ✅ Yes | ✅ Yes\n" +
-                "AI chatbot (Ollama) | ✅ Local & private | ✅ Local & private\n" +
-                "AI — Gemini / DeepSeek / Mistral | ❌ Not included | ✅ BYOK (your keys)\n" +
+                "AI chatbot (Ollama local) | ✅ Local & private | ✅ Local & private\n" +
+                "AI — Gemini cloud (free tier) | ✅ BYOK (your key) | ✅ BYOK (your keys)\n" +
+                "AI — Additional cloud providers | ❌ Not included | ✅ BYOK (your keys)\n" +
                 "Multi-tenant panel | ❌ Single site | ✅ Unlimited sites\n" +
                 "White label | ❌ Not included | ✅ Full custom brand\n" +
                 "E-commerce (Stripe) | ❌ Not included | ✅ 1% fee\n" +
@@ -811,15 +843,15 @@ public static class BrixLandingSeeder
             }, faq.Id);
         }
 
-        // ── Final CTA ─────────────────────────────────────────────────────────
+        // ── Coming Soon CTA ───────────────────────────────────────────────────
         B("CTABannerBlock", new
         {
-            Title            = V("Ready to upgrade?"),
+            Title            = V("Pro is coming — stay in the loop"),
             TitleColor       = V(TEXT),
             TitleSize        = V("2.5rem"),
-            Subtitle         = V("BrixCMS.Open is always free. Go Pro when you need the full platform."),
+            Subtitle         = V("BrixCMS.Open is always free. Pro is in active development — follow the repo to get notified the moment it launches."),
             SubtitleColor    = V(TEXT2),
-            Btn1Text         = V("Get BrixCMS Pro →"),
+            Btn1Text         = V("Watch on GitHub →"),
             Btn1Url          = V("https://github.com/Learsi23/BrixCMS"),
             Btn1BgColor      = V(ACCENT),
             Btn1TextColor    = V("#ffffff"),

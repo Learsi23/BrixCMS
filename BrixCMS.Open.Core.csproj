@@ -28,36 +28,53 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>BrixCMS.Open</RootNamespace>
     <AssemblyName>BrixCMS.Open.Core</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <!-- NuGet package metadata -->
     <PackageId>BrixCMS.Open.Core</PackageId>
-    <PackageVersion>1.2.0</PackageVersion>
-    <Title>BrixCMS Open — Headless Core Library</Title>
-    <Authors>BrixCMS</Authors>
-    <Description>Headless CMS library for ASP.NET Core 10.
+    <PackageVersion>1.2.1</PackageVersion>
+    <Title>BrixCMS Open — Headless CMS Core Library for ASP.NET Core 10</Title>
+    <Authors>Lear23</Authors>
+    <Copyright>Copyright © 2025 BrixCMS Contributors</Copyright>
+    <Description>Embed BrixCMS into any existing ASP.NET Core 10 project in 4 lines of code.
 
-Install and wire up BrixCMS in any existing project:
+BrixCMS.Open.Core is the headless engine behind BrixCMS — a free, open-source, block-based CMS with visual editor, AI chatbot, PDF semantic search and a full Content Delivery API.
 
+QUICK SETUP
   dotnet add package BrixCMS.Open.Core
 
   // Program.cs
   builder.Services.AddBrixCms(builder.Configuration);
   var app = builder.Build();
   await app.InitializeBrixCmsAsync();
-  app.MapBrixCmsAdmin();   // /Manager
-  app.MapBrixCmsApi();     // /api/content/*
-  app.MapBrixCmsPages();   // /{slug?}  (optional — for SSR)
+  app.MapBrixCmsAdmin();   // /Manager  — visual admin panel
+  app.MapBrixCmsApi();     // /api/content/*  — headless REST API
+  app.MapBrixCmsPages();   // /{slug?}  — server-side rendering (optional)
   app.Run();
 
-Includes: 40+ block types, page management, visual admin editor,
-Ollama AI chatbot, PDF semantic search, Content Delivery API,
-SQLite / SQL Server / PostgreSQL, newsletter, image optimisation,
-CSRF protection and rate limiting.</Description>
-    <PackageTags>cms;headless;blazor;aspnetcore;ollama;ai;brixcms;sqlite;blocks;dotnet10;content-api</PackageTags>
-    <PackageProjectUrl>https://github.com/Learsi23/BrixCMS</PackageProjectUrl>
+WHAT YOU GET
+✅ 45+ content block types (Hero, Gallery, FAQ, Cards, Map, Video, QR Code, Countdown…)
+✅ Visual drag-and-drop page editor
+✅ AI chatbot — Ollama (local, free) or Gemini (cloud, free tier BYOK)
+✅ PDF semantic search with in-memory vector store
+✅ Headless REST API: GET /api/content/pages/{slug} returns nested block tree
+✅ Multi-admin with role-based permissions (owner / admin / member)
+✅ SQLite (zero-config) · SQL Server · PostgreSQL via EF Core 10
+✅ Newsletter subscriber API
+✅ Image optimisation (ImageSharp), QR codes, Markdown, XML Sitemap
+✅ AES-256-GCM API key encryption · TOTP 2FA · PBKDF2-SHA256 passwords
+✅ Rate limiting, CSRF, security headers out of the box
+✅ MIT license
+
+GitHub: https://github.com/Learsi23/BrixCMS
+Pro / Docs: https://brixc-ms.com</Description>
+    <PackageTags>cms;content-management;content-management-system;headless-cms;dotnet-cms;aspnetcore-cms;blazor-cms;net10;page-builder;visual-editor;block-editor;ai-chatbot;ollama;gemini;sqlite;self-hosted;open-source;brixcms;aspnetcore;blazor;headless;content-api;dotnet10;web-cms;blocks</PackageTags>
+    <PackageProjectUrl>https://brixc-ms.com</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/Learsi23/BrixCMS</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>v1.2.0 — Gemini cloud AI (free tier BYOK), full Headless REST API with nested block tree, 45+ blocks, PDF upload via admin panel, improved security headers.</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -120,6 +137,18 @@ CSRF protection and rate limiting.</Description>
   <!-- ASP.NET Core framework (provides IServiceCollection, WebApplication, IConfiguration, etc.) -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Global usings that Microsoft.NET.Sdk.Web adds automatically but Microsoft.NET.Sdk does not -->
+  <ItemGroup>
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <Using Include="Microsoft.AspNetCore.Routing" />
+    <Using Include="Microsoft.AspNetCore.RateLimiting" />
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="System.Threading.RateLimiting" />
   </ItemGroup>
 
 </Project>
