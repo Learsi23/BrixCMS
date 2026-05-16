@@ -8,6 +8,7 @@
   "description": "Open-source .NET 10 block-based CMS with Blazor Server, MVC, SQLite and local Ollama AI chatbot. 40+ pre-built blocks, visual page editor, PDF chatbot — zero config.",
   "groupIdentity": "BrixCMS.Open",
   "precedence": "100",
+  "iconFile": "icon.png",
   "tags": {
     "language": "C#",
     "type": "project"
@@ -62,16 +63,6 @@
       "replaces": "BRIX_ENCRYPTION_KEY_PLACEHOLDER",
       "parameters": {
         "format": "N"
-      }
-    }
-  },
-  "ide": {
-    "default": {
-      "VisualStudio": {
-        "defaultProjectNameRegex": ".*",
-        "icon": {
-          "name": "browser"
-        }
       }
     }
   },
