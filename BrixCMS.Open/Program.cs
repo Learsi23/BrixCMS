@@ -441,9 +441,13 @@ static void AddColumnIfNotExists(
                     $@"ALTER TABLE ""{table}"" ADD COLUMN IF NOT EXISTS ""{column}"" {sqliteTypeDef}");
                 break;
 
-            default: // sqlite — throws if column already exists; catch suppresses it
-                db.ExecuteSqlRaw(
-                    $@"ALTER TABLE ""{table}"" ADD COLUMN ""{column}"" {sqliteTypeDef}");
+            default: // sqlite — check first to avoid EF logging a "fail" entry
+                var exists = db.SqlQueryRaw<int>(
+                    $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'")
+                    .AsEnumerable().FirstOrDefault();
+                if (exists == 0)
+                    db.ExecuteSqlRaw(
+                        $@"ALTER TABLE ""{table}"" ADD COLUMN ""{column}"" {sqliteTypeDef}");
                 break;
         }
     }
