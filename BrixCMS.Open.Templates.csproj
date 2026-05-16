@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.2.1</PackageVersion>
+    <PackageVersion>1.2.2</PackageVersion>
     <PackageId>BrixCMS.Open.Templates</PackageId>
     <Title>BrixCMS Open — .NET 10 CMS Template (Blazor, Headless, AI)</Title>
     <Authors>Lear23</Authors>
@@ -38,7 +38,7 @@ Pro: https://brixc-ms.com</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/Learsi23/BrixCMS</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>v1.2.1 — Auto-generate EncryptionKey on project creation (no manual config needed). v1.2.0 — Gemini cloud AI (free tier BYOK), Headless REST API, 45+ blocks.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.2.2 — AiClientFactory multi-provider abstraction, AES-256-GCM EncryptionService, ApiKey model, improved PDF chunking, GitHub star banner in admin panel. v1.2.1 — Auto-generate EncryptionKey on project creation. v1.2.0 — Gemini cloud AI, Headless REST API, 45+ blocks.</PackageReleaseNotes>
     <!-- Minimal target — no code is compiled, only content is packed -->
     <TargetFramework>net10.0</TargetFramework>
     <IncludeContentInPack>true</IncludeContentInPack>

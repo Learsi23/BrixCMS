@@ -24,7 +24,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 
 | | |
 |---|---|
-| **40+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
+| **45+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
 | **AI chatbot** | Embed a PDF-trained chatbot on any page — Ollama (local, free, private) or Gemini (cloud, free tier) |
 | **Visual editor** | Drag-and-drop block builder in the admin panel — no code required |
 | **Multi-admin** | Invite team members; the owner manages access |
@@ -62,84 +62,60 @@ dotnet new install BrixCMS.Open.Templates
 dotnet new brixcms -n MyWebsite
 cd MyWebsite
 dotnet run
-```
-
-### Option B — clone the repo
-```bash
+Option B — clone the repo
 git clone https://github.com/Learsi23/BrixCMS
 cd BrixCMS/BrixCMS.Open
 dotnet run
-```
+Open https://localhost:5001 — your site is running.
 
-Open `https://localhost:5001` — your site is running.
+Admin panel: https://localhost:5001/Manager
+Default credentials: admin@brix.com / admin123 — change these immediately.
 
-Admin panel: `https://localhost:5001/Manager`  
-Default credentials: `admin@brix.com` / `admin123` — **change these immediately.**
+AI Chatbot Setup
+BrixCMS.Open supports two AI modes: local (Ollama, free, zero data leaves your server) and cloud (Gemini — BYOK). You can switch between them from the admin panel at Configuration → Chatbot & Security, no code changes needed.
 
----
-
-## AI Chatbot Setup
-
-BrixCMS.Open supports two AI modes: **local** (Ollama, free, zero data leaves your server) and **cloud** (Gemini — BYOK). You can switch between them from the admin panel at **Configuration → Chatbot & Security**, no code changes needed.
-
-### Option A — Ollama (local, default)
-
-```bash
+Option A — Ollama (local, default)
 # Install Ollama from https://ollama.com, then:
 ollama pull llama3.1:8b   # chat model
 ollama pull all-minilm    # embeddings for PDF search
-```
+No configuration needed — BrixCMS connects to http://localhost:11434 automatically. You can also download models directly from the admin panel.
 
-No configuration needed — BrixCMS connects to `http://localhost:11434` automatically. You can also download models directly from the admin panel.
-
-### Option B — Gemini (cloud, free tier available)
-
-1. Get a free API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) — Gemini 2.5 Flash Lite is free (60 req/min, 1 M tokens/day).
-2. Open the admin panel → **Configuration → Chatbot & Security**.
-3. Paste your key in the Gemini section and click **Save**.
-4. Pick a model (`gemini-2.5-flash-lite` / `gemini-2.5-flash` / `gemini-2.5-pro`) and click **Set Active**.
-
+Option B — Gemini (cloud, free tier available)
+Get a free API key at aistudio.google.com/app/apikey — Gemini 2.5 Flash Lite is free (60 req/min, 1 M tokens/day).
+Open the admin panel → Configuration → Chatbot & Security.
+Paste your key in the Gemini section and click Save.
+Pick a model (gemini-2.5-flash-lite / gemini-2.5-flash / gemini-2.5-pro) and click Set Active.
 The key is stored encrypted at rest (AES-256-GCM) and never leaves your server. If Gemini is unavailable the system falls back to Ollama automatically.
 
-### PDF-trained chatbot
+PDF-trained chatbot
+Drop any PDF into wwwroot/Data/ (or upload via the admin panel). On startup BrixCMS ingests it into the local vector store and the ChatBlock answers questions about it with source citations. Works with both Ollama and Gemini.
 
-Drop any PDF into `wwwroot/Data/` (or upload via the admin panel). On startup BrixCMS ingests it into the local vector store and the `ChatBlock` answers questions about it with source citations. Works with both Ollama and Gemini.
+Block Reference
+Layout
+GridColumn · FullColumnBlock · SpacerBlock · DividerBlock · BannerBlock
 
----
+Content
+HeroBlock · HeroFlexibleBlock · TextBlock · MarkdownBlock · ImageBlock · CardBlock · IconCardBlock · StatsBlock · CTABannerBlock · LogoStripBlock · TimelineBlock · TestimonialsBlock · SocialProofBlock · TeamBlock · FeatureGridBlock · FeatureListBlock · MenuBlock · OpeningHoursBlock · TableBlock · CodeBlock
 
-## Block Reference
+Media
+GalleryBlock · VideoBlock · FlexibleImageTextBlock · MapBlock · BeforeAfterBlock · AudioBlock · LottieBlock · QRCodeBlock
 
-### Layout
-`GridColumn` · `FullColumnBlock` · `SpacerBlock` · `DividerBlock` · `BannerBlock`
+Interactive
+ButtonLinkBlock · AccordionBlock · TabsBlock · FAQBlock · CountdownBlock · NewsletterBlock · CookieBannerBlock · DropdownBlock
 
-### Content
-`HeroBlock` · `HeroFlexibleBlock` · `TextBlock` · `MarkdownBlock` · `ImageBlock` · `CardBlock` · `IconCardBlock` · `StatsBlock` · `CTABannerBlock` · `LogoStripBlock` · `TimelineBlock` · `TestimonialsBlock` · `SocialProofBlock` · `TeamBlock` · `FeatureGridBlock` · `FeatureListBlock` · `MenuBlock` · `OpeningHoursBlock` · `TableBlock` · `CodeBlock`
+AI / Blazor
+ChatBlock · FloatingChatBlock · ContactFormBlock
 
-### Media
-`GalleryBlock` · `VideoBlock` · `FlexibleImageTextBlock` · `MapBlock` · `BeforeAfterBlock` · `AudioBlock` · `LottieBlock` · `QRCodeBlock`
-
-### Interactive
-`ButtonLinkBlock` · `AccordionBlock` · `TabsBlock` · `FAQBlock` · `CountdownBlock` · `NewsletterBlock` · `CookieBannerBlock` · `DropdownBlock`
-
-### AI / Blazor
-`ChatBlock` · `FloatingChatBlock` · `ContactFormBlock`
-
----
-
-## Headless API
-
+Headless API
 BrixCMS exposes a read-only JSON API so you can use it as a backend for any frontend — Next.js, Nuxt, React, Vue, Flutter, or anything that speaks HTTP.
 
 All endpoints return JSON. No authentication required for published content.
 
----
-
-### `GET /api/content/pages`
-
+GET /api/content/pages
 Returns all published pages with their SEO metadata. Use this to build navigation, sitemaps, or a page list in your frontend.
 
-**Response**
-```json
+Response
+
 [
   {
     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -164,21 +140,13 @@ Returns all published pages with their SEO metadata. Use this to build navigatio
     "pageType": "standard"
   }
 ]
-```
+GET /api/content/pages/{slug}
+Returns a single published page with its full nested block tree. The home page has an empty slug ("").
 
----
-
-### `GET /api/content/pages/{slug}`
-
-Returns a single published page with its full **nested block tree**. The home page has an empty slug (`""`).
-
-```
 GET /api/content/pages/about
 GET /api/content/pages/        ← home page
-```
+Response
 
-**Response**
-```json
 {
   "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "title": "About",
@@ -230,17 +198,11 @@ GET /api/content/pages/        ← home page
     }
   ]
 }
-```
+Blocks that act as containers (e.g. GridColumn) nest their child blocks under children. Leaf blocks have an empty children array.
 
-Blocks that act as containers (e.g. `GridColumn`) nest their child blocks under `children`. Leaf blocks have an empty `children` array.
+GET /api/content/pages/{slug}/blocks
+Returns a flat list of all blocks for a page, without nesting. Use this when you want to build your own tree or render blocks in a custom order.
 
----
-
-### `GET /api/content/pages/{slug}/blocks`
-
-Returns a **flat list** of all blocks for a page, without nesting. Use this when you want to build your own tree or render blocks in a custom order.
-
-```json
 [
   {
     "id": "a1b2c3d4-0000-0000-0000-000000000001",
@@ -268,43 +230,25 @@ Returns a **flat list** of all blocks for a page, without nesting. Use this when
     "data": { "content": "<p>Our mission is...</p>" }
   }
 ]
-```
-
----
-
-### `POST /api/newsletter/subscribe`
-
+POST /api/newsletter/subscribe
 Subscribe an email address to the newsletter.
 
-**Request body**
-```json
+Request body
+
 { "email": "user@example.com", "name": "Alice" }
-```
+Responses
 
-**Responses**
-
-| Status | Body |
-|--------|------|
-| `200 OK` | `{ "ok": true }` |
-| `400 Bad Request` | `{ "error": "Invalid email address." }` |
-| `409 Conflict` | `{ "error": "You are already subscribed." }` |
-
----
-
-### Error responses
-
+Status	Body
+200 OK	{ "ok": true }
+400 Bad Request	{ "error": "Invalid email address." }
+409 Conflict	{ "error": "You are already subscribed." }
+Error responses
 All error responses follow the same shape:
-```json
-{ "error": "Page not found." }
-```
 
+{ "error": "Page not found." }
 404 is returned when a page does not exist or is unpublished.
 
----
-
-### Consuming the API from Next.js
-
-```ts
+Consuming the API from Next.js
 // lib/brixcms.ts
 const BASE = process.env.BRIX_URL ?? 'https://your-brixcms-host.com';
 
@@ -320,9 +264,6 @@ export async function getAllPages() {
   const res = await fetch(`${BASE}/api/content/pages`);
   return res.json();
 }
-```
-
-```tsx
 // app/[slug]/page.tsx
 import { getPage, getAllPages } from '@/lib/brixcms';
 
@@ -336,15 +277,9 @@ export default async function CmsPage({ params }: { params: { slug: string } }) 
   if (!page) notFound();
   // render page.blocks however you like
 }
-```
+Configuration
+appsettings.json — set before deploying:
 
----
-
-## Configuration
-
-**`appsettings.json`** — set before deploying:
-
-```json
 {
   "EncryptionKey": "your-32-char-minimum-secret-key!!",
   "SmtpSettings": {
@@ -359,91 +294,58 @@ export default async function CmsPage({ params }: { params: { slug: string } }) 
     "EmbeddingModel": "all-minilm:latest"
   }
 }
-```
+Use User Secrets or environment variables for all sensitive values in production.
 
-Use [User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) or environment variables for all sensitive values in production.
-
----
-
-## Deployment
-
+Deployment
 BrixCMS runs on any server with .NET 10. No Docker required.
 
-```bash
 dotnet publish -c Release -o ./publish
 # Copy ./publish to your server and run:
 dotnet BrixCMS.Open.dll
-```
-
-Works on: **Azure App Service** · **DigitalOcean** · **Hetzner** · **VPS with systemd**
+Works on: Azure App Service · DigitalOcean · Hetzner · VPS with systemd
 
 For Azure Sweden North (recommended for Swedish GDPR compliance), use the standard App Service Linux plan.
 
----
-
-## Project Structure
-
-```
+Project Structure
 BrixCMS.Open/
 ├── Areas/Manager/          # Admin panel (login, pages, media, team, backup)
 ├── Components/             # Blazor components (chat UI, contact form, interactive blocks)
 ├── Controllers/            # CMS, API, sitemap, landing
 ├── Data/                   # EF Core context + entity models
-├── Models/                 # 40+ block type definitions
+├── Models/                 # 45+ block type definitions
 ├── Services/               # Auth, AI, PDF ingestion, email, encryption
 ├── Views/                  # Razor views (blocks, layouts, admin)
 ├── wwwroot/                # Static assets + PDF data folder
 ├── Program.cs              # App startup
 └── appsettings.json        # Configuration
-```
+vs BrixCMS Pro
+Feature	Open	Pro
+All 45+ blocks	✅	✅
+AI chatbot (Ollama local)	✅	✅
+Cloud AI — Gemini (BYOK, free tier)	✅	✅
+Multi-admin with role-based permissions	✅	✅
+Visual drag-and-drop editor	✅	✅
+Headless REST API	✅	✅
+PDF semantic search	✅	✅
+SQLite / SQL Server / PostgreSQL	✅	✅
+Figma import	—	✅
+AI page generator	—	✅
+E-commerce (Stripe)	—	✅
+White-label (remove attribution)	—	✅
+Priority support	—	✅
+BrixCMS Pro →
 
----
-
-## vs BrixCMS Pro
-
-| Feature | Open | Pro |
-|---|---|---|
-| All 45+ blocks | ✅ | ✅ |
-| AI chatbot (Ollama local) | ✅ | ✅ |
-| Cloud AI — Gemini (BYOK, free tier) | ✅ | ✅ |
-| Multi-admin with role-based permissions | ✅ | ✅ |
-| Visual drag-and-drop editor | ✅ | ✅ |
-| Headless REST API | ✅ | ✅ |
-| PDF semantic search | ✅ | ✅ |
-| SQLite / SQL Server / PostgreSQL | ✅ | ✅ |
-| Figma import | — | ✅ |
-| AI page generator | — | ✅ |
-| E-commerce (Stripe) | — | ✅ |
-| White-label (remove attribution) | — | ✅ |
-| Priority support | — | ✅ |
-
-[BrixCMS Pro →](https://brixc-ms.com)
-
----
-
-## Security Notes
-
-- Passwords: PBKDF2-SHA256, 100,000 iterations
-- API keys: AES-256-GCM encrypted at rest
-- 2FA: TOTP (RFC 6238) — works with Google Authenticator, Authy, Microsoft Authenticator
-- Rate limiting: 5 login attempts/min, 20 AI requests/min
-- Security headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-
----
-
+Security Notes
+Passwords: PBKDF2-SHA256, 100,000 iterations
+API keys: AES-256-GCM encrypted at rest
+2FA: TOTP (RFC 6238) — works with Google Authenticator, Authy, Microsoft Authenticator
+Rate limiting: 5 login attempts/min, 20 AI requests/min
+Security headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
 ## Support the Project
 
-If BrixCMS saves you time or helps your project, please **[give it a star on GitHub](https://github.com/Learsi23/BrixCMS/stargazers)** ⭐ — it takes two seconds and helps others discover it.
+If BrixCMS saves you time, please **[star us on GitHub](https://github.com/Learsi23/BrixCMS/stargazers)** ⭐ — it takes two seconds and helps others discover it.
 
 [![Star on GitHub](https://img.shields.io/github/stars/Learsi23/BrixCMS?style=for-the-badge&logo=github&label=Star%20on%20GitHub&color=22c55e)](https://github.com/Learsi23/BrixCMS/stargazers)
 
-You can also help by:
-- Sharing on social media / dev communities (tag `#BrixCMS`)
-- Writing a blog post or tutorial
-- Opening issues and PRs — all contributions welcome!
-
----
-
 ## License
-
-MIT — free to use, modify, and distribute. Attribution required in the OSS version (footer bar). Remove it by upgrading to [BrixCMS Pro](https://brixc-ms.com).
+MIT — free to use, modify, and distribute. Attribution required in the OSS version (footer bar). Remove it by upgrading to BrixCMS Pro.
