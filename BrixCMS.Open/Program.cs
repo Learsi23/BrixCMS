@@ -169,6 +169,7 @@ builder.Services.AddScoped<IChatClient>(sp =>
 // =====================================================
 builder.Services.AddScoped<DataIngestor>();
 builder.Services.AddSingleton<SemanticSearch>();
+builder.Services.AddScoped<SiteSettingsImporter>();
 builder.Services.AddTransient<EmailSender>();
 
 // =====================================================
@@ -217,22 +218,25 @@ app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Manager}/{action=Index}/{id?}");
 
-// 4. BrixCMS Landing page (marketing / sales)
-app.MapControllerRoute(
-    name: "landing",
-    pattern: "landing",
-    defaults: new { controller = "Landing", action = "Index" });
+    // 4. BrixCMS Landing page (marketing / sales)
+    app.MapControllerRoute(
+        name: "landing",
+        pattern: "landing",
+        defaults: new { controller = "Landing", action = "Index" });
 
-// 5. Blazor Web App (BEFORE cms catch-all so _framework/ works)
-app.MapRazorComponents<BrixCMS.Open.Components.App>()
-    .AddInteractiveServerRenderMode();
+    // 5a. CMS catch-all — excludes blazor & api prefixes
+    app.MapControllerRoute(
+        name: "cms",
+        pattern: "{*slug}",
+        defaults: new { controller = "Cms", action = "Index", slug = "" },
+        constraints: new { slug = @"^(?!_framework|api|_content|\.well-known).*$" });
 
-// 6. CMS catch-all (last) — exclude _framework, api, _content paths
-app.MapControllerRoute(
-    name: "cms",
-    pattern: "{slug?}",
-    defaults: new { controller = "Cms", action = "Index" },
-    constraints: new { slug = @"^(?!_framework|api|_content|\.well-known).*$" });
+    // 5b. Fallback to CMS for root URL / (catch-all {*slug} doesn't match empty path)
+    app.MapFallbackToController("Index", "Cms");
+
+    // 6. Blazor Web App (after CMS — only _framework / _blazor fall through)
+    app.MapRazorComponents<BrixCMS.Open.Components.App>()
+        .AddInteractiveServerRenderMode();
 
 // =====================================================
 // 🔟 INITIALIZATION — DB + PDF INGESTION

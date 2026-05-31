@@ -431,6 +431,18 @@ BrixCMS.Open/
 
 ---
 
+## Changelog
+
+### v1.4.0 (2026-05-31)
+- **Navbar auto-shows published pages**: Unhandled top-level published pages now appear automatically alongside configured menu items, with dropdown children support
+- **Seed items auto-clear**: First real page publish removes seed menu items and footer page links
+- **Fixed 404 on root URL**: `MapFallbackToController` replaces the broken `pattern: ""` route
+- **Fixed admin anti-forgery**: Save Settings page no longer shows the anti-forgery class name
+- **Improved route ordering**: CMS catch-all route now registered before `MapRazorComponents<App>()`
+- **Full changelog**: [GitHub Releases](https://github.com/Learsi23/BrixCMS/releases)
+
+---
+
 ## Support the Project
 
 If BrixCMS saves you time or helps your project, please **[give it a star on GitHub](https://github.com/Learsi23/BrixCMS/stargazers)** ⭐ — it takes two seconds and helps others discover it.

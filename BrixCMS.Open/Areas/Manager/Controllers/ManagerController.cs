@@ -18,11 +18,13 @@ public class ManagerController : Controller
 {
     private readonly BrixDbContext _db;
     private readonly BlockRegistry _registry;
+    private readonly SiteSettingsImporter _siteImporter;
 
-    public ManagerController(BrixDbContext db, BlockRegistry registry)
+    public ManagerController(BrixDbContext db, BlockRegistry registry, SiteSettingsImporter siteImporter)
     {
         _db = db;
         _registry = registry;
+        _siteImporter = siteImporter;
     }
 
     // LISTADO DE P�GINAS
@@ -30,6 +32,30 @@ public class ManagerController : Controller
     {
         var pages = await _db.Pages.ToListAsync();
         return View(pages);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RenamePage(Guid pageId, string title, bool updateSlug = true, string? returnUrl = null)
+    {
+        var page = await _db.Pages.FindAsync(pageId);
+        if (page == null) return BackTo(returnUrl);
+
+        var oldSlug = page.Slug;
+        page.Title = title;
+        if (updateSlug)
+            page.Slug = title.ToLower().Trim().Replace(" ", "-");
+
+        await _db.SaveChangesAsync();
+
+        if (page.IsPublished)
+        {
+            if (!string.IsNullOrEmpty(oldSlug) && oldSlug != page.Slug)
+                await _siteImporter.RemovePageFromNavAsync(oldSlug);
+            await _siteImporter.AddPageToNavAsync(page.Title, page.Slug ?? "", isSubpage: page.ParentId.HasValue);
+        }
+
+        TempData["Success"] = $"Renamed to \"{title}\".";
+        return BackTo(returnUrl);
     }
 
     [HttpPost]
@@ -55,33 +81,106 @@ public class ManagerController : Controller
 
         _db.Pages.Add(page);
         await _db.SaveChangesAsync();
+
+        if (page.ParentId == null)
+            await _siteImporter.AddPageToNavAsync(page.Title, page.Slug ?? "");
+
         return RedirectToAction(nameof(Index));
     }
 
     // ? NUEVO � mover p�gina arriba/abajo (scope a hermanos)
     [HttpPost]
-    public async Task<IActionResult> MovePage(Guid pageId, string direction)
+    public async Task<IActionResult> MovePage(Guid pageId, string direction, string? returnUrl = null)
     {
         var current = await _db.Pages.FindAsync(pageId);
-        if (current == null) return RedirectToAction(nameof(Index));
+        if (current == null) return BackTo(returnUrl);
 
         var siblings = await _db.Pages
             .Where(p => p.ParentId == current.ParentId)
             .OrderBy(p => p.SortOrder)
             .ToListAsync();
         var index = siblings.FindIndex(p => p.Id == pageId);
-        if (index == -1) return RedirectToAction(nameof(Index));
+        if (index == -1) return BackTo(returnUrl);
 
         int newIndex = direction == "up" ? index - 1 : index + 1;
         if (newIndex < 0 || newIndex >= siblings.Count)
-            return RedirectToAction(nameof(Index));
+            return BackTo(returnUrl);
 
         var temp = siblings[index].SortOrder;
         siblings[index].SortOrder = siblings[newIndex].SortOrder;
         siblings[newIndex].SortOrder = temp;
 
         await _db.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+        return BackTo(returnUrl);
+    }
+
+    // RE-PARENT A PAGE: convert top-level -> subpage or subpage -> top-level.
+    // Validates: no cycles, slug unique among new siblings.
+    // Syncs navbar: top-level pages appear there; subpages don't.
+    [HttpPost]
+    public async Task<IActionResult> SetPageParent(Guid pageId, Guid? newParentId, string? returnUrl = null)
+    {
+        var page = await _db.Pages.FindAsync(pageId);
+        if (page == null) { TempData["Error"] = "Page not found."; return BackTo(returnUrl); }
+
+        if (page.ParentId == newParentId)
+            return BackTo(returnUrl);
+
+        if (newParentId == page.Id)
+        {
+            TempData["Error"] = "A page cannot be its own parent.";
+            return BackTo(returnUrl);
+        }
+
+        if (newParentId.HasValue)
+        {
+            var newParent = await _db.Pages.FindAsync(newParentId.Value);
+            if (newParent == null) { TempData["Error"] = "New parent page not found."; return BackTo(returnUrl); }
+
+            var allPages = await _db.Pages.Select(p => new { p.Id, p.ParentId }).ToListAsync();
+            var byId = allPages.ToDictionary(p => p.Id);
+            var cursor = newParentId.Value;
+            int hops = 0;
+            while (byId.TryGetValue(cursor, out var node) && node.ParentId.HasValue && hops++ < 50)
+            {
+                if (node.ParentId.Value == pageId)
+                {
+                    TempData["Error"] = "Cannot move — that would create a loop.";
+                    return BackTo(returnUrl);
+                }
+                cursor = node.ParentId.Value;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(page.Slug))
+        {
+            var clash = await _db.Pages.AnyAsync(p => p.Id != pageId && p.ParentId == newParentId && p.Slug == page.Slug);
+            if (clash)
+            {
+                TempData["Error"] = "A sibling under the new parent already uses that slug.";
+                return BackTo(returnUrl);
+            }
+        }
+
+        var nextSort = await _db.Pages.Where(p => p.ParentId == newParentId).MaxAsync(p => (int?)p.SortOrder) ?? -1;
+        var oldParentId = page.ParentId;
+        page.ParentId = newParentId;
+        page.SortOrder = nextSort + 1;
+
+        await _db.SaveChangesAsync();
+
+        if (page.IsPublished)
+        {
+            if (oldParentId == null && newParentId != null && !string.IsNullOrEmpty(page.Slug))
+                await _siteImporter.RemovePageFromNavAsync(page.Slug);
+            else if (oldParentId != null && newParentId == null)
+                await _siteImporter.AddPageToNavAsync(page.Title, page.Slug ?? "");
+        }
+
+        TempData["Success"] = newParentId == null
+            ? $"Promoted \"{page.Title}\" to top-level."
+            : $"Moved \"{page.Title}\" under a new parent.";
+        return BackTo(returnUrl);
     }
 
     // EDITOR DE P�GINA (GET)
@@ -207,6 +306,12 @@ public class ManagerController : Controller
 
             await _db.SaveChangesAsync();
 
+            // Sync navbar/footer: remove old slug entry if slug changed, then add new one.
+            var oldSlug = (await _db.Pages.AsNoTracking().Where(p => p.Id == pageId).Select(p => p.Slug).FirstOrDefaultAsync()) ?? "";
+            if (!string.IsNullOrEmpty(oldSlug) && oldSlug != data.Slug)
+                await _siteImporter.RemovePageFromNavAsync(oldSlug);
+            await _siteImporter.AddPageToNavAsync(data.Title, data.Slug, isSubpage: page.ParentId.HasValue);
+
             // Delete seed pages when the first real page is published
             page.IsSeed = false;
             var seeds = await _db.Pages.Where(p => p.IsSeed && p.Id != pageId).ToListAsync();
@@ -305,11 +410,15 @@ public class ManagerController : Controller
 
     // BORRAR P�GINA ENTERA
     [HttpPost]
-    public async Task<IActionResult> DeletePage(Guid id)
+    public async Task<IActionResult> DeletePage(Guid id, string? returnUrl = null)
     {
         var page = await _db.Pages.FindAsync(id);
         if (page != null)
         {
+            // Remove from navbar/footer before deleting
+            if (page.IsPublished && !string.IsNullOrEmpty(page.Slug))
+                await _siteImporter.RemovePageFromNavAsync(page.Slug);
+
             // Recursive delete: collect all descendant pages
             var toDelete = new List<Page>();
             var queue = new Queue<Guid>();
@@ -331,7 +440,7 @@ public class ManagerController : Controller
             }
             await _db.SaveChangesAsync();
         }
-        return RedirectToAction(nameof(Index));
+        return BackTo(returnUrl ?? Url.Action(nameof(Index)));
     }
 
     // MOVER BLOQUE
@@ -365,6 +474,9 @@ public class ManagerController : Controller
         return RedirectToAction("Edit", new { id = pageGuid });
     }
 
+    private IActionResult BackTo(string? returnUrl) =>
+        !string.IsNullOrEmpty(returnUrl) ? (IActionResult)Redirect(returnUrl) : RedirectToAction(nameof(Index));
+
     // PUBLICAR P�GINA DIRECTAMENTE DESDE EL EDITOR
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -376,6 +488,7 @@ public class ManagerController : Controller
         page.IsPublished = true;
         page.PublishedAt = DateTime.UtcNow;
         page.IsSeed = false;
+        await _siteImporter.AddPageToNavAsync(page.Title, page.Slug ?? "", isSubpage: page.ParentId.HasValue);
 
         var seeds = await _db.Pages.Where(p => p.IsSeed && p.Id != pageId).ToListAsync();
         foreach (var s in seeds)

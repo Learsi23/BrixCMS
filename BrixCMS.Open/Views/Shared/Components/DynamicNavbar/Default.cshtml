@@ -15,6 +15,21 @@
         .GroupBy(p => p.ParentId!.Value)
         .ToDictionary(g => g.Key, g => g.ToList());
     var topLevel = allPages.Where(p => !p.ParentId.HasValue).ToList();
+
+    var handledSlugs = new System.Collections.Generic.HashSet<string>();
+    foreach (var item in menuItems)
+    {
+        if (!string.IsNullOrEmpty(item.PageSlug))
+        {
+            handledSlugs.Add(item.PageSlug.ToLowerInvariant());
+        }
+        else if (!string.IsNullOrEmpty(item.CustomUrl))
+        {
+            var slugFromUrl = item.CustomUrl.TrimStart('/').Split('/')[0].Split('?')[0].Split('#')[0];
+            if (!string.IsNullOrEmpty(slugFromUrl))
+                handledSlugs.Add(slugFromUrl.ToLowerInvariant());
+        }
+    }
 }
 
 <nav class="@Model.PaddingVertical @(Model.IsSticky ? "sticky top-0 z-50" : "") @(Model.HasShadow ? "shadow-md" : "")" style="background-color: @Model.BackgroundColor;">
@@ -56,6 +71,37 @@
                             @text
                         </a>
                     }
+                }
+                @foreach (var p in topLevel)
+                {
+                    if (handledSlugs.Contains((p.Slug ?? "").ToLowerInvariant())) { continue; }
+                    var hasChildren = childrenByParentId.ContainsKey(p.Id);
+                    var path = p.GetFullPath(allPagesById);
+                    <div class="relative group">
+                        <a href="@path" data-enhance-nav="false"
+                           class="hover:opacity-75 transition-opacity inline-flex items-center gap-1"
+                           style="color: @Model.TextColor;">
+                            @p.Title
+                            @if (hasChildren)
+                            {
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            }
+                        </a>
+                        @if (hasChildren)
+                        {
+                            <div class="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-lg border border-gray-200 py-2 min-w-[180px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                @foreach (var child in childrenByParentId[p.Id])
+                                {
+                                    <a href="@child.GetFullPath(allPagesById)" data-enhance-nav="false"
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                                        @child.Title
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
                 }
             }
             else
@@ -135,6 +181,15 @@
                             @text
                         </a>
                     }
+                }
+                @foreach (var p in topLevel)
+                {
+                    if (handledSlugs.Contains((p.Slug ?? "").ToLowerInvariant())) { continue; }
+                    <a href="@p.GetFullPath(allPagesById)" data-enhance-nav="false"
+                       class="block py-2 px-2 rounded hover:opacity-75 transition-opacity"
+                       style="color: @Model.TextColor;">
+                        @p.Title
+                    </a>
                 }
             }
             else
