@@ -38,6 +38,21 @@ public class SiteSettingsImporter
             current.Footer.Pages.Clear();
         }
 
+        // Delete seed pages (Features, Pro) and their subpages when a real page is created
+        var seedSlugs = new[] { "features", "pro" };
+        var seedPages = await _db.Pages.Where(p => seedSlugs.Contains(p.Slug) && !p.ParentId.HasValue).ToListAsync();
+        if (seedPages.Count > 0)
+        {
+            var seedIds = seedPages.Select(p => p.Id).ToList();
+            var subpages = await _db.Pages.Where(p => p.ParentId.HasValue && seedIds.Contains(p.ParentId.Value)).ToListAsync();
+            foreach (var sub in subpages)
+                _logger.LogInformation("Removing seed subpage '{Title}' ({Slug})", sub.Title, sub.Slug);
+            _db.Pages.RemoveRange(subpages);
+            foreach (var sp in seedPages)
+                _logger.LogInformation("Removing seed page '{Title}' ({Slug})", sp.Title, sp.Slug);
+            _db.Pages.RemoveRange(seedPages);
+        }
+
         if (!current.Navbar.MenuItems.Any(m => m.PageSlug == slug))
             current.Navbar.MenuItems.Add(new MenuItemConfig { CustomText = title, PageSlug = slug });
 
