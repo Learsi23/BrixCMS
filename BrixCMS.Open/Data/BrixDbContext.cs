@@ -21,6 +21,12 @@ public class BrixDbContext : DbContext
         modelBuilder.Entity<ApiKey>()
             .HasIndex(k => k.Provider)
             .IsUnique();
+
+        modelBuilder.Entity<Page>()
+            .HasMany(p => p.Children)
+            .WithOne(p => p.Parent)
+            .HasForeignKey(p => p.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -40,6 +46,14 @@ public class Page
     public string? MetaDescription { get; set; }
     public string? OgImage { get; set; }
     public string? MetaKeywords { get; set; }
+
+    /// <summary>
+    /// Optional parent page id. When set, the page is rendered at /{parent.Slug}/{this.Slug}
+    /// and appears nested under its parent in the page list. Null = top-level page.
+    /// </summary>
+    public Guid? ParentId { get; set; }
+    public Page? Parent { get; set; }
+    public List<Page> Children { get; set; } = new();
 }
 public class Block
 {

@@ -1,4 +1,5 @@
 using BrixCMS.Open.Data;
+using BrixCMS.Open.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -18,6 +19,7 @@ public class SitemapController : Controller
             .OrderBy(p => p.SortOrder)
             .ToListAsync();
 
+        var allPagesById = pages.ToDictionary(p => p.Id);
         var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var sb = new StringBuilder();
         sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -25,8 +27,10 @@ public class SitemapController : Controller
 
         foreach (var page in pages)
         {
+            var fullPath = page.GetFullPath(allPagesById).TrimStart('/');
+            if (string.IsNullOrEmpty(fullPath)) continue;
             sb.AppendLine("  <url>");
-            sb.AppendLine($"    <loc>{baseUrl}/{page.Slug}</loc>");
+            sb.AppendLine($"    <loc>{baseUrl}/{fullPath}</loc>");
             if (page.PublishedAt.HasValue)
                 sb.AppendLine($"    <lastmod>{page.PublishedAt.Value:yyyy-MM-dd}</lastmod>");
             sb.AppendLine("    <changefreq>weekly</changefreq>");

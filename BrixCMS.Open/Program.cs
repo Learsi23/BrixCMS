@@ -137,7 +137,7 @@ builder.Services.AddSingleton<MarkdownPipeline>(_ =>
 // 5️⃣ AI — Dynamic provider (Gemini / DeepSeek / Mistral) with Ollama fallback
 // =====================================================
 
-var embeddingModel = builder.Configuration["Ollama:EmbeddingModel"]!;
+var embeddingModel = builder.Configuration["Ollama:EmbeddingModel"] ?? "all-minilm:latest";
 var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
 
 // Embeddings always use local Ollama (needed for PDF semantic search)
@@ -275,6 +275,7 @@ using (var scope = app.Services.CreateScope())
         ["OgImage"] = "TEXT",
         ["MetaKeywords"] = "TEXT",
         ["IsSeed"] = "INTEGER NOT NULL DEFAULT 0",
+        ["ParentId"] = "TEXT",
     };
     foreach (var col in newPageColumns)
         AddColumnIfNotExists(db.Database, dbProvider, "Pages", col.Key, col.Value);
@@ -377,10 +378,23 @@ using (var scope = app.Services.CreateScope())
         // ✅ FIX: Get the generator from DI to pass to the source
         var generator = scope.ServiceProvider.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
 
-        await DataIngestor.IngestDataAsync(
-            app.Services,
-            new PDFDirectorySource(dataPath, generator) // <-- Now passing the generator
-        );
+        // Run ingestion in background so app doesn't block on startup
+        // Timeout after 30s to avoid hanging if Ollama is unavailable
+        var cts = new CancellationTokenSource();
+        cts.CancelAfter(TimeSpan.FromSeconds(30));
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await DataIngestor.IngestDataAsync(
+                    app.Services,
+                    new PDFDirectorySource(dataPath, generator));
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "⚠️ PDF ingestion failed (non-blocking, app continues)");
+            }
+        }, cts.Token);
     }
     else
     {

@@ -7,7 +7,7 @@
 		<UserSecretsId>cf90e7a9-d19d-40a3-ab6c-6f22eb17254e</UserSecretsId>
 
 		<!-- NUGET METADATA -->
-		<Version>1.2.3</Version>
+		<Version>1.3.0</Version>
 		<Authors>Lear23</Authors>
 		<Description>A modular, intelligent, and flexible CMS built on .NET 10 with native AI capabilities.</Description>
 		<PackageProjectUrl>https://github.com/Learsi23/BrixCMS</PackageProjectUrl>

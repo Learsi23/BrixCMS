@@ -33,21 +33,24 @@ public class ManagerController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreatePage(string title, string pageType = "standard")
+    public async Task<IActionResult> CreatePage(string title, string pageType = "standard", Guid? parentId = null)
     {
         if (string.IsNullOrEmpty(title)) return RedirectToAction(nameof(Index));
 
-        var maxOrder = await _db.Pages.AnyAsync()
-            ? await _db.Pages.MaxAsync(p => p.SortOrder) + 1
-            : 0;
+        var maxOrder = await _db.Pages
+            .Where(p => p.ParentId == parentId)
+            .OrderByDescending(p => p.SortOrder)
+            .Select(p => (int?)p.SortOrder)
+            .FirstOrDefaultAsync() ?? -1;
 
         var page = new Page
         {
             Id = Guid.NewGuid(),
             Title = title,
             Slug = title.ToLower().Trim().Replace(" ", "-"),
-            SortOrder = maxOrder,
-            PageType = pageType  // ? �nico cambio aqu�
+            SortOrder = maxOrder + 1,
+            PageType = pageType,
+            ParentId = parentId,
         };
 
         _db.Pages.Add(page);
@@ -55,22 +58,27 @@ public class ManagerController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ? NUEVO � mover p�gina arriba/abajo
+    // ? NUEVO � mover p�gina arriba/abajo (scope a hermanos)
     [HttpPost]
     public async Task<IActionResult> MovePage(Guid pageId, string direction)
     {
-        var pages = await _db.Pages.OrderBy(p => p.SortOrder).ToListAsync();
-        var index = pages.FindIndex(p => p.Id == pageId);
+        var current = await _db.Pages.FindAsync(pageId);
+        if (current == null) return RedirectToAction(nameof(Index));
+
+        var siblings = await _db.Pages
+            .Where(p => p.ParentId == current.ParentId)
+            .OrderBy(p => p.SortOrder)
+            .ToListAsync();
+        var index = siblings.FindIndex(p => p.Id == pageId);
         if (index == -1) return RedirectToAction(nameof(Index));
 
         int newIndex = direction == "up" ? index - 1 : index + 1;
-        if (newIndex < 0 || newIndex >= pages.Count)
+        if (newIndex < 0 || newIndex >= siblings.Count)
             return RedirectToAction(nameof(Index));
 
-        // Intercambiar SortOrder
-        var temp = pages[index].SortOrder;
-        pages[index].SortOrder = pages[newIndex].SortOrder;
-        pages[newIndex].SortOrder = temp;
+        var temp = siblings[index].SortOrder;
+        siblings[index].SortOrder = siblings[newIndex].SortOrder;
+        siblings[newIndex].SortOrder = temp;
 
         await _db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
@@ -150,6 +158,7 @@ public class ManagerController : Controller
             page.Title = data.Title;
             page.Slug = data.Slug;
             page.JsonData = data.JsonData;
+            page.ParentId = data.ParentId;
             page.IsPublished = true;
             page.PublishedAt = DateTime.UtcNow;
 
@@ -301,9 +310,25 @@ public class ManagerController : Controller
         var page = await _db.Pages.FindAsync(id);
         if (page != null)
         {
-            var blocks = await _db.Blocks.Where(b => b.PageId == id).ToListAsync();
-            _db.Blocks.RemoveRange(blocks);
-            _db.Pages.Remove(page);
+            // Recursive delete: collect all descendant pages
+            var toDelete = new List<Page>();
+            var queue = new Queue<Guid>();
+            queue.Enqueue(id);
+            while (queue.Count > 0)
+            {
+                var cur = queue.Dequeue();
+                var cp = await _db.Pages.FindAsync(cur);
+                if (cp == null) continue;
+                toDelete.Add(cp);
+                var childIds = await _db.Pages.Where(p => p.ParentId == cur).Select(p => p.Id).ToListAsync();
+                foreach (var cid in childIds) queue.Enqueue(cid);
+            }
+
+            foreach (var p in toDelete)
+            {
+                _db.Blocks.RemoveRange(_db.Blocks.Where(b => b.PageId == p.Id));
+                _db.Pages.Remove(p);
+            }
             await _db.SaveChangesAsync();
         }
         return RedirectToAction(nameof(Index));

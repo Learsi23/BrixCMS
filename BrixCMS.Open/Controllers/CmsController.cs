@@ -1,4 +1,5 @@
 using BrixCMS.Open.Data;
+using BrixCMS.Open.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -15,14 +16,13 @@ public class CmsController : Controller
         if (string.IsNullOrEmpty(slug))
         {
             var home = await _db.Pages
-                .Where(p => p.IsPublished)
+                .Where(p => p.IsPublished && p.ParentId == null)
                 .OrderBy(p => p.SortOrder)
                 .FirstOrDefaultAsync();
 
             if (home == null)
                 return Content("No published pages yet.");
 
-            // If home slug is also empty, render directly — redirecting to "/" would loop
             if (string.IsNullOrEmpty(home.Slug))
             {
                 home.Blocks = await _db.Blocks
@@ -35,8 +35,7 @@ public class CmsController : Controller
             return Redirect("/" + home.Slug);
         }
 
-        var page = await _db.Pages
-            .FirstOrDefaultAsync(p => p.Slug.ToLower() == slug.ToLower());
+        var page = await _db.Pages.ResolveByPathAsync(slug);
 
         if (page == null) return Content($"Page '{slug}' not found.");
         if (!page.IsPublished) return Content($"The page '{slug}' exists but is not published.");

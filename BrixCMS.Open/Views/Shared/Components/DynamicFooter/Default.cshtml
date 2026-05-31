@@ -1,10 +1,18 @@
 @model BrixCMS.Open.Models.FooterSettings
 @using BrixCMS.Open.Data
+@using BrixCMS.Open.Extensions
 
 @{
     var logoUrl = Model.Logo?.TrimStart('~');
     var currentYear = DateTime.Now.Year.ToString();
-    var publishedPages = ViewContext.HttpContext.RequestServices.GetService<BrixDbContext>()?.Pages.Where(x => x.IsPublished).OrderBy(x => x.Title).ToList() ?? new List<Page>();
+    var db = ViewContext.HttpContext.RequestServices.GetService<BrixDbContext>();
+    var allPages = db?.Pages.Where(x => x.IsPublished).OrderBy(x => x.SortOrder).ToList() ?? new List<Page>();
+    var allPagesById = allPages.ToDictionary(p => p.Id);
+    var childrenByParentId = allPages
+        .Where(p => p.ParentId.HasValue)
+        .GroupBy(p => p.ParentId!.Value)
+        .ToDictionary(g => g.Key, g => g.ToList());
+    var topLevel = allPages.Where(p => !p.ParentId.HasValue).ToList();
     var pagesList = Model.Pages ?? new List<MenuItemConfig>();
     var socialMediaList = Model.SocialMedia ?? new List<SocialMediaConfig>();
 
@@ -62,11 +70,26 @@
                         }
                         else
                         {
-                            @foreach (var p in publishedPages)
+                            @foreach (var p in topLevel)
                             {
+                                var hasChildren = childrenByParentId.ContainsKey(p.Id);
                                 <li>
-                                    <a href="/@p.Slug" data-enhance-nav="false"
+                                    <a href="@p.GetFullPath(allPagesById)" data-enhance-nav="false"
                                        class="hover:opacity-75 transition-opacity">@p.Title</a>
+                                    @if (hasChildren)
+                                    {
+                                        <ul class="ml-4 mt-1 space-y-1 border-l border-gray-600 pl-3">
+                                            @foreach (var child in childrenByParentId[p.Id])
+                                            {
+                                                <li>
+                                                    <a href="@child.GetFullPath(allPagesById)" data-enhance-nav="false"
+                                                       class="hover:opacity-75 transition-opacity text-sm opacity-80">
+                                                        — @child.Title
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
                                 </li>
                             }
                         }

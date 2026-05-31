@@ -1,8 +1,31 @@
 @using BrixCMS.Open.Data
+@using BrixCMS.Open.Extensions
 @model IEnumerable<BrixCMS.Open.Data.Page>
 @{
     Layout = "_ManagerLayout";
-    var pages = Model.OrderBy(p => p.SortOrder).ToList();
+    var allPages = Model.OrderBy(p => p.SortOrder).ToList();
+    var allPagesById = allPages.ToDictionary(p => p.Id);
+
+    // Build tree structure
+    var childrenByParentId = allPages
+        .Where(p => p.ParentId.HasValue)
+        .GroupBy(p => p.ParentId!.Value)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    var topLevel = allPages.Where(p => !p.ParentId.HasValue).ToList();
+
+    // Flatten tree for display
+    var flatPages = new List<(Page Page, int Depth)>();
+    void Flatten(List<Page> pages, int depth)
+    {
+        foreach (var p in pages)
+        {
+            flatPages.Add((p, depth));
+            if (childrenByParentId.TryGetValue(p.Id, out var children))
+                Flatten(children, depth + 1);
+        }
+    }
+    Flatten(topLevel, 0);
 }
 
 <div class="container mx-auto px-12 mt-32">
@@ -14,6 +37,14 @@
         <form asp-area="Manager" asp-controller="Manager" asp-action="CreatePage" method="post" class="flex gap-2 items-center">
             <input name="title" placeholder="Title of the new page..."
                    class="px-4 py-2 border rounded-lg outline-none" required />
+            <select name="parentId"
+                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-white cursor-pointer">
+                <option value="">— Top level —</option>
+                @foreach (var p in allPages)
+                {
+                    <option value="@p.Id">@p.Title</option>
+                }
+            </select>
             <select name="pageType"
                     class="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-white cursor-pointer">
                 <option value="standard"><i class="fas fa-file mr-1"></i> Standard</option>
@@ -39,11 +70,13 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                @if (pages.Any())
+                @if (flatPages.Any())
                 {
-                    @for (int i = 0; i < pages.Count; i++)
+                    var firstPublishedId = flatPages.FirstOrDefault(x => x.Page.IsPublished).Page?.Id;
+
+                    @for (int i = 0; i < flatPages.Count; i++)
                     {
-                        var p = pages[i];
+                        var (p, depth) = flatPages[i];
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
                                 <div class="flex gap-1">
@@ -59,7 +92,7 @@
                                             </button>
                                         </form>
                                     }
-                                    @if (i < pages.Count - 1)
+                                    @if (i < flatPages.Count - 1)
                                     {
                                         <form asp-area="Manager" asp-controller="Manager"
                                               asp-action="MovePage" method="post">
@@ -74,14 +107,32 @@
                                 </div>
                             </td>
 
-                            <td class="px-6 py-4 font-medium flex items-center gap-2">
-                                @if (i == pages.FindIndex(x => x.IsPublished))
-                                {
-                                    <span class="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                                        <i class="fas fa-home mr-1"></i> Home
-                                    </span>
-                                }
-                                @p.Title
+                            <td class="px-6 py-4 font-medium">
+                                <div class="flex items-center gap-2">
+                                    @if (depth > 0)
+                                    {
+                                        <span class="text-gray-300 select-none" style="padding-left: @(depth * 20)px">└─</span>
+                                    }
+                                    @if (p.Id == firstPublishedId)
+                                    {
+                                        <span class="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
+                                            <i class="fas fa-home mr-1"></i> Home
+                                        </span>
+                                    }
+                                    @p.Title
+                                </div>
+                                <!-- Inline "+ Subpage" form -->
+                                <div style="padding-left: @((depth + 1) * 20)px" class="mt-1">
+                                    <form asp-area="Manager" asp-controller="Manager" asp-action="CreatePage" method="post"
+                                          class="flex items-center gap-1"
+                                          onsubmit="var inp=this.querySelector('input[name=title]'); if(!inp.value.trim()){event.preventDefault();}">
+                                        <input type="hidden" name="parentId" value="@p.Id" />
+                                        <input type="hidden" name="pageType" value="standard" />
+                                        <input name="title" placeholder="+ Subpage..."
+                                               class="w-28 px-2 py-0.5 text-xs border border-gray-200 rounded outline-none" />
+                                        <button type="submit" class="text-emerald-600 text-xs hover:underline">Add</button>
+                                    </form>
+                                </div>
                             </td>
 
                             <td class="px-6 py-4">
@@ -99,7 +150,12 @@
                                 }
                             </td>
 
-                            <td class="px-6 py-4 text-gray-500 font-mono text-xs">/@p.Slug</td>
+                            <td class="px-6 py-4 text-gray-500 font-mono text-xs">
+                                @{
+                                    var fullPath = p.GetFullPath(allPagesById);
+                                }
+                                @fullPath
+                            </td>
 
                             <td class="px-6 py-4">
                                 @if (p.IsPublished)
@@ -116,42 +172,35 @@
                                 }
                             </td>
 
-                            <td class="px-6 py-4 text-right flex justify-end gap-3 items-center">
-                                @if (p.IsPublished)
-                                {
-                                    @*
-                                       FIX: Changed target="_blank" to a unique name per page.
-                                       This ensures clicking "View" repeatedly for the same page refreshes the same tab.
-                                    *@
-                                    <a href="/@p.Slug"
-                                           target="view-page-@p.Id"
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end gap-3 items-center">
+                                    @if (p.IsPublished)
+                                    {
+                                        <a href="@fullPath"
+                                               target="view-page-@p.Id"
+                                               rel="noopener"
+                                               class="text-emerald-600 hover:underline text-sm">
+                                            <i class="fas fa-eye mr-1"></i> View
+                                        </a>
+                                    }
+
+                                    <a asp-area="Manager" asp-controller="Manager"
+                                           asp-action="Edit" asp-route-id="@p.Id"
+                                           target="edit-page-@p.Id"
                                            rel="noopener"
-                                           class="text-emerald-600 hover:underline text-sm">
-                                        <i class="fas fa-eye mr-1"></i> View
+                                           class="text-blue-600 hover:underline text-sm">
+                                        Edit
                                     </a>
-                                }
 
-                                @*
-                                   FIX: If you want 'Edit' to open in a new, reusable tab, add target="edit-page-@p.Id".
-                                   If you want it to open in the current tab, simply remove the target attribute.
-                                   Below, I've set it to reuse an edit tab.
-                                *@
-                                <a asp-area="Manager" asp-controller="Manager"
-                                       asp-action="Edit" asp-route-id="@p.Id"
-                                       target="edit-page-@p.Id"
-                                       rel="noopener"
-                                       class="text-blue-600 hover:underline text-sm">
-                                    Edit
-                                </a>
-
-                                <form asp-area="Manager" asp-controller="Manager"
-                                      asp-action="DeletePage" asp-route-id="@p.Id"
-                                      method="post"
-                                      onsubmit="return confirm('Delete this page and all its blocks?')">
-                                    <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">
-                                        Delete
-                                    </button>
-                                </form>
+                                    <form asp-area="Manager" asp-controller="Manager"
+                                          asp-action="DeletePage" asp-route-id="@p.Id"
+                                          method="post"
+                                          onsubmit="return confirm('Delete this page and ALL its subpages?')">
+                                        <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }

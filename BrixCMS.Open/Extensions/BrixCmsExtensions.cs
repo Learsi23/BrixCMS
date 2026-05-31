@@ -236,9 +236,21 @@ public static class BrixCmsExtensions
             var generator = scope.ServiceProvider
                 .GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
 
-            await DataIngestor.IngestDataAsync(
-                app.Services,
-                new PDFDirectorySource(dataPath, generator));
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(TimeSpan.FromSeconds(30));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await DataIngestor.IngestDataAsync(
+                        app.Services,
+                        new PDFDirectorySource(dataPath, generator));
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "⚠️ PDF ingestion failed (non-blocking, app continues)");
+                }
+            }, cts.Token);
         }
     }
 }

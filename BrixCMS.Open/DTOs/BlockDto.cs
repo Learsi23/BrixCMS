@@ -5,6 +5,7 @@ namespace BrixCMS.Open.DTOs
         public string Title { get; set; }
         public string Slug { get; set; }
         public string JsonData { get; set; }
+        public Guid? ParentId { get; set; }
         public List<BlockDto> Blocks { get; set; } = new();
     }
     public class BlockDto

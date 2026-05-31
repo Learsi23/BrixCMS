@@ -120,16 +120,20 @@
         </div>
     </main>
 
+    @Html.AntiForgeryToken()
+
     <script>
         async function publishFromPreview(btn) {
             if (!confirm('Publish this page? It will be publicly visible.')) return;
 
             const pageId = '@Model.Id';
             const blocks = @Html.Raw(allBlocksJson);
+            const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
             const data = {
                 Title:    '@Html.Raw(titleJs)',
                 Slug:     '@Html.Raw(slugJs)',
                 JsonData: '@Html.Raw(jsonDataJs)',
+                ParentId: @(Model.ParentId.HasValue ? $"'{Model.ParentId}'" : "null"),
                 Blocks:   blocks
             };
 
@@ -139,7 +143,7 @@
             try {
                 const res = await fetch(`/Manager/Manager/PublishPage?pageId=${pageId}`, {
                     method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': csrf },
                     body:    JSON.stringify(data)
                 });
 

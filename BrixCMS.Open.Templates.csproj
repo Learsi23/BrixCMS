@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.2.3</PackageVersion>
+    <PackageVersion>1.3.0</PackageVersion>
     <PackageId>BrixCMS.Open.Templates</PackageId>
     <Title>BrixCMS Open — .NET 10 CMS Template (Blazor, Headless, AI)</Title>
     <Authors>Lear23</Authors>
