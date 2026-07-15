@@ -85,7 +85,7 @@
             </div>
         }
 
-        @if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit"))
+        @if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit", StringComparison.OrdinalIgnoreCase))
         {
             <div class="mt-4 text-center">
                 <button type="button" onclick="openSelectorForParent('@blockData.Id')"

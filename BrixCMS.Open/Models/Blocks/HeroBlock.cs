@@ -211,12 +211,12 @@ namespace BrixCMS.Open.Models.Blocks
         public ColorField ButtonTextColor { get; set; } = new() { Value = "#ffffff" };
 
         // NEW: Button border radius
-        [Field(Title = "Button Border Radius", Description = "Border radius (e.g., rounded-xl, rounded-full, 12px).")]
-        public StringField ButtonBorderRadius { get; set; } = new() { Value = "rounded-xl" };
+        [Field(Title = "Button Border Radius", Description = "CSS border-radius value, e.g. 0.75rem, 9999px for a pill shape.")]
+        public StringField ButtonBorderRadius { get; set; } = new() { Value = "0.75rem" };
 
         // NEW: Button padding
-        [Field(Title = "Button Padding", Description = "Padding (e.g., px-8 py-3, 1rem 2rem).")]
-        public StringField ButtonPadding { get; set; } = new() { Value = "px-8 py-3" };
+        [Field(Title = "Button Padding", Description = "CSS padding value, e.g. 0.75rem 2rem.")]
+        public StringField ButtonPadding { get; set; } = new() { Value = "0.75rem 2rem" };
 
         // NEW: Button hover effect
         [Field(Title = "Button Hover Opacity", Description = "Opacity on hover (0-1).")]
@@ -247,9 +247,13 @@ namespace BrixCMS.Open.Models.Blocks
         [Field(Title = "Button 2 Border Width", Description = "Border width (e.g., 1px, 2px).")]
         public StringField Button2BorderWidth { get; set; } = new() { Value = "1px" };
 
+        // NEW: Button 2 padding
+        [Field(Title = "Button 2 Padding", Description = "CSS padding value, e.g. 0.75rem 2rem.")]
+        public StringField Button2Padding { get; set; } = new() { Value = "0.75rem 2rem" };
+
         // NEW: Button 2 border radius
-        [Field(Title = "Button 2 Border Radius", Description = "Border radius for secondary button.")]
-        public StringField Button2BorderRadius { get; set; } = new() { Value = "rounded-xl" };
+        [Field(Title = "Button 2 Border Radius", Description = "CSS border-radius value, e.g. 0.75rem, 9999px for a pill shape.")]
+        public StringField Button2BorderRadius { get; set; } = new() { Value = "0.75rem" };
 
         // NEW: Button 2 hover opacity
         [Field(Title = "Button 2 Hover Opacity", Description = "Opacity on hover for secondary button.")]

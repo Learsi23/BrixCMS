@@ -72,21 +72,14 @@ public class CardBlock : BlockBase
     [Field(Title = "Button Hover Color")]
     public ColorField HoverColor { get; set; }
 
-    [Field(Title = "Border Radius", Placeholder = "fas fa-font")]
-    public StringField BorderRadius { get; set; }
+    [Field(Title = "Button Border Radius", Description = "CSS border-radius value, e.g. 0.5rem, 9999px for a pill shape.")]
+    public StringField BorderRadius { get; set; } = new() { Value = "0.5rem" };
 
     [Field(Title = "Button Border", Placeholder = "e.g., '2px solid #000'")]
-    public StringField Border { get; set; }
+    public StringField Border { get; set; } = new() { Value = "none" };
 
-
-    [Field(Title = "Padding", Placeholder = "fas fa-font")]
-    public StringField Padding { get; set; }
-
-    [Field(Title = "Text Color", Placeholder = "Color for the button text")]
-    public ColorField TextColor { get; set; }
-
-    [Field(Title = "Button Position", Placeholder = "Position of the button (e.g., 'left', 'center', 'right')")]
-    public StringField ButtonPosition { get; set; }
+    [Field(Title = "Button Padding", Description = "CSS padding value, e.g. 0.625rem 1.5rem.")]
+    public StringField Padding { get; set; } = new() { Value = "0.625rem 1.5rem" };
 
 
     // --- CONFIGURACI�N T�CNICA ---

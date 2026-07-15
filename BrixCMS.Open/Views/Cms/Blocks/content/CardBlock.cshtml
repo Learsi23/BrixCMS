@@ -8,6 +8,10 @@
     var isOverlay = layout == "overlay";
     var accent = Model.AccentColor?.Value ?? "#3b82f6";
     var hover = Model.HoverColor?.Value ?? accent;
+    var btnTextColor = Model.ButtonTextColor?.Value ?? "#ffffff";
+    var btnRadius = Model.BorderRadius?.Value ?? "0.5rem";
+    var btnBorder = Model.Border?.Value ?? "none";
+    var btnPadding = Model.Padding?.Value ?? "0.625rem 1.5rem";
     var imageUrl = !string.IsNullOrEmpty(Model.Image?.Value) ? Model.Image.Value : "/images/no-image.png";
     var targetUrl = Model.TargetUrl?.Value ?? "#";
     var textAlign = Model.TextAlign?.Value?.ToLower() ?? "center";
@@ -100,8 +104,8 @@
 
     @* Bot�n de acci�n *@
     <div style="padding:0 1rem 1rem 1rem; position:relative; text-align:@textAlign; @(isHorizontal ? "flex:0 0 100%;" : "")">
-        <button class="@(textAlign == "center" ? "w-full" : "") py-2.5 px-6 rounded-lg font-semibold transition-all"
-                style="background-color:@accent; color:white; border:none; cursor:pointer;"
+        <button class="@(textAlign == "center" ? "w-full" : "") font-semibold transition-all"
+                style="background-color:@accent; color:@btnTextColor; border:@btnBorder; border-radius:@btnRadius; padding:@btnPadding; cursor:pointer;"
                 onmouseover="this.style.backgroundColor='@hover'"
                 onmouseout="this.style.backgroundColor='@accent'"
                 onclick="window.location.href='@targetUrl'">

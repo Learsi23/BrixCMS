@@ -537,6 +537,7 @@ public static class BrixLandingSeeder
             ("fas fa-play-circle", "VideoBlock", "Embed a YouTube, Vimeo, or direct video URL with autoplay and loop options."),
             ("fas fa-map-marker-alt", "MapBlock", "Embed a Google Maps location by address or coordinates. Configurable height and zoom level."),
             ("fas fa-hand-pointer", "ButtonLinkBlock", "Standalone CTA button with configurable URL, style, color, and size. Supports new tab."),
+            ("fas fa-grip-lines", "ButtonsGroupBlock", "A row of one or more buttons, each fully stylable on its own. Add Button items inside."),
             ("fas fa-chevron-down", "DropdownBlock", "Collapsible accordion sections. Perfect for FAQs, specifications, or grouped content."),
             ("fas fa-align-left", "TextWithButtonBlock", "Text content paired with a CTA button. Clean layout for announcements, offers, or feature highlights."),
             ("fas fa-list-ul", "AccordionBlock", "Multi-item collapsible accordion. Perfect for FAQs with multiple questions in one block."),

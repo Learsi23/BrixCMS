@@ -1,0 +1,66 @@
+@using BrixCMS.Open.Services
+@using BrixCMS.Open.Models.Blocks
+@model ButtonsGroupBlock
+@inject BrixCMS.Open.Data.BrixDbContext Db
+@inject BlockRegistry Registry
+
+@{
+    var blockData = (BrixCMS.Open.Data.Block)ViewData["RawBlock"];
+    var allBlocks = ViewData["AllBlocks"] as List<BrixCMS.Open.Data.Block>;
+    var children  = allBlocks != null
+        ? allBlocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList()
+        : Db.Blocks.Where(b => b.ParentId == blockData.Id).OrderBy(b => b.SortOrder).ToList();
+
+    var alignment = (Model.Alignment?.Value ?? "center").ToLower();
+    var justify = alignment switch { "left" => "flex-start", "right" => "flex-end", _ => "center" };
+    var gap = Model.Gap?.Value ?? "1rem";
+    var groupId = "btngrp-" + blockData.Id.ToString()[..8];
+}
+
+<div class="py-4 px-4" id="@groupId">
+    <div class="flex flex-wrap items-center" style="justify-content:@justify; gap:@gap;">
+        @foreach (var child in children)
+        {
+            var item = Registry.CreateModel(child) as ButtonItemBlock;
+            if (item == null) continue;
+
+            var bg = item.BgColor?.Value ?? "#3b82f6";
+            var hoverBg = item.HoverBgColor?.Value ?? bg;
+            var textColor = item.TextColor?.Value ?? "#ffffff";
+            var url = string.IsNullOrWhiteSpace(item.Url?.Value) ? "#" : item.Url.Value;
+            var newTab = item.NewTab?.IsTrue ?? false;
+            var icon = item.IconClass?.Value;
+
+            <a href="@url"
+               target="@(newTab ? "_blank" : "_self")"
+               rel="@(newTab ? "noopener noreferrer" : null)"
+               class="inline-flex items-center gap-2 font-semibold transition-all"
+               style="background-color:@bg; color:@textColor; border-radius:@(item.BorderRadius?.Value ?? "0.5rem"); padding:@(item.Padding?.Value ?? "0.75rem 1.75rem"); font-size:@(item.FontSize?.Value ?? "1rem");"
+               onmouseover="this.style.backgroundColor='@hoverBg'"
+               onmouseout="this.style.backgroundColor='@bg'">
+                @if (!string.IsNullOrWhiteSpace(icon))
+                {
+                    <i class="@icon"></i>
+                }
+                <span>@(item.Text?.Value ?? "Button")</span>
+            </a>
+        }
+
+        @if (!children.Any())
+        {
+            <div class="text-center text-gray-400 py-6 px-8 border-2 border-dashed border-gray-200 rounded-xl w-full">
+                Add buttons with "+ Add child block"
+            </div>
+        }
+    </div>
+
+    @if (ViewContext.HttpContext.Request.Path.ToString().Contains("/edit", StringComparison.OrdinalIgnoreCase))
+    {
+        <div class="mt-4 text-center">
+            <button type="button" onclick="openSelectorForParent('@blockData.Id')"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                + Add button
+            </button>
+        </div>
+    }
+</div>

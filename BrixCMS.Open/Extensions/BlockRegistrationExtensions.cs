@@ -74,6 +74,8 @@ namespace BrixCMS.Open.Extensions
             registry.Register<TabsBlock>("interactive");
             registry.Register<TabItemBlock>("interactive");
             registry.Register<EmailButtonBlock>("interactive");
+            registry.Register<ButtonsGroupBlock>("interactive");
+            registry.Register<ButtonItemBlock>("interactive");
 
             // blazor/
             registry.Register<ChatBlock>("blazor");

@@ -165,17 +165,18 @@
     var btnUrl = Model.ButtonUrl?.Value ?? "#";
     var btnBg = Model.ButtonColor?.Value ?? "#3b82f6";
     var btnClr = Model.ButtonTextColor?.Value ?? "#ffffff";
-    var btnBorderRadius = Model.ButtonBorderRadius?.Value ?? "rounded-xl";
-    var btnPadding = Model.ButtonPadding?.Value ?? "px-8 py-3";
+    var btnBorderRadius = Model.ButtonBorderRadius?.Value ?? "0.75rem";
+    var btnPadding = Model.ButtonPadding?.Value ?? "0.75rem 2rem";
     var btnHoverOpacity = Model.ButtonHoverOpacity?.Value ?? "0.85";
-    
+
     var hasButton2 = !string.IsNullOrWhiteSpace(Model.Button2Text?.Value);
     var btn2Url = Model.Button2Url?.Value ?? "#";
     var btn2Bg = Model.Button2Color?.Value ?? "transparent";
     var btn2Clr = Model.Button2TextColor?.Value ?? "#ffffff";
     var btn2BorderColor = Model.Button2BorderColor?.Value ?? "#2A2A30";
     var btn2BorderWidth = Model.Button2BorderWidth?.Value ?? "1px";
-    var btn2BorderRadius = Model.Button2BorderRadius?.Value ?? "rounded-xl";
+    var btn2Padding = Model.Button2Padding?.Value ?? "0.75rem 2rem";
+    var btn2BorderRadius = Model.Button2BorderRadius?.Value ?? "0.75rem";
     var btn2HoverOpacity = Model.Button2HoverOpacity?.Value ?? "0.85";
     
     // Helper function to safely convert opacity to percentage
@@ -365,17 +366,19 @@
                         @if (hasButton)
                         {
                             <a href="@btnUrl"
-                               class="inline-block font-bold text-base transition-all hover:opacity-@btnOpacityPercent @btnBorderRadius @btnPadding"
-                               style="background-color: @btnBg; color: @btnClr;">
+                               data-editable-field="ButtonText" data-block-id="@__blockId"
+                               class="inline-block font-bold text-base transition-all hover:opacity-@btnOpacityPercent"
+                               style="background-color: @btnBg; color: @btnClr; padding: @btnPadding; border-radius: @btnBorderRadius;">
                                 @Model.ButtonText.Value
                             </a>
                         }
-                        
+
                         @if (hasButton2)
                         {
                             <a href="@btn2Url"
-                               class="inline-block font-bold text-base transition-all hover:opacity-@btn2OpacityPercent @btn2BorderRadius"
-                               style="background-color: @btn2Bg; color: @btn2Clr; border: @btn2BorderWidth solid @btn2BorderColor;">
+                               data-editable-field="Button2Text" data-block-id="@__blockId"
+                               class="inline-block font-bold text-base transition-all hover:opacity-@btn2OpacityPercent"
+                               style="background-color: @btn2Bg; color: @btn2Clr; padding: @btn2Padding; border-radius: @btn2BorderRadius; border: @btn2BorderWidth solid @btn2BorderColor;">
                                 @Model.Button2Text.Value
                             </a>
                         }
