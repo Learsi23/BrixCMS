@@ -24,9 +24,12 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 
 | | |
 |---|---|
-| **40+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
+| **50+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
 | **AI chatbot** | Embed a PDF-trained chatbot on any page — Ollama (local, free, private) or Gemini (cloud, free tier) |
 | **Visual editor** | Drag-and-drop block builder in the admin panel — no code required |
+| **Live text editing** | Double-click any highlighted text directly on the live preview to edit it in place — saves in the background, no reload |
+| **Device preview** | Toggle Desktop / Tablet / Mobile on the preview page — a real iframe, so Tailwind's responsive breakpoints actually re-trigger |
+| **Page history** | Every publish is snapshotted automatically; roll back to any prior version from the editor in one click |
 | **Multi-admin** | Invite team members; the owner manages access |
 | **PDF semantic search** | Drop PDFs in `wwwroot/Data/` and the chatbot answers questions about them |
 | **SEO ready** | Meta, OG tags, canonical URLs, XML sitemap |
@@ -389,7 +392,7 @@ BrixCMS.Open/
 ├── Components/             # Blazor components (chat UI, contact form, interactive blocks)
 ├── Controllers/            # CMS, API, sitemap, landing
 ├── Data/                   # EF Core context + entity models
-├── Models/                 # 40+ block type definitions
+├── Models/                 # 50+ block type definitions
 ├── Services/               # Auth, AI, PDF ingestion, email, encryption
 ├── Views/                  # Razor views (blocks, layouts, admin)
 ├── wwwroot/                # Static assets + PDF data folder
@@ -403,7 +406,7 @@ BrixCMS.Open/
 
 | Feature | Open | Pro |
 |---|---|---|
-| All 45+ blocks | ✅ | ✅ |
+| All 50+ blocks | ✅ | ✅ |
 | AI chatbot (Ollama local) | ✅ | ✅ |
 | Cloud AI — Gemini (BYOK, free tier) | ✅ | ✅ |
 | Multi-admin with role-based permissions | ✅ | ✅ |

@@ -2,14 +2,15 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.4.0</PackageVersion>
+    <PackageVersion>1.5.0</PackageVersion>
     <PackageId>BrixCMS.Open.Templates</PackageId>
     <Title>BrixCMS Open — .NET 10 CMS Template (Blazor, Headless, AI)</Title>
     <Authors>Lear23</Authors>
     <Copyright>Copyright © 2025 BrixCMS Contributors</Copyright>
     <Description>dotnet new template for BrixCMS — a free, open-source, block-based CMS for ASP.NET Core 10.
 
-✅ 45+ drag-and-drop content blocks (Hero, Gallery, FAQ, Cards, Map, Video, QR, Countdown…)
+✅ 50+ drag-and-drop content blocks (Hero, Gallery, FAQ, Cards, Map, Video, QR, Countdown…)
+✅ Live text editing, device preview and one-click page version history
 ✅ AI chatbot — local Ollama (free, private) or Gemini cloud (free tier, BYOK)
 ✅ PDF semantic search with vector embeddings
 ✅ Headless REST API — serve content to Next.js, Nuxt, React, Vue or Flutter
@@ -38,7 +39,7 @@ Pro: https://brixc-ms.com</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/Learsi23/BrixCMS</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>v1.4.0 — Navbar auto-shows published top-level pages alongside configured menu items with dropdown children support; seed items auto-clear on first real page publish. Fixed 404 on root URL. Fixed admin anti-forgery token rendering. Improved route ordering (CMS before Blazor). v1.2.3 — Fix custom icon in Visual Studio New Project dialog (iconFile in .template.config). v1.2.2 — AiClientFactory, EncryptionService, ApiKey model, PDF chunking, GitHub star banner. v1.2.1 — Auto-generate EncryptionKey. v1.2.0 — Gemini cloud AI, Headless REST API, 45+ blocks.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.5.0 — Live text editing: double-click any highlighted text on the live preview to edit it in place, saved in the background. Device preview (Desktop/Tablet/Mobile) via a real iframe so responsive breakpoints re-trigger. Automatic page version history with one-click restore. Merged CardBlock + MultiCard into one flexible card block with horizontal/overlay layouts. Refreshed the block showcase to list all 50+ blocks. v1.4.0 — Navbar auto-shows published top-level pages alongside configured menu items with dropdown children support; seed items auto-clear on first real page publish. Fixed 404 on root URL. Fixed admin anti-forgery token rendering. Improved route ordering (CMS before Blazor). v1.2.3 — Fix custom icon in Visual Studio New Project dialog (iconFile in .template.config). v1.2.2 — AiClientFactory, EncryptionService, ApiKey model, PDF chunking, GitHub star banner. v1.2.1 — Auto-generate EncryptionKey. v1.2.0 — Gemini cloud AI, Headless REST API, 45+ blocks.</PackageReleaseNotes>
     <!-- Minimal target — no code is compiled, only content is packed -->
     <TargetFramework>net10.0</TargetFramework>
     <IncludeContentInPack>true</IncludeContentInPack>
