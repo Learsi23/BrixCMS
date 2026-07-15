@@ -68,7 +68,7 @@ public static class BrixLandingSeeder
             PublishedAt     = DateTime.UtcNow,
             SortOrder       = 0,
             PageType        = "standard",
-            MetaDescription = "BrixCMS.Open — free, self-hosted, open-source .NET 10 CMS. 40+ blocks, Ollama AI chatbot, SQLite, MIT license.",
+            MetaDescription = "BrixCMS.Open — free, self-hosted, open-source .NET 10 CMS. 50+ blocks, Ollama AI chatbot, SQLite, MIT license.",
             JsonData        = JsonSerializer.Serialize(new { BackgroundColor = new { Value = BG } }),
         };
         db.Pages.Add(page);
@@ -100,7 +100,7 @@ public static class BrixLandingSeeder
             Title              = V("Your CMS. Your server. AI included."),
             TitleColor         = V(TEXT),
             TitleSize          = V("3.5rem"),
-            Subtitle           = V("BrixCMS.Open is a free, open-source .NET 10 block-based CMS with 40+ visual blocks, Ollama AI chatbot, and zero configuration."),
+            Subtitle           = V("BrixCMS.Open is a free, open-source .NET 10 block-based CMS with 50+ visual blocks, Ollama AI chatbot, and zero configuration."),
             SubtitleColor      = V(TEXT2),
             SubtitleSize       = V("1.15rem"),
             Description        = V(""),
@@ -123,7 +123,7 @@ public static class BrixLandingSeeder
         {
             Title           = V(""),
             Subtitle        = V(""),
-            Stat1Number     = V("40+"),
+            Stat1Number     = V("50+"),
             Stat1Label      = V("Pre-built blocks"),
             Stat1Icon       = V("fas fa-th-large"),
             Stat2Number     = V("MIT"),
@@ -171,7 +171,7 @@ public static class BrixLandingSeeder
         foreach (var (icon, color, title, text) in new[]
         {
             ("fas fa-th-large", ACCENT,
-             "40+ pre-built blocks",
+             "50+ pre-built blocks",
              "Hero, Stats, FAQ, Testimonials, Gallery, Map, Countdown, Timeline, Tabs, Team, Table, QR, Code and more. Add your own in minutes."),
             ("fas fa-robot", SUCCESS,
              "AI chatbot — Ollama local or Gemini cloud",
@@ -260,7 +260,7 @@ public static class BrixLandingSeeder
             StepLabel   = V("03"),
             Icon        = V("fas fa-paint-brush"),
             Title       = V("Build visually"),
-            Description = V("Open the page editor, drag & drop 40+ blocks, configure colors, text and images. Publish with one click. Your site is live."),
+            Description = V("Open the page editor, drag & drop 50+ blocks, configure colors, text and images. Publish with one click. Your site is live."),
             AccentColor = V(WARNING),
         }, timeline.Id);
 
@@ -361,7 +361,7 @@ public static class BrixLandingSeeder
             PublishedAt     = DateTime.UtcNow,
             SortOrder       = 1,
             PageType        = "standard",
-            MetaDescription = "BrixCMS.Open features — 40+ blocks, Ollama AI chatbot, visual page editor, SQLite, MIT license.",
+            MetaDescription = "BrixCMS.Open features — 50+ blocks, Ollama AI chatbot, visual page editor, SQLite, MIT license.",
             JsonData        = JsonSerializer.Serialize(new { BackgroundColor = new { Value = BG } }),
         };
         db.Pages.Add(page);
@@ -378,7 +378,7 @@ public static class BrixLandingSeeder
         // ── Hero ──────────────────────────────────────────────────────────────
         B("HeroBlock", new
         {
-            Title              = V("40+ blocks. Zero config."),
+            Title              = V("50+ blocks. Zero config."),
             TitleColor         = V(TEXT),
             TitleSize          = V("3.25rem"),
             Subtitle           = V("Every block in BrixCMS.Open — visual editor, live preview, and Ollama AI chatbot built in."),
@@ -497,29 +497,57 @@ public static class BrixLandingSeeder
 
         foreach (var (icon, name, desc) in new[]
         {
-            ("fas fa-image",             "HeroBlock",           "Full-screen hero with image, overlay, CTA buttons"),
-            ("fas fa-chart-bar",         "StatsBlock",          "4 key metrics with icons and labels"),
-            ("fas fa-font",              "TextBlock",           "Rich text: title, subtitle, body + padding control"),
-            ("fas fa-th",               "GridColumn",          "Responsive layout container (2–4 cols)"),
-            ("fas fa-id-card",          "IconCardBlock",       "Card with FontAwesome icon, title and body text"),
-            ("fas fa-question-circle",  "FAQBlock",            "Accordion FAQ (cards, bordered or list style)"),
-            ("fas fa-star",             "TestimonialsBlock",   "Review carousel with avatars and star ratings"),
-            ("fas fa-stream",           "TimelineBlock",       "Step-by-step process or company history"),
-            ("fas fa-table",            "TableBlock",          "Data table — pipe-separated, striped, bordered or minimal"),
-            ("fas fa-code",             "CodeBlock",           "Syntax-highlighted code with copy button"),
-            ("fas fa-qrcode",           "QRCodeBlock",         "QR generator — URL, WiFi, vCard, Email"),
-            ("fas fa-images",           "GalleryBlock",        "Image gallery with lightbox"),
-            ("fas fa-play-circle",      "VideoBlock",          "YouTube / Vimeo / self-hosted video embed"),
-            ("fas fa-map-marker-alt",   "MapBlock",            "Embedded Google or OpenStreetMap"),
-            ("fas fa-clock",            "CountdownBlock",      "Live countdown timer to a target date"),
-            ("fas fa-users",            "TeamBlock",           "Team members grid with photo, name & role"),
-            ("fas fa-envelope",         "NewsletterBlock",     "Email signup form with configurable endpoint"),
-            ("fas fa-phone",            "ContactFormBlock",    "Full contact form with validation"),
-            ("fas fa-music",            "AudioBlock",          "Audio player (minimal, card or full style)"),
-            ("fas fa-magic",            "LottieBlock",         "Lottie JSON animations (auto-play, loop, speed)"),
-            ("fas fa-exchange-alt",     "BeforeAfterBlock",    "Before / after image comparison slider"),
-            ("fas fa-layer-group",      "TabsBlock",           "Tabbed content panels"),
-            ("fas fa-align-left",       "MarkdownBlock",       "Markdown-rendered content"),
+            // Kept in sync with Extensions/BlockRegistrationExtensions.cs — every standalone
+            // (non-child) registered block, using each block's own [BlockType] description.
+            ("fas fa-th", "GridColumn", "Flexible CSS grid with configurable rows and columns. Each row can have different column counts."),
+            ("fas fa-arrows-alt-v", "SpacerBlock", "Adds vertical whitespace between blocks. Set exact height in px, rem, or vh."),
+            ("fas fa-grip-lines", "DividerBlock", "Horizontal separator line with configurable color, thickness, and style."),
+            ("fas fa-bullhorn", "BannerBlock", "Announcement or notification bar: free shipping, active discount, new feature. Can be closed."),
+            ("fas fa-columns", "FullColumnBlock", "Multi-column layout container. Add any blocks inside each column for flexible page layouts."),
+            ("fas fa-question-circle", "FAQBlock", "Specialized FAQ block with structured questions and answers. Different from accordion - optimized for Q&A content."),
+            ("fas fa-columns", "BeforeAfterBlock", "Image comparison slider. Perfect for showing transformations, before/after results, or product comparisons."),
+            ("fas fa-headphones", "AudioBlock", "Audio player for podcasts, music, or voice recordings. Supports custom cover image and episode info."),
+            ("fas fa-table", "TableBlock", "Simple data table. Different from comparison table - optimized for displaying structured data."),
+            ("fas fa-list-check", "FeatureListBlock", "List of features with icons. Perfect for showing features, benefits, or checklists."),
+            ("fas fa-cookie", "CookieBannerBlock", "GDPR cookie consent banner. Display privacy notice and consent buttons."),
+            ("fas fa-envelope-open-text", "NewsletterBlock", "Email subscription form with a title, subtitle, and customisable call-to-action button."),
+            ("fas fa-film", "LottieBlock", "Lottie animation. Lightweight JSON animations for engaging visual content."),
+            ("fas fa-code", "CodeBlock", "Syntax highlighted code block. Perfect for code snippets, API examples, and tutorials."),
+            ("fas fa-qrcode", "QRCodeBlock", "QR code generator. Perfect for linking to URLs, payments, WiFi access, or contact info."),
+            ("fas fa-play-circle", "HeroBlock", "Full-width hero with title, subtitle, and background image. Perfect for page introductions."),
+            ("fas fa-film", "HeroFlexibleBlock", "Hero with flexible background: video, image, or color. Multiple buttons support."),
+            ("fas fa-font", "TextBlock", "Rich text block with title, subtitle, and body. Full control over size, color, and alignment."),
+            ("fab fa-markdown", "MarkdownBlock", "Write content in Markdown with full WYSIWYG editor (TinyMCE). Ideal for articles, docs, and rich text."),
+            ("fas fa-image", "ImageBlock", "Single image with configurable size, alt text, border radius, and optional caption."),
+            ("fas fa-layer-group", "CardBlock", "Flexible card with image, title, description, icon, and CTA button. Supports vertical, horizontal, and overlay layouts."),
+            ("fas fa-id-card", "IconCardBlock", "Card with a large icon, title, and description. Great for features or services sections."),
+            ("fas fa-chart-bar", "StatsBlock", "Display key metrics or numbers with labels. Ideal for social proof and achievement sections."),
+            ("fas fa-bullhorn", "CTABannerBlock", "Call-to-action banner with headline, description, and a prominent button to drive conversions."),
+            ("fas fa-handshake", "LogoStripBlock", "Horizontal row of partner or brand logos. Builds trust and social proof on landing pages."),
+            ("fas fa-stream", "TimelineBlock", "Timeline of steps or milestones. Ideal for 'How it works', company history, or process."),
+            ("fas fa-quote-left", "TestimonialsBlock", "Carousel of customer reviews with avatar, name, role, and stars."),
+            ("fas fa-award", "SocialProofBlock", "Client logos + number of Google or Trustpilot reviews. Builds trust."),
+            ("fas fa-users", "TeamBlock", "Grid of team members with photo, name, position, and social media links."),
+            ("fas fa-th-large", "FeatureGridBlock", "Display a grid of feature cards with icons. Perfect for services, benefits, or platform features sections."),
+            ("fas fa-th", "BrixGridDemoBlock", "Visual demonstration of the modular block system. Shows a grid of draggable blocks."),
+            ("fas fa-utensils", "MenuBlock", "Display a restaurant menu with categories, dish names, descriptions, and prices."),
+            ("fas fa-clock", "OpeningHoursBlock", "Weekly opening hours table with a live open/closed status indicator."),
+            ("fas fa-images", "GalleryBlock", "Image gallery with grid, masonry, or carousel display modes. Supports lightbox on click."),
+            ("fas fa-columns", "FlexibleImageTextBlock", "Side-by-side image and text layout. Supports left/right image position, rounded corners, and custom spacing."),
+            ("fas fa-play-circle", "VideoBlock", "Embed a YouTube, Vimeo, or direct video URL with autoplay and loop options."),
+            ("fas fa-map-marker-alt", "MapBlock", "Embed a Google Maps location by address or coordinates. Configurable height and zoom level."),
+            ("fas fa-hand-pointer", "ButtonLinkBlock", "Standalone CTA button with configurable URL, style, color, and size. Supports new tab."),
+            ("fas fa-chevron-down", "DropdownBlock", "Collapsible accordion sections. Perfect for FAQs, specifications, or grouped content."),
+            ("fas fa-align-left", "TextWithButtonBlock", "Text content paired with a CTA button. Clean layout for announcements, offers, or feature highlights."),
+            ("fas fa-list-ul", "AccordionBlock", "Multi-item collapsible accordion. Perfect for FAQs with multiple questions in one block."),
+            ("fas fa-hourglass-half", "CountdownBlock", "Countdown timer for offers, launches, or events. Set the target date."),
+            ("fas fa-folder-open", "TabsBlock", "Content organized in tabs. Ideal for Description / Specifications / Reviews."),
+            ("fas fa-envelope-open-text", "EmailButtonBlock", "Button that triggers an email action (e.g. inquiry, quote request). Sends via your SMTP configuration."),
+            ("fas fa-robot", "ChatBlock", "Modern AI chatbot. Use Fullscreen for a DeepSeek/Gemini-style full-page chat, or Embedded for a card-style widget."),
+            ("fas fa-comment-dots", "FloatingChatBlock", "A modern floating chat button with glassmorphism panel, animated gradients, and fully customizable colors."),
+            ("fas fa-envelope", "ContactFormBlock", "Interactive contact form with email delivery. Fully customizable fields and confirmation message."),
+            ("fas fa-image", "StartHeroBlock", "Animated hero with background image, gradient overlay, title, subtitle, and CTA button."),
+            ("fas fa-play", "LogoStartBlock", "Hero header with animated logo and sequential text or image elements that slide in from the right."),
         })
         {
             B("IconCardBlock", new
@@ -773,7 +801,7 @@ public static class BrixLandingSeeder
             TableData              = V(
                 "Feature | Open (free · MIT) | Pro (commercial)\n" +
                 "Visual page editor | ✅ Yes | ✅ Yes\n" +
-                "40+ pre-built blocks | ✅ Yes | ✅ Yes\n" +
+                "50+ pre-built blocks | ✅ Yes | ✅ Yes\n" +
                 "SQLite database | ✅ Yes | ✅ Yes\n" +
                 "Admin panel + 2FA | ✅ Yes | ✅ Yes\n" +
                 "Media manager | ✅ Yes | ✅ Yes\n" +

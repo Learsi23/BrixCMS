@@ -24,7 +24,7 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 
 | | |
 |---|---|
-| **45+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
+| **50+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
 | **AI chatbot** | Embed a PDF-trained chatbot on any page — Ollama (local, free, private) or Gemini (cloud, free tier) |
 | **Visual editor** | Drag-and-drop block builder in the admin panel — no code required |
 | **Live text editing** | Double-click any highlighted text directly on the live preview to edit it in place — saves in the background, no reload |
@@ -315,7 +315,7 @@ BrixCMS.Open/
 ├── Components/             # Blazor components (chat UI, contact form, interactive blocks)
 ├── Controllers/            # CMS, API, sitemap, landing
 ├── Data/                   # EF Core context + entity models
-├── Models/                 # 45+ block type definitions
+├── Models/                 # 50+ block type definitions
 ├── Services/               # Auth, AI, PDF ingestion, email, encryption
 ├── Views/                  # Razor views (blocks, layouts, admin)
 ├── wwwroot/                # Static assets + PDF data folder
@@ -323,7 +323,7 @@ BrixCMS.Open/
 └── appsettings.json        # Configuration
 vs BrixCMS Pro
 Feature	Open	Pro
-All 45+ blocks	✅	✅
+All 50+ blocks	✅	✅
 AI chatbot (Ollama local)	✅	✅
 Cloud AI — Gemini (BYOK, free tier)	✅	✅
 Multi-admin with role-based permissions	✅	✅
