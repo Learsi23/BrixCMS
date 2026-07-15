@@ -4,7 +4,7 @@ using BrixCMS.Open.Data.Fields;
 namespace BrixCMS.Open.Models.Blocks
 {
     [BlockType(Name = "Team Member", Category = "Content", Icon = "fas fa-user-tie",
-        Description = "Profile of a team member. Use within the Team block.")]
+        Description = "Profile of a team member. Use within the Team block.", Child = true)]
     public class TeamMemberBlock : BlockBase
     {
         [Field(Title = "Photo", Description = "Photo of the team member.")]

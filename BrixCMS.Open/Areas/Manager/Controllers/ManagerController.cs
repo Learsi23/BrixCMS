@@ -19,9 +19,11 @@ public class ManagerController : Controller
     private readonly BrixDbContext _db;
     private readonly BlockRegistry _registry;
     private readonly SiteSettingsImporter _siteImporter;
+    private readonly PageVersionService _versions;
 
-    public ManagerController(BrixDbContext db, BlockRegistry registry, SiteSettingsImporter siteImporter)
+    public ManagerController(BrixDbContext db, BlockRegistry registry, SiteSettingsImporter siteImporter, PageVersionService versions)
     {
+        _versions = versions;
         _db = db;
         _registry = registry;
         _siteImporter = siteImporter;
@@ -229,7 +231,7 @@ public class ManagerController : Controller
     }
 
     // ? PREVIEW DE P�GINA
-    public async Task<IActionResult> Preview(Guid id)
+    public async Task<IActionResult> Preview(Guid id, int frame = 0)
     {
         var page = await _db.Pages.FirstOrDefaultAsync(p => p.Id == id);
         if (page == null) return NotFound();
@@ -239,6 +241,10 @@ public class ManagerController : Controller
             .Where(b => b.PageId == id)
             .OrderBy(b => b.SortOrder)
             .ToListAsync();
+
+        // frame=1: embedded inside the editor's "Live edit" iframe — hide the amber preview
+        // banner so double-click-to-edit isn't fighting a fixed-position bar for space.
+        ViewData["IsFrame"] = frame == 1;
 
         return View(page);
     }
@@ -254,6 +260,11 @@ public class ManagerController : Controller
 
         try
         {
+            // Snapshot the pre-edit state so this save becomes an undo point — see
+            // /Manager/PageVersions/{pageId}. Never blocks the publish if it fails.
+            try { await _versions.SnapshotAsync(pageId, "Autosave", HttpContext.Session.GetString("AdminEmail")); }
+            catch { /* history is best-effort — never block a publish over it */ }
+
             page.Title = data.Title;
             page.Slug = data.Slug;
             page.JsonData = data.JsonData;

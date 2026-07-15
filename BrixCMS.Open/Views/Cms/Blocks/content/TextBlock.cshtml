@@ -3,7 +3,9 @@
 @model TextBlock
 
 @{
-    // Función para construir estilos de texto
+    var __blockId = ViewData["IsPreview"] is true ? (ViewData["RawBlock"] as BrixCMS.Open.Data.Block)?.Id : null;
+
+    // Funciï¿½n para construir estilos de texto
     string BuildTextStyles(string color, string size, string weight, string alignment)
     {
         var styles = new List<string>();
@@ -16,7 +18,7 @@
         return string.Join("; ", styles);
     }
     
-    // Función para posicionamiento Flex mejorada
+    // Funciï¿½n para posicionamiento Flex mejorada
     string GetFlexPositioning()
     {
         var vertical = Model.VerticalPosition?.Value?.ToLower() ?? "start";
@@ -40,7 +42,7 @@
         return $"justify-content: {justify}; align-items: {align};";
     }
     
-    // Función para obtener la URL de la imagen de fondo
+    // Funciï¿½n para obtener la URL de la imagen de fondo
     string GetBackgroundImageUrl()
     {
         if (Model.BackgroundImage?.Value != null)
@@ -66,7 +68,7 @@
             GetFlexPositioning()
         };
         
-        // Añadir altura del contenedor si está especificada
+        // Aï¿½adir altura del contenedor si estï¿½ especificada
         var containerHeight = Model.ContainerHeight?.Value ?? "auto";
         if (!string.IsNullOrEmpty(containerHeight) && containerHeight != "auto")
         {
@@ -81,10 +83,10 @@
         }
         else
         {
-            styles.Add($"min-height: inherit"); // Heredar altura mínima
+            styles.Add($"min-height: inherit"); // Heredar altura mï¿½nima
         }
         
-        // Añadir background image si existe
+        // Aï¿½adir background image si existe
         var bgImageUrl = GetBackgroundImageUrl();
         if (bgImageUrl != "none")
         {
@@ -97,7 +99,7 @@
         return string.Join("; ", styles);
     }
     
-    // Determinar el ancho máximo del contenido basado en el posicionamiento horizontal
+    // Determinar el ancho mï¿½ximo del contenido basado en el posicionamiento horizontal
     string GetContentWidthClass()
     {
         var horizontal = Model.HorizontalPosition?.Value?.ToLower() ?? "start";
@@ -109,7 +111,7 @@
     <div class="@GetContentWidthClass() " style="max-width: 100%;">
         
       <div class="container mx-auto">
-            @* Título *@
+            @* Tï¿½tulo *@
             @if (!string.IsNullOrEmpty(Model.Title?.Value))
             {
                 var styles = BuildTextStyles(
@@ -118,10 +120,10 @@
                     Model.TitleWeight?.Value,
                     Model.TitleAlignment?.Value
                 );
-                <h2 style="@styles">@RichText.Render(Model.Title.Value)</h2>
+                <h2 data-editable-field="Title" data-block-id="@__blockId" style="@styles">@RichText.Render(Model.Title.Value)</h2>
             }
         
-            @* Subtítulo *@
+            @* Subtï¿½tulo *@
             @if (!string.IsNullOrEmpty(Model.Subtitle?.Value))
             {
                 var styles = BuildTextStyles(

@@ -171,6 +171,7 @@ builder.Services.AddScoped<DataIngestor>();
 builder.Services.AddSingleton<SemanticSearch>();
 builder.Services.AddScoped<SiteSettingsImporter>();
 builder.Services.AddTransient<EmailSender>();
+builder.Services.AddScoped<BrixCMS.Open.Services.PageVersionService>();
 
 // =====================================================
 // 8️⃣ HTTP PIPELINE
@@ -196,7 +197,7 @@ app.UseSession();
 app.Use(async (ctx, next) =>
 {
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    ctx.Response.Headers["X-Frame-Options"] = "DENY";
+    ctx.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
     ctx.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     ctx.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
@@ -289,6 +290,25 @@ using (var scope = app.Services.CreateScope())
 
     // ── Seed BrixCMS landing page (first run) ──
     BrixCMS.Open.Services.BrixLandingSeeder.SeedIfEmpty(db);
+
+    // Manual migration: PageVersions table (full-page undo history)
+    try
+    {
+        var sqlPageVersions = dbProvider switch
+        {
+            "sqlserver" => "IF OBJECT_ID(N'PageVersions', N'U') IS NULL CREATE TABLE [PageVersions] ([Id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY, [PageId] UNIQUEIDENTIFIER NOT NULL, [CreatedAt] DATETIME2 NOT NULL, [CreatedByEmail] NVARCHAR(500) NULL, [Label] NVARCHAR(100) NOT NULL, [Title] NVARCHAR(500) NOT NULL, [Slug] NVARCHAR(500) NULL, [JsonData] NVARCHAR(MAX) NULL, [MetaDescription] NVARCHAR(MAX) NULL, [OgImage] NVARCHAR(MAX) NULL, [MetaKeywords] NVARCHAR(MAX) NULL, [BlocksJson] NVARCHAR(MAX) NOT NULL)",
+            "postgres"  => @"CREATE TABLE IF NOT EXISTS ""PageVersions"" (""Id"" UUID PRIMARY KEY, ""PageId"" UUID NOT NULL, ""CreatedAt"" TIMESTAMP NOT NULL, ""CreatedByEmail"" TEXT, ""Label"" TEXT NOT NULL, ""Title"" TEXT NOT NULL, ""Slug"" TEXT, ""JsonData"" TEXT, ""MetaDescription"" TEXT, ""OgImage"" TEXT, ""MetaKeywords"" TEXT, ""BlocksJson"" TEXT NOT NULL)",
+            _           => @"CREATE TABLE IF NOT EXISTS ""PageVersions"" (""Id"" TEXT PRIMARY KEY, ""PageId"" TEXT NOT NULL, ""CreatedAt"" TEXT NOT NULL, ""CreatedByEmail"" TEXT, ""Label"" TEXT NOT NULL, ""Title"" TEXT NOT NULL, ""Slug"" TEXT, ""JsonData"" TEXT, ""MetaDescription"" TEXT, ""OgImage"" TEXT, ""MetaKeywords"" TEXT, ""BlocksJson"" TEXT NOT NULL)",
+        };
+        db.Database.ExecuteSqlRaw(sqlPageVersions);
+        db.Database.ExecuteSqlRaw(dbProvider switch
+        {
+            "sqlserver" => "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PageVersions_PageId') CREATE INDEX [IX_PageVersions_PageId] ON [PageVersions] ([PageId])",
+            "postgres"  => @"CREATE INDEX IF NOT EXISTS ""IX_PageVersions_PageId"" ON ""PageVersions"" (""PageId"")",
+            _           => @"CREATE INDEX IF NOT EXISTS ""IX_PageVersions_PageId"" ON ""PageVersions"" (""PageId"")",
+        });
+    }
+    catch { /* already exists */ }
 
     // Manual migration: Subscribers table
     try

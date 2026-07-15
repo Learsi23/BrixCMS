@@ -29,6 +29,11 @@ namespace BrixCMS.Open.Services
         /// </summary>
         public string GetViewPath(string blockType)
         {
+            // Unregistered type (e.g. a block removed in a later version but still referenced by an
+            // old page) → a shared empty partial, so render loops that don't null-check the model
+            // never hit a "view not found" 500. The block simply renders nothing.
+            if (!_types.ContainsKey(blockType))
+                return "~/Views/Cms/Blocks/_Missing.cshtml";
             if (_viewFolders.TryGetValue(blockType, out var folder))
                 return $"~/Views/Cms/Blocks/{folder}/{blockType}.cshtml";
             return $"~/Views/Cms/Blocks/{blockType}.cshtml";

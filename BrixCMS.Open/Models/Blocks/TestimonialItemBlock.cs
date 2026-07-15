@@ -4,7 +4,7 @@ using BrixCMS.Open.Data.Fields;
 namespace BrixCMS.Open.Models.Blocks
 {
     [BlockType(Name = "Testimonial", Category = "Content", Icon = "fas fa-user-circle",
-        Description = "A customer review. Use within the Testimonials block.")]
+        Description = "A customer review. Use within the Testimonials block.", Child = true)]
     public class TestimonialItemBlock : BlockBase
     {
         [Field(Title = "Review Text", Description = "Text of the customer review.")]

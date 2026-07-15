@@ -20,6 +20,11 @@
     }
 
     var blockAttr = type.GetCustomAttribute<BlockTypeAttribute>();
+
+    // Theme color palette — quick-pick swatches shown in every ColorField. A neutral default
+    // that works across any kind of site (no SiteConfig coupling in the open-source build).
+    var themePalette = new List<string> { "#2563EB", "#0F172A", "#FFFFFF", "#F8FAFC", "#10B981", "#F59E0B", "#EF4444", "#6B7280" };
+
     bool isGroup = typeof(BlockGroupBase).IsAssignableFrom(type);
 
     var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -32,7 +37,36 @@
         .OrderBy(b => b.SortOrder)
         .ToList();
 
+    // Default instance of the block, used to read SelectField options.
     var defaultInstance = Activator.CreateInstance(type);
+
+    // Parse a CSS box shorthand ("16px", "1rem 2rem", "8px 16px 8px 16px") into 4 sides
+    // (top, right, bottom, left) + a single unit. Empty input → 4 empty sides (= "not set"),
+    // so opening a block that never set spacing doesn't force 0 on every side.
+    (string Top, string Right, string Bottom, string Left, string Unit) ParseBox(string css)
+    {
+        css = (css ?? "").Trim();
+        if (css.Length == 0) return ("", "", "", "", "px");
+        var unit = "px";
+        var nums = new List<string>();
+        foreach (var part in css.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(part, @"^(-?\d+(?:\.\d+)?)(px|rem|em|%|vh|vw|pt)?$");
+            if (m.Success)
+            {
+                nums.Add(m.Groups[1].Value);
+                if (m.Groups[2].Success && m.Groups[2].Value.Length > 0) unit = m.Groups[2].Value;
+            }
+            else { nums.Add("0"); }
+        }
+        return nums.Count switch
+        {
+            1 => (nums[0], nums[0], nums[0], nums[0], unit),
+            2 => (nums[0], nums[1], nums[0], nums[1], unit),
+            3 => (nums[0], nums[1], nums[2], nums[1], unit),
+            _ => (nums[0], nums[1], nums[2], nums[3], unit),
+        };
+    }
 }
 
 <div class="border-l-4 @(isGroup ? "border-purple-500 bg-purple-50/30" : "border-emerald-500 bg-white") p-6 mb-6 rounded-2xl shadow-sm border border-gray-200">
@@ -75,17 +109,105 @@
           asp-controller="Manager"
           asp-action="SaveBlock"
           method="post"
-          class="space-y-4">
+          data-block-id="@Model.Id"
+          class="space-y-4 brix-block-form">
 
         <input type="hidden" name="blockId" value="@Model.Id" />
         <input type="hidden" name="pageId" value="@Model.PageId" />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/60 p-5 rounded-xl border border-gray-100">
+                @{
+                    // Order is deterministic: the block's own fields first, then the shared
+                    // brixBlockBase fields (Spacing / Layout / Advanced) — independent of any
+                    // reflection ordering quirks. OrderBy is stable so declaration order is kept
+                    // within each group.
+                    var fieldProps = type.GetProperties()
+                        .Where(p => typeof(IField).IsAssignableFrom(p.PropertyType))
+                        .OrderBy(p => p.DeclaringType == typeof(BrixCMS.Open.Models.Base.brixBlockBase) ? 1 : 0)
+                        .ToList();
+                    var editorUid = Model.Id.ToString().Replace("-", "").Substring(0, 8);
+                    // Group fields into collapsible sections by their [Header]. A field with no
+                    // preceding header falls into a default "Settings" section.
+                    var sections = new List<(string Title, bool Advanced, List<System.Reflection.PropertyInfo> Props)>();
+                    foreach (var fp in fieldProps)
+                    {
+                        var fh = fp.GetCustomAttribute<HeaderAttribute>();
+                        if (fh != null || sections.Count == 0)
+                            sections.Add((fh?.Title ?? "Settings", fh?.Advanced ?? false, new List<System.Reflection.PropertyInfo>()));
+                        sections[sections.Count - 1].Props.Add(fp);
+                    }
 
-                @foreach (var prop in type.GetProperties().Where(p => typeof(IField).IsAssignableFrom(p.PropertyType)))
+                    // ── Normalize every block's own header names into 4 canonical buckets so the
+                    //    editor always reads Content / Style / Layout / Advanced, no matter how each
+                    //    block named its [Header]s. Dynamic: works for all current + future blocks. ──
+                    string Bucket(string title)
+                    {
+                        var t = (title ?? "").ToLowerInvariant();
+                        bool Has(params string[] ks) => ks.Any(k => t.Contains(k));
+                        if (Has("advanced", "animation", "seo", "developer", "custom code", "schema")) return "Advanced";
+                        if (Has("style", "background", "design", "colour", "color", "appearance", "spacing", "theme", "shadow")) return "Style";
+                        if (Has("layout", "height", "column", "align", "grid", "container", "width", "position", "size")) return "Layout";
+                        return "Content";
+                    }
+                    var __bucketOrder = new[] { "Content", "Style", "Layout", "Advanced" };
+                    var __grouped = new List<(string Title, bool Advanced, List<System.Reflection.PropertyInfo> Props)>();
+                    foreach (var __bn in __bucketOrder)
+                    {
+                        var __srcs = sections.Where(s => Bucket(s.Title) == __bn).ToList();
+                        if (__srcs.Count == 0) continue;
+                        var __props = __srcs.SelectMany(s => s.Props).ToList();
+                        var __adv = __bn == "Advanced" || __srcs.Any(s => s.Advanced);
+                        __grouped.Add((__bn, __adv, __props));
+                    }
+                    sections = __grouped;
+
+                    var anyAdvanced = sections.Any(s => s.Advanced);
+                }
+                @if (anyAdvanced)
                 {
+                    <div data-modebar="@editorUid" class="flex items-center justify-end gap-2 mb-3">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">View</span>
+                        <div class="inline-flex border border-gray-200 rounded-lg overflow-hidden text-[10px] font-bold">
+                            <button type="button" onclick="setEditorMode('@editorUid','simple',this)" class="ed-mode px-3 py-1 bg-indigo-600 text-white">Simple</button>
+                            <button type="button" onclick="setEditorMode('@editorUid','advanced',this)" class="ed-mode px-3 py-1 text-gray-600">Advanced</button>
+                        </div>
+                    </div>
+                }
+
+                @for (int __si = 0; __si < sections.Count; __si++)
+                {
+                    var __sec = sections[__si];
+                    var __open = __si == 0;
+                    <div class="block-section border border-gray-100 rounded-xl mb-3 bg-white/60" data-editor="@editorUid" data-advanced="@(__sec.Advanced ? "true" : "false")" style="@(__sec.Advanced ? "display:none" : "")">
+                        <button type="button" onclick="toggleSection(this)" class="w-full flex items-center justify-between px-4 py-2.5 text-left">
+                            <span class="text-[11px] font-black uppercase tracking-widest text-gray-600">@__sec.Title</span>
+                            <span class="flex items-center gap-2">
+                                @if (!__open)
+                                {
+                                    <span class="text-[10px] font-medium normal-case tracking-normal text-gray-400">@__sec.Props.Count settings</span>
+                                }
+                                <i class="fas fa-chevron-@(__open ? "down" : "right") text-gray-400 text-xs"></i>
+                            </span>
+                        </button>
+                        <div class="section-body grid grid-cols-1 md:grid-cols-2 gap-4 px-4 pb-4 @(__open ? "" : "hidden")">
+                            @foreach (var prop in __sec.Props)
+                            {
                     var fieldAttr = prop.GetCustomAttribute<FieldAttribute>();
                     var label = fieldAttr?.Title ?? prop.Name;
+                    // Help text for the "?" hover tooltip: the field's own Description, or a
+                    // plain-language fallback for common style concepts (padding, margin, …).
+                    var __help = fieldAttr?.Description ?? "";
+                    if (string.IsNullOrEmpty(__help))
+                    {
+                        var __k = (prop.Name + " " + label).ToLowerInvariant();
+                        if (__k.Contains("padding"))       __help = "Padding: the space inside the box, between its border and the content.";
+                        else if (__k.Contains("margin"))    __help = "Margin: the space outside the box, separating it from other elements.";
+                        else if (__k.Contains("radius"))    __help = "Border radius: how rounded the corners are — 0 is square, higher is rounder.";
+                        else if (__k.Contains("gap"))       __help = "Gap: the space between items in a row or grid.";
+                        else if (__k.Contains("weight"))    __help = "Font weight: how bold the text is — 400 is normal, 700 is bold.";
+                        else if (__k.Contains("opacity"))   __help = "Opacity: transparency, from 0 (invisible) to 1 (solid).";
+                        else if (__k.Contains("shadow"))    __help = "Box shadow: a soft shadow drawn behind the element.";
+                        else if (__k.Contains("gradient"))  __help = "A CSS gradient — a smooth blend between two or more colors.";
+                    }
                     string currentVal = "";
 
                     if (currentData.TryGetValue(prop.Name, out var element))
@@ -118,8 +240,82 @@
                         continue;
                     }
 
-                    @* MarkdownField ocupa toda la fila *@
-                    @if (prop.PropertyType == typeof(MarkdownField))
+                    @* The spacing box draws padding + margin together, so skip BlockMargin —
+                       it is rendered inside the BlockPadding branch below. *@
+                    @if (prop.Name == "BlockMargin")
+                    {
+                        continue;
+                    }
+
+                    @* ── SPACING BOX (BlockPadding + BlockMargin, click-an-edge) ── *@
+                    @if (prop.Name == "BlockPadding")
+                    {
+                        string __marCss = "";
+                        if (currentData.TryGetValue("BlockMargin", out var __mEl) && __mEl.ValueKind == JsonValueKind.Object && __mEl.TryGetProperty("Value", out var __mvProp))
+                            __marCss = __mvProp.GetString() ?? "";
+                        var __p = ParseBox(currentVal);
+                        var __m = ParseBox(__marCss);
+                        var __spId = "sp-" + Model.Id.ToString("N").Substring(0, 8);
+                        var __spUnits = new[] { "px", "rem", "em", "%" };
+                        string EdgeStyle(string where)
+                        {
+                            var s = "position:absolute;width:44px;height:22px;text-align:center;border-radius:6px;font-size:11px;border:1px solid #cbd5e1;background:#fff;color:#334155;outline:none;z-index:5;";
+                            return s + where switch
+                            {
+                                "top" => "top:-11px;left:50%;margin-left:-22px;",
+                                "bottom" => "bottom:-11px;left:50%;margin-left:-22px;",
+                                "left" => "left:-22px;top:50%;margin-top:-11px;",
+                                "right" => "right:-22px;top:50%;margin-top:-11px;",
+                                _ => ""
+                            };
+                        }
+                        <div class="col-span-1 md:col-span-2" data-spacing="@__spId">
+                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">Padding &amp; margin <span class="text-gray-400 normal-case font-normal">— click an edge to set it</span></label>
+                            <div class="flex flex-wrap items-start gap-5 mt-2">
+                                <div class="relative" style="width:300px" onmouseover="brixSpacingHelp('@__spId','margin')">
+                                    <div class="relative rounded-xl border border-dashed border-amber-300 bg-amber-50/60 pt-7 pb-7 px-7">
+                                        <span class="absolute left-2 top-1 text-[9px] uppercase tracking-wider text-amber-500">margin</span>
+                                        <input class="edge-input" type="number" placeholder="0" value="@__m.Top"    data-side="m-top"    aria-label="Margin top"    onfocus="brixSpacingHelp('@__spId','margin')"  oninput="brixSpacing('@__spId')" style="@EdgeStyle("top")" />
+                                        <input class="edge-input" type="number" placeholder="0" value="@__m.Right"  data-side="m-right"  aria-label="Margin right"  onfocus="brixSpacingHelp('@__spId','margin')"  oninput="brixSpacing('@__spId')" style="@EdgeStyle("right")" />
+                                        <input class="edge-input" type="number" placeholder="0" value="@__m.Bottom" data-side="m-bottom" aria-label="Margin bottom" onfocus="brixSpacingHelp('@__spId','margin')"  oninput="brixSpacing('@__spId')" style="@EdgeStyle("bottom")" />
+                                        <input class="edge-input" type="number" placeholder="0" value="@__m.Left"   data-side="m-left"   aria-label="Margin left"   onfocus="brixSpacingHelp('@__spId','margin')"  oninput="brixSpacing('@__spId')" style="@EdgeStyle("left")" />
+                                        <div class="relative rounded-lg border border-blue-300 bg-blue-50 pt-7 pb-7 px-7" onmouseover="event.stopPropagation(); brixSpacingHelp('@__spId','padding')">
+                                            <span class="absolute left-2 top-1 text-[9px] uppercase tracking-wider text-blue-500">padding</span>
+                                            <input class="edge-input" type="number" placeholder="0" value="@__p.Top"    data-side="p-top"    aria-label="Padding top"    onfocus="brixSpacingHelp('@__spId','padding')" oninput="brixSpacing('@__spId')" style="@EdgeStyle("top")" />
+                                            <input class="edge-input" type="number" placeholder="0" value="@__p.Right"  data-side="p-right"  aria-label="Padding right"  onfocus="brixSpacingHelp('@__spId','padding')" oninput="brixSpacing('@__spId')" style="@EdgeStyle("right")" />
+                                            <input class="edge-input" type="number" placeholder="0" value="@__p.Bottom" data-side="p-bottom" aria-label="Padding bottom" onfocus="brixSpacingHelp('@__spId','padding')" oninput="brixSpacing('@__spId')" style="@EdgeStyle("bottom")" />
+                                            <input class="edge-input" type="number" placeholder="0" value="@__p.Left"   data-side="p-left"   aria-label="Padding left"   onfocus="brixSpacingHelp('@__spId','padding')" oninput="brixSpacing('@__spId')" style="@EdgeStyle("left")" />
+                                            <div class="rounded-md bg-gray-100 text-center text-[10px] text-gray-500 py-2">content</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3 mt-3 text-[10px] text-gray-500">
+                                        <label class="flex items-center gap-1">margin
+                                            <select data-unit="m" onchange="brixSpacing('@__spId')" class="border border-gray-200 rounded px-1 py-0.5 bg-white">
+                                                @foreach (var __u in __spUnits) { <option value="@__u" selected="@(__u == __m.Unit)">@__u</option> }
+                                            </select>
+                                        </label>
+                                        <label class="flex items-center gap-1">padding
+                                            <select data-unit="p" onchange="brixSpacing('@__spId')" class="border border-gray-200 rounded px-1 py-0.5 bg-white">
+                                                @foreach (var __u in __spUnits) { <option value="@__u" selected="@(__u == __p.Unit)">@__u</option> }
+                                            </select>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-[180px] rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                    <div data-help-title class="text-sm font-bold text-gray-800 mb-1">Padding</div>
+                                    <p data-help-body class="text-xs leading-relaxed text-gray-500">The space <em>inside</em> the box, between its edge and the content. Bigger padding = more air around the text.</p>
+                                    <div class="mt-3 pt-3 border-t border-gray-200 text-[11px] font-mono text-gray-400">
+                                        <div data-preview="margin">margin: @(string.IsNullOrEmpty(__marCss) ? "(none)" : __marCss)</div>
+                                        <div data-preview="padding">padding: @(string.IsNullOrEmpty(currentVal) ? "(none)" : currentVal)</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="values[BlockPadding].Value" data-out="padding" value="@currentVal" />
+                            <input type="hidden" name="values[BlockMargin].Value"  data-out="margin"  value="@__marCss" />
+                        </div>
+                    }
+                    @* MarkdownField spans the full row — direct child of the grid *@
+                    else if (prop.PropertyType == typeof(MarkdownField))
                     {
                         var uniqueId = "editor_" + Model.Id.ToString().Replace("-", "").Substring(0, 8) + "_" + prop.Name;
                         <div class="col-span-1 md:col-span-2 flex flex-col gap-1.5">
@@ -133,7 +329,7 @@
                                     var TINY_ID = '@uniqueId';
                                     var TINY_SRC = '/lib/tinymce/js/tinymce/tinymce.min.js';
                                     function initTiny() {
-                                        if (!window.tinymce) { console.error('TinyMCE no cargado'); return; }
+                                        if (!window.tinymce) { console.error('TinyMCE not loaded'); return; }
                                         if (tinymce.get(TINY_ID)) tinymce.get(TINY_ID).destroy();
                                         tinymce.init({
                                             selector: '#' + TINY_ID,
@@ -173,46 +369,67 @@
                     }
                     else
                     {
-                        @* TextAreaField always spans full width for readability *@
                         var colSpan = prop.PropertyType == typeof(TextAreaField) ? "col-span-1 md:col-span-2" : "";
                         <div class="flex flex-col gap-1.5 @colSpan">
-                            @* No mostrar label para BoolField *@
+                            @* No label for BoolField (it has its own inline label) *@
                             @if (prop.PropertyType != typeof(BoolField))
                             {
-                                <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
-                                @if (!string.IsNullOrEmpty(fieldAttr?.Description))
-                                {
-                                    <p class="text-[10px] text-blue-500 bg-blue-50 border border-blue-100 rounded px-2 py-1 leading-snug -mt-0.5">
-                                        <i class="fas fa-circle-info mr-1"></i>@fieldAttr.Description
-                                    </p>
-                                }
+                                <label class="flex items-center text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                                    <span>@label</span>
+                                    @if (!string.IsNullOrEmpty(__help))
+                                    {
+                                        @* Self-contained help tooltip — does NOT use Tailwind's hidden/group-hover,
+                                           which silently fail to hide the text when the Tailwind CDN is slow/blocked
+                                           (that is what made every description show at once). CSS lives in #brix-help-style. *@
+                                        <span class="brix-help">
+                                            <i class="fas fa-circle-question text-gray-300 hover:text-gray-500 cursor-help"></i>
+                                            <span class="brix-tip">@__help</span>
+                                        </span>
+                                    }
+                                </label>
                             }
 
-                            @* -- COLOR FIELD -- *@
+                            @* ── COLOR FIELD ── *@
                             @if (prop.PropertyType == typeof(ColorField))
                             {
-                                <div class="flex gap-2">
-                                    <input type="color"
-                                           id="color-@Model.Id-@prop.Name"
-                                           value="@(string.IsNullOrEmpty(currentVal) ? "#000000" : currentVal)"
-                                           onchange="document.getElementById('hidden-@Model.Id-@prop.Name').value = this.value"
-                                           class="h-9 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer" />
-                                    <input type="hidden"
-                                           id="hidden-@Model.Id-@prop.Name"
-                                           name="values[@prop.Name].Value"
-                                           value="@currentVal" />
-                                    <input type="text"
-                                           value="@currentVal"
-                                           oninput="document.getElementById('hidden-@Model.Id-@prop.Name').value = this.value; document.getElementById('color-@Model.Id-@prop.Name').value = this.value"
-                                           class="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg font-mono" />
+                                // The native colour input only accepts #rrggbb. Feed it a valid hex
+                                // (fallback when the saved value is rgba()/named) — the real value
+                                // stays in the text box + hidden field.
+                                var __hex = System.Text.RegularExpressions.Regex.IsMatch(currentVal ?? "", "^#[0-9A-Fa-f]{6}$") ? currentVal : "#000000";
+                                <div>
+                                    <div class="flex gap-2">
+                                        <input type="color"
+                                               id="color-@Model.Id-@prop.Name"
+                                               value="@__hex"
+                                               onchange="document.getElementById('hidden-@Model.Id-@prop.Name').value = this.value"
+                                               class="h-9 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer" />
+                                        <input type="hidden"
+                                               id="hidden-@Model.Id-@prop.Name"
+                                               name="values[@prop.Name].Value"
+                                               value="@currentVal" />
+                                        <input type="text"
+                                               value="@currentVal"
+                                               oninput="document.getElementById('hidden-@Model.Id-@prop.Name').value = this.value; document.getElementById('color-@Model.Id-@prop.Name').value = this.value"
+                                               class="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg font-mono" />
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-2 mt-2" title="Theme colors">
+                                        @foreach (var __sw in themePalette)
+                                        {
+                                            var __on = string.Equals(currentVal, __sw, StringComparison.OrdinalIgnoreCase);
+                                            <button type="button" title="@__sw" aria-label="Use color @__sw" onclick="pickColor('@Model.Id','@prop.Name','@__sw')"
+                                                    style="background-color:@__sw"
+                                                    class="w-7 h-7 rounded-full ring-2 ring-offset-2 ring-offset-white @(__on ? "ring-gray-800" : "ring-transparent") border border-gray-200 hover:scale-110 transition-transform"></button>
+                                        }
+                                    </div>
                                 </div>
                             }
-                            @* -- IMAGE FIELD -- *@
+                            @* ── IMAGE FIELD ── *@
                             else if (prop.PropertyType == typeof(ImageField))
                             {
                                 var imgWrapperId = $"imgwrap-{Model.Id.ToString().Replace("-","").Substring(0,8)}-{prop.Name}";
                                 var imgInputId   = $"img-{Model.Id}-{prop.Name}";
 
+                                // Read saved Width/Height/ObjectFit from JSON
                                 string imgWidth = "", imgHeight = "", imgFit = "cover";
                                 if (currentData.TryGetValue(prop.Name, out var imgEl) && imgEl.ValueKind == JsonValueKind.Object)
                                 {
@@ -236,14 +453,14 @@
                                     <button type="button"
                                             onclick="clearImageField('@imgInputId', '@imgWrapperId')"
                                             class="bg-red-100 hover:bg-red-500 text-red-500 hover:text-white w-9 flex items-center justify-center rounded-lg border border-red-200 transition"
-                                            title="Eliminar imagen">
+                                            title="Remove image">
                                         <i class="fas fa-times text-xs"></i>
                                     </button>
                                 </div>
                                 @* Size controls *@
                                 <div class="flex gap-2 mt-1.5">
                                     <div class="flex-1">
-                                        <label class="text-[9px] text-gray-400 uppercase">Ancho (px)</label>
+                                        <label class="text-[9px] text-gray-400 uppercase">Width (px)</label>
                                         <input type="number"
                                                name="values[@prop.Name].Width"
                                                value="@(string.IsNullOrEmpty(imgWidth) ? "" : imgWidth.Replace("px",""))"
@@ -252,7 +469,7 @@
                                                class="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
                                     </div>
                                     <div class="flex-1">
-                                        <label class="text-[9px] text-gray-400 uppercase">Alto (px)</label>
+                                        <label class="text-[9px] text-gray-400 uppercase">Height (px)</label>
                                         <input type="number"
                                                name="values[@prop.Name].Height"
                                                value="@(string.IsNullOrEmpty(imgHeight) ? "" : imgHeight.Replace("px",""))"
@@ -261,7 +478,7 @@
                                                class="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
                                     </div>
                                     <div class="flex-1">
-                                        <label class="text-[9px] text-gray-400 uppercase">Ajuste</label>
+                                        <label class="text-[9px] text-gray-400 uppercase">Fit</label>
                                         <select name="values[@prop.Name].ObjectFit"
                                                 class="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white cursor-pointer">
                                             <option value="cover"   selected="@(imgFit == "cover")">Cover</option>
@@ -279,7 +496,7 @@
                                     </div>
                                 </div>
                             }
-                            @* -- TEXTAREA FIELD -- *@
+                            @* ── TEXTAREA FIELD ── *@
                             else if (prop.PropertyType == typeof(TextAreaField))
                             {
                                 <textarea name="values[@prop.Name].Value"
@@ -287,7 +504,7 @@
                                           placeholder="@(fieldAttr?.Placeholder ?? "")"
                                           class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg font-mono leading-relaxed">@currentVal</textarea>
                             }
-                            @* -- BOOL FIELD -- *@
+                            @* ── BOOL FIELD ── *@
                             else if (prop.PropertyType == typeof(BoolField))
                             {
                                 var isChecked = currentVal == "true";
@@ -303,7 +520,7 @@
                                     <label for="bool-@Model.Id-@prop.Name" class="text-[10px] text-gray-600">@label</label>
                                 </div>
                             }
-                            @* -- SELECT FIELD -- *@
+                            @* ── SELECT FIELD ── *@
                             else if (prop.PropertyType.IsGenericType &&
                                      prop.PropertyType.GetGenericTypeDefinition() == typeof(SelectField<>))
                             {
@@ -324,7 +541,7 @@
                                     }
                                 </select>
                             }
-                            @* -- NUMBER FIELD -- *@
+                            @* ── NUMBER FIELD ── *@
                             else if (prop.PropertyType == typeof(NumberField))
                             {
                                 <input type="number"
@@ -333,21 +550,17 @@
                                        placeholder="@(fieldAttr?.Placeholder ?? "")"
                                        class="px-3 py-2 text-xs border border-gray-200 rounded-lg w-full" />
                             }
-                            @* -- LIST FIELD (Menu Items / Social Media) -- *@
+                            @* ── LIST FIELD (Menu Items / Social Media) ── *@
                             else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(ListField<>))
                             {
                                 var listUniqueId = "list-" + Model.Id.ToString().Replace("-", "").Substring(0, 8) + "-" + prop.Name;
                                 var innerType = prop.PropertyType.GetGenericArguments()[0];
                                 var isMenuItem = innerType.Name == "MenuItemField";
                                 var isSocialMedia = innerType.Name == "SocialMediaField";
-                                var isProductSelection = innerType.Name == "ProductSelectionField";
 
                                 <div class="col-span-1 md:col-span-2">
                                     <div class="flex justify-between items-center mb-2">
-                                        @if (!isProductSelection)
-                                        {
-                                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
-                                        }
+                                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">@label</label>
                                         <button type="button"
                                                 onclick="addListItem('@listUniqueId', '@innerType.Name')"
                                                 class="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600">
@@ -439,20 +652,6 @@
                                                             </div>
                                                         </div>
                                                     }
-                                                    else if (isProductSelection)
-                                                    {
-                                                        var prodId = item.ContainsKey("ProductId") ? item["ProductId"]?.ToString() : "";
-                                                        var prodName = item.ContainsKey("ProductName") ? item["ProductName"]?.ToString() : "Producto";
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="flex-1 text-xs text-gray-600 truncate">@prodName</span>
-                                                            <input type="hidden"
-                                                                   name="values[@prop.Name].Items[@index].ProductId"
-                                                                   value="@prodId" />
-                                                            <input type="hidden"
-                                                                   name="values[@prop.Name].Items[@index].ProductName"
-                                                                   value="@prodName" />
-                                                        </div>
-                                                    }
                                                 </div>
                                                 index++;
                                             }
@@ -462,56 +661,14 @@
                                            id="@(listUniqueId)-json"
                                            name="values[@prop.Name].Value"
                                            value="@currentVal" />
-                                    <script>
-                                        function addListItem(listId, itemType) {
-                                            const container = document.getElementById(listId);
-                                            const index = container.children.length;
-                                            const types = itemType.toLowerCase();
-
-                                            let html = '<div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative group">' +
-                                                '<button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>';
-
-                                            if (types.includes('menu')) {
-                                                html += '<div class="grid grid-cols-2 gap-2">' +
-                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Is Custom URL</label>' +
-                                                    '<input type="checkbox" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].IsCustomUrl" value="true" class="w-4 h-4" /></div>' +
-                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Custom Text</label>' +
-                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].CustomText" value="" class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
-                                                    '<div class="col-span-2"><label class="text-[9px] text-gray-400 uppercase">Custom URL / Page Slug</label>' +
-                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].CustomUrl" value="" placeholder="/page-slug or https://..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
-                                                    '</div>';
-                                            } else if (types.includes('social')) {
-                                                html += '<div class="grid grid-cols-2 gap-2">' +
-                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Platform</label>' +
-                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].Platform" value="" placeholder="facebook, instagram..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
-                                                    '<div><label class="text-[9px] text-gray-400 uppercase">URL</label>' +
-                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].Url" value="" placeholder="https://..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
-                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Icon Type</label>' +
-                                                    '<select name="values[' + listId.replace('list-', '') + '].Items[' + index + '].IconType" class="w-full px-2 py-1 text-xs border border-gray-200 rounded">' +
-                                                    '<option value="class">CSS Class</option><option value="image">Image</option></select></div>' +
-                                                    '<div><label class="text-[9px] text-gray-400 uppercase">Icon Class/URL</label>' +
-                                                    '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].IconClass" value="" placeholder="fab fa-facebook or /uploads/..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
-                                                    '</div>';
-                                            } else if (types.includes('product')) {
-                                                html += '<p class="text-xs text-gray-500 mb-2">Haz clic para seleccionar productos</p>' +
-                                                    '<button type="button" onclick="openProductSelector(\'' + listId + '\')" ' +
-                                                    'class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 w-full">' +
-                                                    '<i class="fas fa-plus mr-1"></i> Seleccionar Productos' +
-                                                    '</button>';
-                                            } else {
-                                                html += '<input type="text" name="values[' + listId.replace('list-', '') + '].Items[' + index + '].Value" value="" class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />';
-                                            }
-
-                                            html += '</div>';
-                                            container.insertAdjacentHTML('beforeend', html);
-                                        }
-                                    </script>
                                 </div>
                             }
-                            @* -- PDF SELECT FIELD (checkboxes from ingested docs) -- *@
+                            @* ── PDF SELECT FIELD (checkboxes from ingested docs) ── *@
                             else if (prop.PropertyType == typeof(PdfSelectField))
                             {
-                                var availablePdfs = await SemanticSearchSvc.GetAllDocumentIdsAsync();
+                                var availablePdfs = (await SemanticSearchSvc.GetAllDocumentIdsAsync())
+                                    .Where(d => d.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                    .ToList();
                                 var selectedSet = (currentVal ?? "")
                                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -547,28 +704,233 @@
                                     }
                                 </div>
                             }
-                            @* -- DEFAULT TEXT FIELD -- *@
+                            @* ── DEFAULT TEXT FIELD (smart enum / alignment / length controls) ── *@
                             else
                             {
-                                <input type="text"
-                                       name="values[@prop.Name].Value"
-                                       value="@currentVal"
-                                       placeholder="@(fieldAttr?.Placeholder ?? "")"
-                                       class="px-3 py-2 text-xs border border-gray-200 rounded-lg" />
+                                var __ph = fieldAttr?.Placeholder ?? "";
+                                // A placeholder like "left | center | right" is really an enum typed as text.
+                                // Render it as a dropdown (or alignment icon buttons) — unless the stored
+                                // value is a custom one that isn't in the list (then keep the text box).
+                                var __opts = __ph.Contains('|')
+                                    ? __ph.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList()
+                                    : new List<string>();
+                                var __isEnum = __opts.Count >= 2 && __opts.All(o => !o.Contains(' ') && o.Length <= 16);
+                                var __curInOpts = string.IsNullOrEmpty(currentVal) || __opts.Any(o => string.Equals(o, currentVal, StringComparison.OrdinalIgnoreCase));
+                                var __useEnum = __isEnum && __curInOpts;
+                                var __isAlign = __useEnum && __opts.All(o => o == "left" || o == "center" || o == "right");
+
+                                // CSS length fields ("2rem", "48px", "100%") → a number input + unit picker.
+                                var __lenFull = new System.Text.RegularExpressions.Regex(@"^\s*(\d+(?:\.\d+)?)\s*(px|rem|em|%|vh|vw|pt)\s*$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                var __lenAny  = new System.Text.RegularExpressions.Regex(@"(\d+(?:\.\d+)?)\s*(px|rem|em|%|vh|vw|pt)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                var __mCur = __lenFull.Match(currentVal ?? "");
+                                var __mPh  = __lenAny.Match(__ph);
+                                var __useLen = !__useEnum && (__mCur.Success || (string.IsNullOrEmpty(currentVal) && __mPh.Success));
+                                var __lenNum  = __mCur.Success ? __mCur.Groups[1].Value : "";
+                                var __lenUnit = __mCur.Success ? __mCur.Groups[2].Value.ToLowerInvariant() : (__mPh.Success ? __mPh.Groups[2].Value.ToLowerInvariant() : "px");
+
+                                if (__isAlign)
+                                {
+                                    <div class="inline-flex border border-gray-200 rounded-lg overflow-hidden" data-align="@prop.Name">
+                                        <input type="hidden" name="values[@prop.Name].Value" value="@currentVal" />
+                                        @foreach (var __o in new[] { "left", "center", "right" })
+                                        {
+                                            var __on = string.Equals(currentVal, __o, StringComparison.OrdinalIgnoreCase);
+                                            <button type="button" onclick="setAlign(this,'@__o')" aria-label="Align @__o"
+                                                    class="align-btn px-3 py-2 text-xs @(__on ? "bg-indigo-600 text-white" : "text-gray-500")">
+                                                <i class="fas fa-align-@__o"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                else if (__useEnum)
+                                {
+                                    <select name="values[@prop.Name].Value" class="px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white">
+                                        @foreach (var __o in __opts)
+                                        {
+                                            <option value="@__o" selected="@(string.Equals(currentVal, __o, StringComparison.OrdinalIgnoreCase))">@__o</option>
+                                        }
+                                    </select>
+                                }
+                                else if (__useLen)
+                                {
+                                    var __units = new[] { "px", "rem", "em", "%", "vh", "vw", "pt" };
+                                    <div class="inline-flex items-center gap-1" data-len="@prop.Name">
+                                        <input type="hidden" name="values[@prop.Name].Value" value="@currentVal" />
+                                        <input type="number" step="any" value="@__lenNum" oninput="setLen(this)" aria-label="@label value"
+                                               class="len-num w-20 px-2 py-2 text-xs border border-gray-200 rounded-lg" />
+                                        <select onchange="setLen(this)" aria-label="@label unit" class="len-unit px-2 py-2 text-xs border border-gray-200 rounded-lg bg-white">
+                                            @foreach (var __u in __units)
+                                            {
+                                                <option value="@__u" selected="@(string.Equals(__u, __lenUnit, StringComparison.OrdinalIgnoreCase))">@__u</option>
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <input type="text"
+                                           name="values[@prop.Name].Value"
+                                           value="@currentVal"
+                                           placeholder="@__ph"
+                                           class="px-3 py-2 text-xs border border-gray-200 rounded-lg" />
+                                }
                             }
                         </div>
                     }
+                            }
+                        </div>
+                    </div>
                 }
 
-                <div class="md:col-span-2 flex justify-end pt-2">
+                <div class="flex justify-end pt-2">
                     <button type="submit"
                             class="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
                         Save Changes
                     </button>
                 </div>
-
-            </div>
     </form>
+
+    <script>
+    // This partial renders once per block, so guard the shared helpers behind a flag —
+    // declaring let/const/function at top level here would collide ("already declared")
+    // on the second block. Everything below is assigned to window.* exactly once.
+    if (!window.__brixEditorSections) {
+        window.__brixEditorSections = true;
+        // Inject the help-tooltip CSS once. Self-contained so it never depends on the Tailwind CDN.
+        if (!document.getElementById('brix-help-style')) {
+            var __hs = document.createElement('style');
+            __hs.id = 'brix-help-style';
+            __hs.textContent = '.brix-help{position:relative;display:inline-block;margin-left:6px;vertical-align:middle}' +
+                '.brix-help .brix-tip{display:none;position:absolute;z-index:50;left:0;top:18px;width:220px;padding:8px;font-size:10px;line-height:1.4;color:#fff;background:#1f2937;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.2);text-transform:none;font-weight:400;white-space:normal}' +
+                '.brix-help:hover .brix-tip{display:block}';
+            document.head.appendChild(__hs);
+        }
+        window.toggleSection = function (btn) {
+            var body = btn.nextElementSibling;
+            var chev = btn.querySelector('i');
+            var hidden = body.classList.toggle('hidden');
+            if (chev) { chev.classList.toggle('fa-chevron-down', !hidden); chev.classList.toggle('fa-chevron-right', hidden); }
+        };
+        window.setEditorMode = function (uid, mode, btn) {
+            var bar = btn.closest('[data-modebar]');
+            if (bar) bar.querySelectorAll('.ed-mode').forEach(function (b) {
+                var on = b === btn;
+                b.classList.toggle('bg-indigo-600', on);
+                b.classList.toggle('text-white', on);
+                b.classList.toggle('text-gray-600', !on);
+            });
+            document.querySelectorAll('.block-section[data-editor="' + uid + '"][data-advanced="true"]').forEach(function (s) {
+                s.style.display = (mode === 'advanced') ? '' : 'none';
+            });
+        };
+        window.setAlign = function (btn, val) {
+            var wrap = btn.closest('[data-align]');
+            if (!wrap) return;
+            var hidden = wrap.querySelector('input[type=hidden]');
+            if (hidden) hidden.value = val;
+            wrap.querySelectorAll('.align-btn').forEach(function (b) {
+                var on = b === btn;
+                b.classList.toggle('bg-indigo-600', on);
+                b.classList.toggle('text-white', on);
+                b.classList.toggle('text-gray-500', !on);
+            });
+        };
+        window.setLen = function (el) {
+            var wrap = el.closest('[data-len]');
+            if (!wrap) return;
+            var num = wrap.querySelector('.len-num');
+            var unit = wrap.querySelector('.len-unit');
+            var hidden = wrap.querySelector('input[type=hidden]');
+            if (hidden) hidden.value = (num.value !== '' ? (num.value + unit.value) : '');
+        };
+        window.pickColor = function (bid, prop, hex) {
+            var h = document.getElementById('hidden-' + bid + '-' + prop);
+            var c = document.getElementById('color-' + bid + '-' + prop);
+            if (c) c.value = hex;
+            if (h) {
+                h.value = hex;
+                var txt = h.parentElement.querySelector('input[type=text]');
+                if (txt) txt.value = hex;
+            }
+        };
+        // ── Spacing box: turn the 4+4 edge inputs into CSS shorthand on the two hidden fields ──
+        window.brixSpacing = function (id) {
+            var root = document.querySelector('[data-spacing="' + id + '"]');
+            if (!root) return;
+            function build(group) {
+                var unit = (root.querySelector('[data-unit="' + group + '"]') || {}).value || 'px';
+                var sides = ['top', 'right', 'bottom', 'left'].map(function (s) {
+                    var el = root.querySelector('[data-side="' + group + '-' + s + '"]');
+                    return el ? el.value.trim() : '';
+                });
+                if (sides.every(function (x) { return x === ''; })) return '';
+                var n = sides.map(function (x) { return x === '' ? '0' : x; });
+                var shorthand;
+                if (n[0] === n[1] && n[1] === n[2] && n[2] === n[3]) shorthand = [n[0]];
+                else if (n[0] === n[2] && n[1] === n[3]) shorthand = [n[0], n[1]];
+                else shorthand = n;
+                return shorthand.map(function (t) { return t + unit; }).join(' ');
+            }
+            var pad = build('p'), mar = build('m');
+            var po = root.querySelector('[data-out="padding"]'); if (po) po.value = pad;
+            var mo = root.querySelector('[data-out="margin"]');  if (mo) mo.value = mar;
+            var pp = root.querySelector('[data-preview="padding"]'); if (pp) pp.textContent = 'padding: ' + (pad || '(none)');
+            var mp = root.querySelector('[data-preview="margin"]');  if (mp) mp.textContent = 'margin: ' + (mar || '(none)');
+        };
+        window.brixSpacingHelp = function (id, kind) {
+            var root = document.querySelector('[data-spacing="' + id + '"]');
+            if (!root) return;
+            var t = root.querySelector('[data-help-title]');
+            var b = root.querySelector('[data-help-body]');
+            if (!t || !b) return;
+            if (kind === 'margin') {
+                t.textContent = 'Margin';
+                b.innerHTML = 'The space <em>outside</em> the box, separating it from other elements above and below.';
+            } else {
+                t.textContent = 'Padding';
+                b.innerHTML = 'The space <em>inside</em> the box, between its edge and the content. Bigger padding = more air around the text.';
+            }
+        };
+        // ── List items (Menu / Social) add-row helper ──
+        window.addListItem = function (listId, itemType) {
+            var container = document.getElementById(listId);
+            var index = container.children.length;
+            var types = itemType.toLowerCase();
+            var name = listId.replace('list-', '');
+
+            var html = '<div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative group">' +
+                '<button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>';
+
+            if (types.includes('menu')) {
+                html += '<div class="grid grid-cols-2 gap-2">' +
+                    '<div><label class="text-[9px] text-gray-400 uppercase">Is Custom URL</label>' +
+                    '<input type="checkbox" name="values[' + name + '].Items[' + index + '].IsCustomUrl" value="true" class="w-4 h-4" /></div>' +
+                    '<div><label class="text-[9px] text-gray-400 uppercase">Custom Text</label>' +
+                    '<input type="text" name="values[' + name + '].Items[' + index + '].CustomText" value="" class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                    '<div class="col-span-2"><label class="text-[9px] text-gray-400 uppercase">Custom URL / Page Slug</label>' +
+                    '<input type="text" name="values[' + name + '].Items[' + index + '].CustomUrl" value="" placeholder="/page-slug or https://..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                    '</div>';
+            } else if (types.includes('social')) {
+                html += '<div class="grid grid-cols-2 gap-2">' +
+                    '<div><label class="text-[9px] text-gray-400 uppercase">Platform</label>' +
+                    '<input type="text" name="values[' + name + '].Items[' + index + '].Platform" value="" placeholder="facebook, instagram..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                    '<div><label class="text-[9px] text-gray-400 uppercase">URL</label>' +
+                    '<input type="text" name="values[' + name + '].Items[' + index + '].Url" value="" placeholder="https://..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                    '<div><label class="text-[9px] text-gray-400 uppercase">Icon Type</label>' +
+                    '<select name="values[' + name + '].Items[' + index + '].IconType" class="w-full px-2 py-1 text-xs border border-gray-200 rounded">' +
+                    '<option value="class">CSS Class</option><option value="image">Image</option></select></div>' +
+                    '<div><label class="text-[9px] text-gray-400 uppercase">Icon Class/URL</label>' +
+                    '<input type="text" name="values[' + name + '].Items[' + index + '].IconClass" value="" placeholder="fab fa-facebook or /uploads/..." class="w-full px-2 py-1 text-xs border border-gray-200 rounded" /></div>' +
+                    '</div>';
+            } else {
+                html += '<input type="text" name="values[' + name + '].Items[' + index + '].Value" value="" class="w-full px-2 py-1 text-xs border border-gray-200 rounded" />';
+            }
+
+            html += '</div>';
+            container.insertAdjacentHTML('beforeend', html);
+        };
+    }
+    </script>
 
     @* CHILD BLOCKS *@
     @if (isGroup)
@@ -579,12 +941,11 @@
                 var childType = Registry.GetBlockType(child.Type);
                 var childAttr = childType?.GetCustomAttribute<BlockTypeAttribute>();
                 var childIsGroup = childType != null && typeof(BlockGroupBase).IsAssignableFrom(childType);
-                var childCollapseId = $"child-{child.Id.ToString().Replace("-", "")}";
 
                 <div x-data="{ open: false }"
                      class="rounded-2xl border @(childIsGroup ? "border-purple-200 bg-purple-50/20" : "border-gray-200 bg-white") shadow-sm overflow-hidden">
 
-                    @* Header del bloque hijo (siempre visible) *@
+                    @* Child block header (always visible) *@
                     <div class="flex items-center justify-between px-4 py-3 @(childIsGroup ? "bg-purple-50" : "bg-gray-50") border-b border-gray-100 cursor-pointer"
                          @@click="open = !open">
                         <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -601,29 +962,29 @@
                         <div class="flex items-center gap-1.5 ml-2 flex-shrink-0" @@click.stop>
                             <button onclick="executeAction('@child.PageId', '@child.Id', 'up', 'MoveBlock')"
                                     class="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-500 text-xs transition"
-                                    title="Subir">
+                                    title="Move up">
                                 <i class="fas fa-arrow-up text-xs"></i>
                             </button>
                             <button onclick="executeAction('@child.PageId', '@child.Id', 'down', 'MoveBlock')"
                                     class="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-500 text-xs transition"
-                                    title="Bajar">
+                                    title="Move down">
                                 <i class="fas fa-arrow-down text-xs"></i>
                             </button>
-                            <button onclick="if(confirm('¿Eliminar este bloque?')) executeAction('@child.PageId', '@child.Id', '', 'DeleteBlock')"
+                            <button onclick="if(confirm('Delete this block?')) executeAction('@child.PageId', '@child.Id', '', 'DeleteBlock')"
                                     class="w-7 h-7 flex items-center justify-center bg-white hover:bg-red-500 text-red-400 hover:text-white rounded-lg border border-red-200 transition"
-                                    title="Eliminar">
+                                    title="Delete">
                                 <i class="fas fa-times text-xs"></i>
                             </button>
                             <button @@click="open = !open"
                                     :class="open ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg transition"
-                                    title="Expandir / Colapsar">
+                                    title="Expand / Collapse">
                                 <i class="fas text-xs" :class="open ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                             </button>
                         </div>
                     </div>
 
-                    @* Contenido colapsable *@
+                    @* Collapsible content *@
                     <div x-show="open" x-transition:enter="transition ease-out duration-200"
                          x-transition:enter-start="opacity-0 -translate-y-1"
                          x-transition:enter-end="opacity-100 translate-y-0"
@@ -634,11 +995,11 @@
                         @await Html.PartialAsync("_BlockEditor", child)
                     </div>
 
-                    @* Hint cuando esta colapsado *@
+                    @* Hint when collapsed *@
                     <div x-show="!open"
                          @@click="open = true"
                          class="px-4 py-2 text-center text-[10px] text-gray-400 cursor-pointer hover:bg-gray-50 transition select-none">
-                        Haz clic para expandir
+                        Click to expand
                     </div>
                 </div>
             }
@@ -646,14 +1007,14 @@
             <button type="button"
                     @@click="openSelector('@Model.Id')"
                     class="w-full py-4 border-2 border-dashed border-purple-200 text-purple-400 text-[10px] font-black uppercase rounded-2xl hover:bg-purple-50 transition">
-                <i class="fas fa-plus mr-1"></i> Añadir bloque hijo
+                <i class="fas fa-plus mr-1"></i> Add child block
             </button>
         </div>
     }
 
 </div>
 
-@* -- PDF CHECKBOX HELPER -- *@
+@* ── PDF CHECKBOX HELPER ── *@
 <script>
     if (typeof updatePdfHidden === 'undefined') {
         function updatePdfHidden(hiddenId, checkbox) {
@@ -665,117 +1026,4 @@
             hidden.value = checked.join(', ');
         }
     }
-</script>
-
-@* -- MODAL SELECTOR DE PRODUCTOS -- *@
-<div id="productSelectorModal" class="fixed inset-0 bg-black/50 z-50 hidden" style="display: none;">
-    <div class="bg-white rounded-2xl w-full max-w-2xl mx-auto mt-20 p-6 max-h-[80vh] overflow-hidden flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-black text-gray-800">Seleccionar Productos</h3>
-            <button type="button" onclick="closeProductSelector()" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-
-        <input type="text" id="productSearchInput"
-               placeholder="Buscar productos..."
-               class="w-full px-4 py-2 border border-gray-200 rounded-lg mb-4"
-               onkeyup="searchProductsForSelector(this.value)" />
-
-        <div id="productSelectorList" class="flex-1 overflow-y-auto space-y-2">
-        </div>
-
-        <div class="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
-            <span class="text-xs text-gray-500">Seleccionados: <span id="selectedCount">0</span></span>
-            <div class="flex gap-2">
-                <button type="button" onclick="closeProductSelector()"
-                        class="px-4 py-2 text-xs font-black uppercase bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    Cancelar
-                </button>
-                <button type="button" onclick="confirmProductSelection()"
-                        class="px-4 py-2 text-xs font-black uppercase bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">
-                    Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-let currentSelectorListId = '';
-let selectedProducts = [];
-
-function openProductSelector(listId) {
-    currentSelectorListId = listId;
-    selectedProducts = [];
-    document.getElementById('productSelectorModal').style.display = 'flex';
-    searchProductsForSelector('');
-}
-
-function closeProductSelector() {
-    document.getElementById('productSelectorModal').style.display = 'none';
-    currentSelectorListId = '';
-    selectedProducts = [];
-}
-
-async function searchProductsForSelector(query) {
-    const container = document.getElementById('productSelectorList');
-    try {
-        const url = query.length >= 2
-            ? '/Manager/Products/ApiList?search=' + encodeURIComponent(query)
-            : '/Manager/Products/ApiList';
-        const res = await fetch(url);
-        const products = await res.json();
-
-        if (products.length === 0) {
-            container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No se encontraron productos</p>';
-            return;
-        }
-
-        container.innerHTML = products.map(p => {
-            const isSelected = selectedProducts.some(sp => sp.id === p.id);
-            return '<div class="flex items-center p-3 rounded-lg border ' +
-                   (isSelected ? 'bg-emerald-50 border-emerald-300' : 'border-gray-200 hover:bg-gray-50') +
-                   ' cursor-pointer" onclick="toggleProductSelection(\'' + p.id + '\', \'' + p.name.replace(/\'/g, "\\'") + '\', ' + p.price + ')">' +
-                   '<input type="checkbox" ' + (isSelected ? 'checked' : '') + ' class="mr-3" />' +
-                   '<img src="' + (p.image || '/images/no-image.png') + '" class="w-10 h-10 object-cover rounded mr-3" />' +
-                   '<div class="flex-1"><p class="text-xs font-black text-gray-800">' + p.name + '</p>' +
-                   '<p class="text-xs text-gray-500">' + p.price + (p.category ? ' - ' + p.category : '') + '</p></div></div>';
-        }).join('');
-    } catch(e) {
-        console.error(e);
-        container.innerHTML = '<p class="text-xs text-red-500">Error al cargar productos</p>';
-    }
-}
-
-function toggleProductSelection(id, name, price) {
-    const exists = selectedProducts.findIndex(p => p.id === id);
-    if (exists >= 0) {
-        selectedProducts.splice(exists, 1);
-    } else {
-        selectedProducts.push({ id, name, price });
-    }
-    document.getElementById('selectedCount').innerText = selectedProducts.length;
-    searchProductsForSelector(document.getElementById('productSearchInput').value);
-}
-
-function confirmProductSelection() {
-    const container = document.getElementById(currentSelectorListId);
-    if (!container) { closeProductSelector(); return; }
-
-    container.innerHTML = selectedProducts.map((p, i) =>
-        '<div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative group">' +
-        '<button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700">' +
-        '<i class="fas fa-times"></i></button>' +
-        '<div class="flex items-center gap-2">' +
-        '<span class="flex-1 text-xs text-gray-600 truncate">' + p.name + '</span>' +
-        '<input type="hidden" name="values[' + currentSelectorListId.replace('list-', '') + '.Items[' + i + '].ProductId" value="' + p.id + '" />' +
-        '<input type="hidden" name="values[' + currentSelectorListId.replace('list-', '') + '.Items[' + i + '].ProductName" value="' + p.name.replace(/"/g, '&quot;') + '" />' +
-        '</div></div>'
-    ).join('');
-
-    document.getElementById(currentSelectorListId + '-json').value = JSON.stringify(selectedProducts.map(p => ({ ProductId: p.id, ProductName: p.name })));
-
-    closeProductSelector();
-}
 </script>

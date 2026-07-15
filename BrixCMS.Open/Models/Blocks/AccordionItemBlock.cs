@@ -4,7 +4,7 @@ using BrixCMS.Open.Data.Fields;
 namespace BrixCMS.Open.Models.Blocks
 {
     [BlockType(Name = "Accordion Item", Category = "Interactive", Icon = "fas fa-chevron-down",
-        Description = "A single accordion item (question + answer). Use inside an Accordion block.")]
+        Description = "A single accordion item (question + answer). Use inside an Accordion block.", Child = true)]
     public class AccordionItemBlock : BlockBase
     {
         [Field(Title = "Pregunta", Placeholder = "Escribe la pregunta")]

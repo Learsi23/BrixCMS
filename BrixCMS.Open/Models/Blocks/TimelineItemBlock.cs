@@ -4,7 +4,7 @@ using BrixCMS.Open.Data.Fields;
 namespace BrixCMS.Open.Models.Blocks
 {
     [BlockType(Name = "Timeline Item", Category = "Content", Icon = "fas fa-circle",
-        Description = "A step or milestone in the timeline. Use within a Timeline block.")]
+        Description = "A step or milestone in the timeline. Use within a Timeline block.", Child = true)]
     public class TimelineItemBlock : BlockBase
     {
         [Field(Title = "Step Label / Number", Description = "Label or number for the step, e.g., '01' or 'Step 1'.", Placeholder = "e.g., 01 or Step 1")]

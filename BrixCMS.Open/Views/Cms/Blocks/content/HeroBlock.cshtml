@@ -3,6 +3,10 @@
 @model HeroBlock
 
 @{
+    // Live-edit hook: which raw DB block this render came from (null outside the editor preview) —
+    // used to wire double-click-to-edit on the preview iframe.
+    var __blockId = ViewData["IsPreview"] is true ? (ViewData["RawBlock"] as BrixCMS.Open.Data.Block)?.Id : null;
+
     // =========================================================================
     // BACKGROUND SETTINGS
     // =========================================================================
@@ -323,6 +327,7 @@
             {
                 <div class="flex @GetFlexJustifyClass(titleAlignment)">
                     <h1 class="font-black leading-tight"
+                        data-editable-field="Title" data-block-id="@__blockId"
                         style="color: @titleColor; font-size: @titleSize; font-weight: @titleWeight; line-height: @titleLineHeight; @(!string.IsNullOrWhiteSpace(titleMaxWidth) ? $"max-width: {titleMaxWidth};" : "")">
                         @Html.Raw(title)
                     </h1>
@@ -334,6 +339,7 @@
             {
                 <div class="flex @GetFlexJustifyClass(subtitleAlignment)">
                     <p class="leading-relaxed"
+                       data-editable-field="Subtitle" data-block-id="@__blockId" data-multiline="1"
                        style="color: @subtitleColor; font-size: @subtitleSize; font-weight: @subtitleWeight; max-width: @(subtitleMaxWidth == "2xl" ? "42rem" : subtitleMaxWidth == "xl" ? "36rem" : subtitleMaxWidth);">
                         @Html.Raw(subtitle)
                     </p>

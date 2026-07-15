@@ -18,6 +18,9 @@ namespace BrixCMS.Open.Data.Fields
     public class HeaderAttribute : Attribute
     {
         public string Title { get; set; } = "";
+        /// <summary>When true, this section is hidden in the editor's "Simple" mode and only
+        /// shown in "Advanced" mode â€” keeps a powerful block approachable without losing controls.</summary>
+        public bool Advanced { get; set; } = false;
         public HeaderAttribute(string title) => Title = title;
     }
 
@@ -38,6 +41,11 @@ namespace BrixCMS.Open.Data.Fields
 
         /// <summary>Short description shown on hover in the block library</summary>
         public string Description { get; set; } = "";
+
+        /// <summary>True for item/child blocks that only make sense inside a parent
+        /// (e.g. Accordion Item, Tab Item, Team Member). Hidden from the top-level Block
+        /// Library, but still offered when adding a block inside a parent group.</summary>
+        public bool Child { get; set; } = false;
     }
 
     /// <summary>
@@ -491,7 +499,7 @@ namespace BrixCMS.Open.Data.Fields
             Value = "";
             Options = new List<SelectOption<string>>
             {
-                new() { Value = "",                 Label = "— Site Font —" },
+                new() { Value = "",                 Label = "â€” Site Font â€”" },
                 new() { Value = "Inter",            Label = "Inter" },
                 new() { Value = "Roboto",           Label = "Roboto" },
                 new() { Value = "Lato",             Label = "Lato" },

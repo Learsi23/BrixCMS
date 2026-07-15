@@ -6,6 +6,7 @@
 
 @{
     var blockData = (BrixCMS.Open.Data.Block)ViewData["RawBlock"];
+    var __editableBlockId = ViewData["IsPreview"] is true ? blockData?.Id : null;
     var childBlocks = Db.Blocks
         .Where(b => b.ParentId == blockData.Id)
         .OrderBy(b => b.SortOrder)
@@ -50,7 +51,7 @@
         
         @if (!string.IsNullOrEmpty(title))
         {
-            <h2 class="font-bold mb-4" style="color:@titleColor; text-align:@titleAlign; font-size:2rem;">
+            <h2 class="font-bold mb-4" data-editable-field="Title" data-block-id="@__editableBlockId" style="color:@titleColor; text-align:@titleAlign; font-size:2rem;">
                 @Html.Raw(title)
             </h2>
         }

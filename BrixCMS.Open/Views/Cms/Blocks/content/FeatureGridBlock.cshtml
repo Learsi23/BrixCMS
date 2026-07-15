@@ -2,12 +2,13 @@
 @model FeatureGridBlock
 
 @{
+    var __blockId = ViewData["IsPreview"] is true ? (ViewData["RawBlock"] as BrixCMS.Open.Data.Block)?.Id : null;
     var cols = Model.Columns?.Value ?? "3";
     var gap = Model.Gap?.Value ?? "1rem";
     var bgColor = Model.BackgroundColor?.Value ?? "transparent";
     var paddingY = Model.PaddingY?.Value ?? "3rem";
     var maxWidth = Model.MaxWidth?.Value ?? "1200px";
-    
+
     var titleColor = Model.TitleColor?.Value ?? "#ffffff";
     var titleSize = Model.TitleSize?.Value ?? "2rem";
     var subColor = Model.SubtitleColor?.Value ?? "#9ca3af";
@@ -16,16 +17,16 @@
 
 <section class="w-full" style="background-color:@bgColor; padding:@paddingY 0;">
     <div class="mx-auto" style="max-width:@maxWidth; padding:0 1rem;">
-        
+
         @* Header *@
         @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
         {
             <div class="text-center mb-8">
                 @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
                 {
-                    <p class="text-xs uppercase tracking-wider mb-2" style="color:#5B6EF5; font-weight:600;">@Model.Subtitle.Value</p>
+                    <p class="text-xs uppercase tracking-wider mb-2" data-editable-field="Subtitle" data-block-id="@__blockId" style="color:#5B6EF5; font-weight:600;">@Model.Subtitle.Value</p>
                 }
-                <h2 class="font-bold" style="color:@titleColor; font-size:@titleSize;">
+                <h2 class="font-bold" data-editable-field="Title" data-block-id="@__blockId" style="color:@titleColor; font-size:@titleSize;">
                     @Html.Raw(Model.Title.Value)
                 </h2>
             </div>
@@ -33,7 +34,7 @@
 
         @* Grid *@
         <div class="grid gap-@gap" style="grid-template-columns:repeat(@cols, 1fr);">
-            
+
             @* Feature 1 *@
             @if (!string.IsNullOrWhiteSpace(Model.Title1?.Value))
             {
@@ -44,10 +45,10 @@
                             <i class="@Model.Icon1.Value"></i>
                         </div>
                     }
-                    <h3 class="font-semibold mb-2" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title1.Value</h3>
+                    <h3 class="font-semibold mb-2" data-editable-field="Title1" data-block-id="@__blockId" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title1.Value</h3>
                     @if (!string.IsNullOrWhiteSpace(Model.Description1?.Value))
                     {
-                        <p class="text-sm" style="color:#9696A6;">@Model.Description1.Value</p>
+                        <p class="text-sm" data-editable-field="Description1" data-block-id="@__blockId" data-multiline="1" style="color:#9696A6;">@Model.Description1.Value</p>
                     }
                 </div>
             }
@@ -62,10 +63,10 @@
                             <i class="@Model.Icon2.Value"></i>
                         </div>
                     }
-                    <h3 class="font-semibold mb-2" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title2.Value</h3>
+                    <h3 class="font-semibold mb-2" data-editable-field="Title2" data-block-id="@__blockId" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title2.Value</h3>
                     @if (!string.IsNullOrWhiteSpace(Model.Description2?.Value))
                     {
-                        <p class="text-sm" style="color:#9696A6;">@Model.Description2.Value</p>
+                        <p class="text-sm" data-editable-field="Description2" data-block-id="@__blockId" data-multiline="1" style="color:#9696A6;">@Model.Description2.Value</p>
                     }
                 </div>
             }
@@ -80,10 +81,10 @@
                             <i class="@Model.Icon3.Value"></i>
                         </div>
                     }
-                    <h3 class="font-semibold mb-2" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title3.Value</h3>
+                    <h3 class="font-semibold mb-2" data-editable-field="Title3" data-block-id="@__blockId" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title3.Value</h3>
                     @if (!string.IsNullOrWhiteSpace(Model.Description3?.Value))
                     {
-                        <p class="text-sm" style="color:#9696A6;">@Model.Description3.Value</p>
+                        <p class="text-sm" data-editable-field="Description3" data-block-id="@__blockId" data-multiline="1" style="color:#9696A6;">@Model.Description3.Value</p>
                     }
                 </div>
             }
@@ -98,10 +99,10 @@
                             <i class="@Model.Icon4.Value"></i>
                         </div>
                     }
-                    <h3 class="font-semibold mb-2" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title4.Value</h3>
+                    <h3 class="font-semibold mb-2" data-editable-field="Title4" data-block-id="@__blockId" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title4.Value</h3>
                     @if (!string.IsNullOrWhiteSpace(Model.Description4?.Value))
                     {
-                        <p class="text-sm" style="color:#9696A6;">@Model.Description4.Value</p>
+                        <p class="text-sm" data-editable-field="Description4" data-block-id="@__blockId" data-multiline="1" style="color:#9696A6;">@Model.Description4.Value</p>
                     }
                 </div>
             }
@@ -116,10 +117,10 @@
                             <i class="@Model.Icon5.Value"></i>
                         </div>
                     }
-                    <h3 class="font-semibold mb-2" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title5.Value</h3>
+                    <h3 class="font-semibold mb-2" data-editable-field="Title5" data-block-id="@__blockId" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title5.Value</h3>
                     @if (!string.IsNullOrWhiteSpace(Model.Description5?.Value))
                     {
-                        <p class="text-sm" style="color:#9696A6;">@Model.Description5.Value</p>
+                        <p class="text-sm" data-editable-field="Description5" data-block-id="@__blockId" data-multiline="1" style="color:#9696A6;">@Model.Description5.Value</p>
                     }
                 </div>
             }
@@ -134,10 +135,10 @@
                             <i class="@Model.Icon6.Value"></i>
                         </div>
                     }
-                    <h3 class="font-semibold mb-2" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title6.Value</h3>
+                    <h3 class="font-semibold mb-2" data-editable-field="Title6" data-block-id="@__blockId" style="color:#F0F0F5; font-size:1.125rem;">@Model.Title6.Value</h3>
                     @if (!string.IsNullOrWhiteSpace(Model.Description6?.Value))
                     {
-                        <p class="text-sm" style="color:#9696A6;">@Model.Description6.Value</p>
+                        <p class="text-sm" data-editable-field="Description6" data-block-id="@__blockId" data-multiline="1" style="color:#9696A6;">@Model.Description6.Value</p>
                     }
                 </div>
             }

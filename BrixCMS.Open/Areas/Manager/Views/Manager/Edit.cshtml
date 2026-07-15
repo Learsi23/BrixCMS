@@ -26,16 +26,26 @@
         .ToList();
 }
 
-<div style="background-color: @bgColor; min-height: 100vh; width: 100%; transition: background-color 0.3s ease;">
+@* Dark theme lives in _ManagerLayout (.brix-dark-editor) so every Manager view inherits it.
+   Keep the class here too so this editor canvas overrides its inline background-color. *@
+<div class="brix-dark-editor" style="background-color: @bgColor; min-height: 100vh; width: 100%; transition: background-color 0.3s ease;">
 
     <div x-data="{
         showBlockPanel: false,
         activeTab: 'Content',
         currentParentId: null,
+        blockSearch: '',
         collapsedBlocks: JSON.parse(localStorage.getItem('collapsed_@Model.Id') || '{}'),
         openSelector(parentId = null) {
         this.currentParentId = parentId;
+        this.blockSearch = '';
         this.showBlockPanel = true;
+        },
+        blockMatch(cat, hay, isChild) {
+        if (isChild && !this.currentParentId) return false;
+        const q = this.blockSearch.trim().toLowerCase();
+        if (q === '') return this.activeTab === cat;
+        return hay.indexOf(q) !== -1;
         },
         toggleBlock(id) {
         this.collapsedBlocks[id] = !this.collapsedBlocks[id];
@@ -99,6 +109,11 @@
                        rel="noopener"
                        class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold transition text-sm shadow-sm">
                     <i class="fas fa-eye mr-1"></i> Preview
+                </a>
+
+                <a href="/Manager/PageVersions?pageId=@Model.Id"
+                       class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl font-bold hover:bg-gray-50 transition text-sm shadow-sm">
+                    <i class="fas fa-clock-rotate-left mr-1"></i> History
                 </a>
 
                 <a href="/Manager" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl font-bold hover:bg-gray-50 transition text-sm shadow-sm">
@@ -215,6 +230,23 @@
             </div>
         </div>
 
+        @* -- LIVE EDIT PREVIEW -- double-click a highlighted text directly on the real page to
+           edit it in place; saves in the background (no reload). Currently text-only, on a pilot
+           set of common blocks (Hero, Text, Card, IconCard, FeatureGrid, CTABanner, Stats, FAQ
+           title) — the rest still use the field panel below as normal. *@
+        <div x-data="{ liveEditOpen: true }" class="bg-white rounded-2xl mb-8 border border-gray-100 shadow-sm overflow-hidden">
+            <button type="button" @@click="liveEditOpen = !liveEditOpen"
+                    class="w-full flex items-center gap-2 px-6 py-4 text-left hover:bg-gray-500 transition">
+                <i class="fas fa-pen-to-square text-indigo-500"></i>
+                <h3 class="text-sm font-bold text-gray-800 flex-1">Live edit — double-click any highlighted text on the page</h3>
+                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" :class="liveEditOpen ? 'rotate-180' : ''"></i>
+            </button>
+            <div x-show="liveEditOpen" x-cloak class="border-t border-gray-100">
+                <iframe id="liveEditFrame" src="/Manager/Manager/Preview/@Model.Id?frame=1"
+                        style="width:100%; height:70vh; border:0; display:block;"></iframe>
+            </div>
+        </div>
+
         @* -- BLOCK LISTING -- *@
         <div class="space-y-4">
             @if (!rootBlocks.Any())
@@ -315,27 +347,38 @@
                      x-transition:enter-end="translate-x-0">
 
                     <!-- Panel header -->
-                    <div class="px-5 py-4 bg-white border-b flex justify-between items-center">
-                        <div>
-                            <h3 class="text-base font-black uppercase tracking-tighter text-gray-900">Block Library</h3>
-                            <p class="text-[10px] text-gray-400 font-medium">Hover a block to see its description</p>
+                    <div class="px-5 py-4 bg-white border-b">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-base font-black uppercase tracking-tighter text-gray-900">Block Library</h3>
+                                <p class="text-[10px] text-gray-400 font-medium" x-show="!currentParentId">Hover a block to see its description</p>
+                                <p class="text-[10px] text-emerald-500 font-medium" x-show="currentParentId" x-cloak>Adding inside a block — item blocks are available</p>
+                            </div>
+                            <button @@click="showBlockPanel = false"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-xl transition">
+                                &times;
+                            </button>
                         </div>
-                        <button @@click="showBlockPanel = false"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 text-xl transition">
-                            &times;
-                        </button>
+                        <!-- Search -->
+                        <div class="relative">
+                            <i class="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs"></i>
+                            <input type="text" x-model="blockSearch" placeholder="Search blocks…"
+                                   class="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+                            <button type="button" x-show="blockSearch" @@click="blockSearch=''" x-cloak
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600">&times;</button>
+                        </div>
                     </div>
 
-                    <!-- Category tabs with icons -->
-                    <div class="flex bg-white border-b px-2 overflow-x-auto gap-0.5 scrollbar-hide">
+                    <!-- Category pills — wrap to as many rows as needed (hidden while searching) -->
+                    <div class="flex flex-wrap gap-2 bg-white border-b px-4 py-3" x-show="blockSearch.trim() === ''">
                         @foreach (var category in sortedCategories)
                         {
                             var categoryKey = category.Replace(" ", "");
                             var catIcon = categoryIcons.TryGetValue(category, out var ci) ? ci : "fas fa-box";
                             <button @@click="activeTab = '@categoryKey'"
-                                :class="activeTab === '@categoryKey' ? 'border-emerald-500 text-emerald-600 bg-emerald-50/50' : 'border-transparent text-gray-400 hover:text-gray-600'"
-                                class="flex flex-col items-center gap-1 px-3 py-3 border-b-2 font-bold text-[9px] uppercase tracking-widest transition whitespace-nowrap min-w-[52px]">
-                                <i class="@catIcon text-sm"></i>
+                                :class="activeTab === '@categoryKey' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-300 hover:text-gray-700'"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border font-bold text-[10px] uppercase tracking-wide transition whitespace-nowrap">
+                                <i class="@catIcon text-[11px]"></i>
                                 <span>@category</span>
                             </button>
                         }
@@ -350,31 +393,34 @@
                                 .Where(b => (b.Value.GetCustomAttribute<BlockTypeAttribute>()?.Category ?? "Other") == category)
                                 .OrderBy(b => b.Value.GetCustomAttribute<BlockTypeAttribute>()?.Name ?? b.Key);
 
-                            <div x-show="activeTab === '@categoryKey'" class="grid grid-cols-2 gap-3">
+                            <div x-show="blockSearch.trim() !== '' || activeTab === '@categoryKey'" class="grid grid-cols-2 gap-3">
                                 @foreach (var item in blocksInCategory)
                                 {
                                     var attr = item.Value.GetCustomAttribute<BlockTypeAttribute>();
                                     var blockName = attr?.Name ?? item.Key;
                                     var blockDesc = attr?.Description ?? "";
                                     var blockIcon = attr?.Icon ?? "fas fa-box";
-                                    <div class="relative group/block">
+                                    var blockChild = (attr?.Child ?? false) ? "true" : "false";
+                                    var searchHay = (blockName + " " + category + " " + blockDesc)
+                                        .ToLowerInvariant().Replace("'", " ").Replace("\r", " ").Replace("\n", " ");
+                                    <div class="relative group/block" x-show="blockMatch('@categoryKey', '@searchHay', @blockChild)" x-cloak>
                                         <button type="button"
                                             @@click="executeAddBlock('@Model.Id', '@item.Key', currentParentId)"
-                                                class="w-full bg-white p-4 rounded-2xl border-2 border-transparent hover:border-emerald-500 hover:shadow-md transition-all flex flex-col items-center shadow-sm relative group">
+                                                class="w-full bg-white p-4 rounded-2xl border-2 border-transparent hover:border-emerald-500 hover:shadow-md transition-all flex flex-col items-center shadow-sm group">
                                             <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-200">
                                                 <i class="@blockIcon text-lg"></i>
                                             </div>
                                             <span class="text-[10px] font-black uppercase text-gray-600 text-center leading-tight group-hover:text-emerald-700">@blockName</span>
-                                            @if (!string.IsNullOrEmpty(blockDesc))
-                                            {
-                                                <!-- Tooltip shown on hover (appears below) -->
-                                                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-gray-900 text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl
-                                                    opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-[100] text-center">
-                                                    @blockDesc
-                                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
-                                                </div>
-                                            }
                                         </button>
+                                        @if (!string.IsNullOrEmpty(blockDesc))
+                                        {
+                                            <!-- Tooltip shown on hover -->
+                                            <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-gray-900 text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl
+                                                opacity-0 group-hover/block:opacity-100 pointer-events-none transition-opacity duration-200 z-[9999] text-center">
+                                                @blockDesc
+                                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
+                                            </div>
+                                        }
                                     </div>
                                 }
                             </div>
@@ -557,4 +603,90 @@
             alpineDiv.__x.$data.showBlockPanel = true;
         }
     };
+
+    // ── LIVE EDIT: double-click a [data-editable-field] element inside the preview iframe to
+    // edit it in place. On blur, the value is written into the SAME hidden/visible input the
+    // field panel below already uses (form.brix-block-form[data-block-id] [name="values[X].Value"]),
+    // then that one block's form is POSTed in the background via fetch — no full-page reload,
+    // and the field panel stays in sync since it's the literal same <input> element.
+    (function () {
+        const frame = document.getElementById('liveEditFrame');
+        if (!frame) return;
+
+        function wireLiveEdit() {
+            const doc = frame.contentDocument;
+            if (!doc) return;
+            // Guard against wiring twice (e.g. readyState check + a late 'load' both firing).
+            if (doc.documentElement.dataset.brixLiveEditWired === '1') return;
+            doc.documentElement.dataset.brixLiveEditWired = '1';
+
+            const style = doc.createElement('style');
+            style.textContent = `
+                [data-editable-field] { cursor: text; outline-offset: 3px; transition: outline .15s, background-color .15s; border-radius: 4px; }
+                [data-editable-field]:hover { outline: 2px dashed #818cf8; background-color: rgba(99,102,241,0.06); }
+                [data-editable-field].brix-editing { outline: 2px solid #6366f1 !important; background-color: rgba(99,102,241,0.08); cursor: text; }
+            `;
+            doc.head.appendChild(style);
+
+            doc.querySelectorAll('[data-editable-field]').forEach(function (el) {
+                el.title = 'Double-click to edit';
+
+                // Some blocks (e.g. CardBlock) wrap their whole content in an <a> — a plain
+                // click would otherwise navigate away before the dblclick to edit can register.
+                el.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+
+                el.addEventListener('dblclick', function (e) {
+                    e.preventDefault();
+                    el.dataset.original = el.innerText;
+                    el.setAttribute('contenteditable', 'plaintext-only');
+                    el.classList.add('brix-editing');
+                    el.focus();
+                    const sel = doc.getSelection();
+                    sel.selectAllChildren(el);
+                });
+
+                el.addEventListener('keydown', function (e) {
+                    if (el.getAttribute('contenteditable') !== 'plaintext-only') return;
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        el.innerText = el.dataset.original || '';
+                        el.blur();
+                    } else if (e.key === 'Enter' && el.dataset.multiline !== '1') {
+                        e.preventDefault();
+                        el.blur();
+                    }
+                });
+
+                el.addEventListener('blur', function () {
+                    if (el.getAttribute('contenteditable') !== 'plaintext-only') return;
+                    el.removeAttribute('contenteditable');
+                    el.classList.remove('brix-editing');
+                    const newText = el.innerText.trim();
+                    if (newText === (el.dataset.original || '').trim()) return; // no change — skip the save round-trip
+                    saveInlineEdit(el.getAttribute('data-block-id'), el.getAttribute('data-editable-field'), newText);
+                });
+            });
+        }
+
+        // The iframe may finish loading before this script runs (fast/cached response) — in
+        // that case 'load' has already fired and would never come again, so wire immediately.
+        if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
+            wireLiveEdit();
+        }
+        frame.addEventListener('load', wireLiveEdit);
+    })();
+
+    function saveInlineEdit(blockId, field, value) {
+        const form = document.querySelector('form.brix-block-form[data-block-id="' + blockId + '"]');
+        if (!form) return;
+        const input = form.querySelector('[name="values[' + field + '].Value"]');
+        if (!input) return;
+        input.value = value;
+        fetch(form.action, { method: 'POST', body: new FormData(form) })
+            .then(function () { console.log('Live edit saved'); })
+            .catch(function () { alert('Could not save — check your connection'); });
+    }
 </script>

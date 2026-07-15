@@ -1,5 +1,6 @@
 @model BrixCMS.Open.Models.Blocks.StatsBlock
 @{
+    var __blockId = ViewData["IsPreview"] is true ? (ViewData["RawBlock"] as BrixCMS.Open.Data.Block)?.Id : null;
     var bgColor    = Model.BackgroundColor?.Value ?? "#f9fafb";
     var cardBg     = Model.CardBgColor?.Value ?? "#ffffff";
     var padY       = Model.PaddingY?.Value ?? "4rem";
@@ -23,12 +24,12 @@
         @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
         {
             <div class="text-center mb-10">
-                <h2 class="text-3xl font-bold mb-2" style="color:@(Model.TitleColor?.Value ?? "#111827")">
+                <h2 class="text-3xl font-bold mb-2" data-editable-field="Title" data-block-id="@__blockId" style="color:@(Model.TitleColor?.Value ?? "#111827")">
                     @Html.Raw(Model.Title.Value)
                 </h2>
                 @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
                 {
-                    <p class="text-lg" style="color:@(Model.SubtitleColor?.Value ?? "#6b7280")">
+                    <p class="text-lg" data-editable-field="Subtitle" data-block-id="@__blockId" data-multiline="1" style="color:@(Model.SubtitleColor?.Value ?? "#6b7280")">
                         @Html.Raw(Model.Subtitle.Value)
                     </p>
                 }

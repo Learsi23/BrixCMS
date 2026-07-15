@@ -27,6 +27,9 @@ BrixCMS is a free, self-hosted CMS built on ASP.NET Core 10 + Blazor. No Docker 
 | **45+ content blocks** | Hero, cards, testimonials, FAQs, galleries, maps, video, countdown, tabs, and more |
 | **AI chatbot** | Embed a PDF-trained chatbot on any page — Ollama (local, free, private) or Gemini (cloud, free tier) |
 | **Visual editor** | Drag-and-drop block builder in the admin panel — no code required |
+| **Live text editing** | Double-click any highlighted text directly on the live preview to edit it in place — saves in the background, no reload |
+| **Device preview** | Toggle Desktop / Tablet / Mobile on the preview page — a real iframe, so Tailwind's responsive breakpoints actually re-trigger |
+| **Page history** | Every publish is snapshotted automatically; roll back to any prior version from the editor in one click |
 | **Multi-admin** | Invite team members; the owner manages access |
 | **PDF semantic search** | Drop PDFs in `wwwroot/Data/` and the chatbot answers questions about them |
 | **SEO ready** | Meta, OG tags, canonical URLs, XML sitemap |

@@ -8,31 +8,40 @@ public class CardBlock : BlockBase
 {
     // --- CONTENIDO ---
     [Header("Contenido")]
-    [Field(Title = "Título Principal", Placeholder = "Ej: Nuestros Servicios")]
+    [Field(Title = "Tï¿½tulo Principal", Placeholder = "Ej: Nuestros Servicios")]
     public StringField Title { get; set; } = new();
 
-    [Field(Title = "Color del Título")]
+    [Field(Title = "Color del Tï¿½tulo")]
     public ColorField TitleColor { get; set; } = new() { Value = "#1f2937" };
 
-    [Field(Title = "Tamaño del Título", Placeholder = "Ej: 1.5rem o 24px")]
+    [Field(Title = "Tamaï¿½o del Tï¿½tulo", Placeholder = "Ej: 1.5rem o 24px")]
     public StringField TitleSize { get; set; } = new() { Value = "1.5rem" };
 
-    [Field(Title = "Subtítulo / Badge")]
+    [Field(Title = "Subtï¿½tulo / Badge")]
     public StringField Badge { get; set; } = new();
 
     [Field(Title = "Color de Badge")]
     public ColorField BadgeColor { get; set; } = new() { Value = "#4b5563" };
 
-    [Field(Title = "Tamaño de Badge")]
+    [Field(Title = "Tamaï¿½o de Badge")]
     public StringField BadgeSize { get; set; } = new() { Value = "0.875rem" };
 
-    [Field(Title = "Descripción Detallada")]
+    [Field(Title = "Subtitle", Description = "Optional second line under the title")]
+    public StringField Subtitle { get; set; } = new();
+
+    [Field(Title = "Subtitle Color")]
+    public ColorField SubtitleColor { get; set; } = new() { Value = "#6b7280" };
+
+    [Field(Title = "Text Alignment", Placeholder = "left | center | right")]
+    public StringField TextAlign { get; set; } = new() { Value = "center" };
+
+    [Field(Title = "Descripciï¿½n Detallada")]
     public TextAreaField Description { get; set; } = new() { Rows = 4 };
 
-    [Field(Title = "Color de Descripción")]
+    [Field(Title = "Color de Descripciï¿½n")]
     public ColorField DescriptionColor { get; set; } = new() { Value = "#4b5563" };
 
-    [Field(Title = "Tamaño de Descripción")]
+    [Field(Title = "Tamaï¿½o de Descripciï¿½n")]
     public StringField DescriptionSize { get; set; } = new() { Value = "0.875rem" };
 
     // --- MULTIMEDIA ---
@@ -46,18 +55,18 @@ public class CardBlock : BlockBase
     [Field(Title = "Icono (FontAwesome)", Placeholder = "fas fa-rocket")]
     public StringField IconClass { get; set; } = new();
 
-    // --- ENLACES Y BOTÓN ---
-    [Header("Acción")]
+    // --- ENLACES Y BOTï¿½N ---
+    [Header("Acciï¿½n")]
     [Field(Title = "URL de Destino")]
     public StringField TargetUrl { get; set; } = new();
 
-    [Field(Title = "Texto del Botón")]
-    public StringField ButtonText { get; set; } = new() { Value = "Saber más" };
+    [Field(Title = "Texto del Botï¿½n")]
+    public StringField ButtonText { get; set; } = new() { Value = "Saber mï¿½s" };
 
-    [Field(Title = "Color del Botón (Fondo)")]
+    [Field(Title = "Color del Botï¿½n (Fondo)")]
     public ColorField AccentColor { get; set; } = new() { Value = "#3b82f6" };
 
-    [Field(Title = "Color del Texto del Botón")]
+    [Field(Title = "Color del Texto del Botï¿½n")]
     public ColorField ButtonTextColor { get; set; } = new() { Value = "#ffffff" };
 
     [Field(Title = "Button Hover Color")]
@@ -80,12 +89,12 @@ public class CardBlock : BlockBase
     public StringField ButtonPosition { get; set; }
 
 
-    // --- CONFIGURACIÓN TÉCNICA ---
-    [Header("Ajustes de Diseño")]
+    // --- CONFIGURACIï¿½N Tï¿½CNICA ---
+    [Header("Ajustes de Diseï¿½o")]
     [Field(Title = "Layout", Placeholder = "vertical, horizontal, overlay")]
     public StringField LayoutType { get; set; } = new() { Value = "vertical" };
 
-    [Field(Title = "¿Cristal (Glass)?", Placeholder = "Yes / No")]
+    [Field(Title = "ï¿½Cristal (Glass)?", Placeholder = "Yes / No")]
     public StringField UseGlassmorphism { get; set; } = new() { Value = "No" };
 
     [Field(Title = "Color de Fondo de la Card")]

@@ -18,6 +18,42 @@
         #main-wrapper {
             min-height: 100vh;
         }
+
+        /* ── Dark theme for Manager content (scoped to .brix-dark-editor). Applied to the
+              main content wrapper so every Manager view inherits it; the sidebar is already
+              dark. Overrides the common light Tailwind utilities (served from the CDN). ── */
+        .brix-dark-editor{ background:#0b0f17 !important; color:#cbd5e1; }
+        .brix-dark-editor .bg-white,
+        .brix-dark-editor .bg-white\/90,
+        .brix-dark-editor .bg-white\/80,
+        .brix-dark-editor .bg-white\/60,
+        .brix-dark-editor .bg-white\/40,
+        .brix-dark-editor .bg-purple-50\/30,
+        .brix-dark-editor .bg-purple-50\/20{ background-color:#0e1320 !important; }
+        .brix-dark-editor .bg-gray-50,
+        .brix-dark-editor .bg-gray-50\/60,
+        .brix-dark-editor .bg-gray-100{ background-color:#131a26 !important; }
+        .brix-dark-editor .text-gray-900,
+        .brix-dark-editor .text-gray-800,
+        .brix-dark-editor .text-gray-700,
+        .brix-dark-editor .text-gray-600{ color:#e5e7eb !important; }
+        .brix-dark-editor .text-gray-500,
+        .brix-dark-editor .text-gray-400,
+        .brix-dark-editor .text-gray-300{ color:#94a3b8 !important; }
+        .brix-dark-editor .border,
+        .brix-dark-editor .border-gray-200,
+        .brix-dark-editor .border-gray-100,
+        .brix-dark-editor .border-gray-200\/80,
+        .brix-dark-editor .border-gray-200\/50,
+        .brix-dark-editor .border-b,
+        .brix-dark-editor .border-t{ border-color:#1f2937 !important; }
+        .brix-dark-editor input:not([type=color]):not([type=checkbox]),
+        .brix-dark-editor textarea,
+        .brix-dark-editor select{ background-color:#0b0f17 !important; color:#e5e7eb !important; border-color:#334155 !important; }
+        .brix-dark-editor ::placeholder{ color:#64748b !important; }
+        .brix-dark-editor .shadow-sm,
+        .brix-dark-editor .shadow-md,
+        .brix-dark-editor .shadow-lg{ box-shadow:none !important; }
     </style>
 </head>
 <body class="font-sans">
@@ -98,7 +134,7 @@
             </div>
 
         </aside>
-        <main id="main-wrapper" class="flex-1 overflow-y-auto">
+        <main id="main-wrapper" class="brix-dark-editor flex-1 overflow-y-auto">
             <div x-data="{ show: false }"
                  x-init="show = !localStorage.getItem('brix-gh-star-dismissed')"
                  x-show="show"

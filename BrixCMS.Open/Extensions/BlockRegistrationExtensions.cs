@@ -81,7 +81,6 @@ namespace BrixCMS.Open.Extensions
             registry.Register<ContactFormBlock>("blazor");
             registry.Register<StartHeroBlock>("blazor");
             registry.Register<LogoStartBlock>("blazor");
-            registry.Register<MultiCard_TextButton>("content");
 
             services.AddSingleton(registry);
 

@@ -4,7 +4,7 @@ using BrixCMS.Open.Data.Fields;
 namespace BrixCMS.Open.Models.Blocks
 {
     [BlockType(Name = "Tab Item", Category = "Interactive", Icon = "fas fa-file-alt",
-        Description = "A tab with a title and HTML content. Use within the Tabs block.")]
+        Description = "A tab with a title and HTML content. Use within the Tabs block.", Child = true)]
     public class TabItemBlock : BlockBase
     {
         [Field(Title = "Tab Title", Description = "Title of the tab.")]

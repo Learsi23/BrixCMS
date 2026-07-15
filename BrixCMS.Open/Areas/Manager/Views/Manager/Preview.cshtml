@@ -19,6 +19,7 @@
     }
 
     var allBlocks = Model.Blocks.ToList();
+    var isFrame = ViewData["IsFrame"] as bool? ?? false;
 
     // Serialize ALL blocks (roots + children) for the publish script
     var allBlocksJson = @Html.Raw(JsonSerializer.Serialize(
@@ -49,80 +50,120 @@
 </head>
 <body>
 
-    @* -- Preview Banner -- *@
-    <div class="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-3 z-50 shadow-lg flex items-center justify-center gap-4">
-        <span><i class="fas fa-eye mr-1"></i> PREVIEW MODE</span>
+    @if (!isFrame)
+    {
+        @* -- Preview Banner -- *@
+        <div class="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-3 z-50 shadow-lg flex items-center justify-center gap-4 flex-wrap">
+            <span><i class="fas fa-eye mr-1"></i> PREVIEW MODE</span>
 
-        @* Publication status *@
-        @if (Model.IsPublished)
-        {
-            <span class="bg-green-600 px-3 py-1 rounded-full text-xs font-bold">
-                <i class="fas fa-check-circle mr-1"></i> Published — @Model.PublishedAt?.ToString("MM/dd/yyyy HH:mm")
-            </span>
-        }
-        else
-        {
-            <span class="bg-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-                <i class="fas fa-pencil mr-1"></i> Draft
-            </span>
-        }
-
-        <a href="/Manager/Manager/Edit/@Model.Id"
-                class="underline font-bold text-sm">
-            <i class="fas fa-arrow-left mr-1"></i> Back to Editor
-        </a>
-
-        <button onclick="publishFromPreview(this)"
-                class="bg-green-600 px-4 py-1.5 rounded text-sm hover:bg-green-700 font-bold transition-colors">
-            <i class="fas fa-globe mr-1"></i> Publish
-        </button>
-    </div>
-    <div style="padding-top:60px"></div>
-
-    @* -- Content -- *@
-    <main style="background-color:@bgColor; min-height:calc(100vh - 60px); width:100%">
-        <div class="container mx-auto px-4 py-10">
-
-            @if (!allBlocks.Any(b => b.ParentId == null))
+            @* Publication status *@
+            @if (Model.IsPublished)
             {
-                <div class="text-center py-20 text-gray-500">
-                    <p><i class="fas fa-cube mr-1"></i> No blocks to display</p>
-                    <a href="/Manager/Manager/Edit/@Model.Id" class="text-indigo-600"><i class="fas fa-arrow-left mr-1"></i> Back to editor</a>
-                </div>
+                <span class="bg-green-600 px-3 py-1 rounded-full text-xs font-bold">
+                    <i class="fas fa-check-circle mr-1"></i> Published — @Model.PublishedAt?.ToString("MM/dd/yyyy HH:mm")
+                </span>
             }
             else
             {
-                @foreach (var block in allBlocks.Where(b => b.ParentId == null).OrderBy(b => b.SortOrder))
-                {
-                    var blockModel = Registry.CreateModel(block);
-
-                    var vd = new ViewDataDictionary(ViewData);
-                    vd["RawBlock"] = block;
-                    vd["Page"] = Model;
-                    vd["IsPreview"] = true;
-                    vd["AllBlocks"] = allBlocks; // ? Children available without touching DB
-
-                    <div class="mb-10">
-                        @if (blockModel != null)
-                        {
-                            @await Html.PartialAsync(Registry.GetViewPath(block.Type), blockModel, vd)
-                        }
-                        else
-                        {
-                            <div class="bg-red-50 border border-red-200 rounded p-4 text-red-700 text-sm">
-                                ? Could not create model for: <code>@block.Type</code>
-                            </div>
-                        }
-                    </div>
-                }
+                <span class="bg-gray-700 px-3 py-1 rounded-full text-xs font-bold">
+                    <i class="fas fa-pencil mr-1"></i> Draft
+                </span>
             }
 
+            @* -- Device preview toggle -- *@
+            <div class="flex items-center gap-1 bg-black/10 rounded-full p-1">
+                <button type="button" onclick="setDevice('desktop', this)" data-device="desktop"
+                        class="device-btn bg-white/25 px-3 py-1 rounded-full text-xs font-bold transition-colors" title="Desktop">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button type="button" onclick="setDevice('tablet', this)" data-device="tablet"
+                        class="device-btn px-3 py-1 rounded-full text-xs font-bold transition-colors" title="Tablet (768px)">
+                    <i class="fas fa-tablet-alt mr-1"></i> Tablet
+                </button>
+                <button type="button" onclick="setDevice('mobile', this)" data-device="mobile"
+                        class="device-btn px-3 py-1 rounded-full text-xs font-bold transition-colors" title="Mobile (375px)">
+                    <i class="fas fa-mobile-alt mr-1"></i> Mobile
+                </button>
+            </div>
+
+            <a href="/Manager/Manager/Edit/@Model.Id"
+                    class="underline font-bold text-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Editor
+            </a>
+
+            <button onclick="publishFromPreview(this)"
+                    class="bg-green-600 px-4 py-1.5 rounded text-sm hover:bg-green-700 font-bold transition-colors">
+                <i class="fas fa-globe mr-1"></i> Publish
+            </button>
         </div>
-    </main>
+        <div style="padding-top:60px"></div>
+
+        @* The iframe gets a REAL viewport of its own, so Tailwind's sm:/md:/lg: breakpoints
+           actually re-trigger when resized — not just a shrunk container. *@
+        <iframe id="previewFrame" src="?frame=1" title="Device preview"
+                style="width:100%; height:calc(100vh - 60px); border:0; display:block; transition:width .15s ease;"></iframe>
+    }
+    else
+    {
+        @* -- Content (rendered once, either directly or inside the device-preview iframe) -- *@
+        <main style="background-color:@bgColor; min-height:100vh; width:100%">
+            <div class="container mx-auto px-4 py-10">
+
+                @if (!allBlocks.Any(b => b.ParentId == null))
+                {
+                    <div class="text-center py-20 text-gray-500">
+                        <p><i class="fas fa-cube mr-1"></i> No blocks to display</p>
+                        <a href="/Manager/Manager/Edit/@Model.Id" class="text-indigo-600"><i class="fas fa-arrow-left mr-1"></i> Back to editor</a>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var block in allBlocks.Where(b => b.ParentId == null).OrderBy(b => b.SortOrder))
+                    {
+                        var blockModel = Registry.CreateModel(block);
+
+                        var vd = new ViewDataDictionary(ViewData);
+                        vd["RawBlock"] = block;
+                        vd["Page"] = Model;
+                        vd["IsPreview"] = true;
+                        vd["AllBlocks"] = allBlocks; // ? Children available without touching DB
+
+                        <div class="mb-10">
+                            @if (blockModel != null)
+                            {
+                                @await Html.PartialAsync(Registry.GetViewPath(block.Type), blockModel, vd)
+                            }
+                            else
+                            {
+                                <div class="bg-red-50 border border-red-200 rounded p-4 text-red-700 text-sm">
+                                    ? Could not create model for: <code>@block.Type</code>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+
+            </div>
+        </main>
+    }
 
     @Html.AntiForgeryToken()
 
     <script>
+        function setDevice(mode, btn) {
+            var frame = document.getElementById('previewFrame');
+            if (!frame) return;
+            var widths = { desktop: '100%', tablet: '768px', mobile: '375px' };
+            frame.style.width = widths[mode] || '100%';
+            frame.style.margin = mode === 'desktop' ? '0' : '24px auto';
+            frame.style.height = mode === 'desktop' ? 'calc(100vh - 60px)' : 'calc(100vh - 108px)';
+            frame.style.border = mode === 'desktop' ? '0' : '1px solid #cbd5e1';
+            frame.style.borderRadius = mode === 'desktop' ? '0' : '16px';
+            frame.style.boxShadow = mode === 'desktop' ? 'none' : '0 10px 30px rgba(0,0,0,.15)';
+            document.querySelectorAll('.device-btn').forEach(function(b){ b.classList.remove('bg-white/25'); });
+            if (btn) btn.classList.add('bg-white/25');
+        }
+
         async function publishFromPreview(btn) {
             if (!confirm('Publish this page? It will be publicly visible.')) return;
 
@@ -143,7 +184,7 @@
             try {
                 const res = await fetch(`/Manager/Manager/PublishPage?pageId=${pageId}`, {
                     method:  'POST',
-                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': csrf },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
                     body:    JSON.stringify(data)
                 });
 

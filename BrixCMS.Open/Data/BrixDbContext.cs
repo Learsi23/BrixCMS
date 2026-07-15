@@ -15,6 +15,7 @@ public class BrixDbContext : DbContext
     public DbSet<Subscriber> Subscribers { get; set; }
     public DbSet<AiUsageLog> AiUsageLogs { get; set; }
     public DbSet<ApiKey> ApiKeys { get; set; }
+    public DbSet<PageVersion> PageVersions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -105,6 +106,33 @@ public class Subscriber
     [Required, EmailAddress] public string Email { get; set; } = "";
     public string? Name { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Full-page undo history. A snapshot captures a page's own fields plus every block (roots and
+/// children, with their ORIGINAL ids preserved) as they were at one instant — see
+/// <see cref="BrixCMS.Open.Services.PageVersionService"/>.
+/// </summary>
+public class PageVersion
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid PageId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? CreatedByEmail { get; set; }
+
+    /// <summary>Short human label, e.g. "Autosave" or "Before restore".</summary>
+    public string Label { get; set; } = "Autosave";
+
+    // Snapshotted page fields (everything PublishPage can change).
+    public string Title { get; set; } = "";
+    public string? Slug { get; set; }
+    public string? JsonData { get; set; }
+    public string? MetaDescription { get; set; }
+    public string? OgImage { get; set; }
+    public string? MetaKeywords { get; set; }
+
+    /// <summary>JSON array of { OriginalId, Type, JsonData, SortOrder, ParentId }.</summary>
+    public string BlocksJson { get; set; } = "[]";
 }
 
 public class AiUsageLog

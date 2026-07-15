@@ -2,6 +2,7 @@
 @model IconCardBlock
 
 @{
+    var __blockId = ViewData["IsPreview"] is true ? (ViewData["RawBlock"] as BrixCMS.Open.Data.Block)?.Id : null;
     var iconPosition = Model.IconPosition?.Value ?? "left";
     var textAlign    = Model.TextAlign?.Value ?? "left";
     var hasLeftIcon  = !string.IsNullOrEmpty(Model.LeftIcon?.Value) || !string.IsNullOrEmpty(Model.LeftIconClass?.Value);
@@ -63,21 +64,21 @@
 
             @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
             {
-                <p class="font-bold mb-2 leading-snug" style="@titleStyle">
+                <p class="font-bold mb-2 leading-snug" data-editable-field="Title" data-block-id="@__blockId" style="@titleStyle">
                     @Html.Raw(Model.Title.Value)
                 </p>
             }
 
             @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
             {
-                <p class="font-medium mb-2 opacity-80" style="@subtitleStyle">
+                <p class="font-medium mb-2 opacity-80" data-editable-field="Subtitle" data-block-id="@__blockId" style="@subtitleStyle">
                     @Html.Raw(Model.Subtitle.Value)
                 </p>
             }
 
             @if (!string.IsNullOrWhiteSpace(Model.Text?.Value))
             {
-                <p class="leading-relaxed mb-2" style="@textStyle">
+                <p class="leading-relaxed mb-2" data-editable-field="Text" data-block-id="@__blockId" data-multiline="1" style="@textStyle">
                     @Html.Raw(Model.Text.Value)
                 </p>
             }

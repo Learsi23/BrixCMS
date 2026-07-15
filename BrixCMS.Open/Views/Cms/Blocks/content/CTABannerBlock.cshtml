@@ -1,6 +1,7 @@
 @using BrixCMS.Open.Extensions
 @model BrixCMS.Open.Models.Blocks.CTABannerBlock
 @{
+    var __blockId = ViewData["IsPreview"] is true ? (ViewData["RawBlock"] as BrixCMS.Open.Data.Block)?.Id : null;
     var bg1    = Model.BackgroundColor?.Value ?? "#10b981";
     var bg2    = Model.BackgroundColor2?.Value;
     var bgImg  = Model.BackgroundImage?.Value;
@@ -31,6 +32,7 @@
         @if (!string.IsNullOrWhiteSpace(Model.Title?.Value))
         {
             <h2 class="font-black leading-tight mb-4"
+                data-editable-field="Title" data-block-id="@__blockId"
                 style="color:@(Model.TitleColor?.Value ?? "#fff"); font-size:@(Model.TitleSize?.Value ?? "2rem");">
                 @RichText.Render(Model.Title.Value)
             </h2>
@@ -39,6 +41,7 @@
         @if (!string.IsNullOrWhiteSpace(Model.Subtitle?.Value))
         {
             <p class="text-lg mb-8 max-w-2xl @(align == "center" ? "mx-auto" : "")"
+               data-editable-field="Subtitle" data-block-id="@__blockId" data-multiline="1"
                style="color:@(Model.SubtitleColor?.Value ?? "rgba(255,255,255,0.8)");">
                 @RichText.Render(Model.Subtitle.Value)
             </p>
