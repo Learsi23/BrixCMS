@@ -1,8 +1,10 @@
 using BrixCMS.Open.Areas.Manager.Filters;
 using BrixCMS.Open.Data;
+using BrixCMS.Open.Extensions.Authorization;
 using BrixCMS.Open.Models;
 using BrixCMS.Open.Services;
 using BrixCMS.Open.Services.Ingestion;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -49,10 +51,9 @@ public class ConfigurationController : Controller
 
     private bool HasPermission(string perm)
     {
-        var role = HttpContext.Session.GetString("AdminRole") ?? "admin";
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "admin";
         if (role is "owner" or "admin") return true;
-        var perms = HttpContext.Session.GetString("AdminPermissions") ?? "";
-        return perms.Contains($"\"{perm}\"");
+        return User.HasClaim("permission", perm);
     }
 
     // ── Navbar & Footer ───────────────────────────────────────────────────────
@@ -176,7 +177,12 @@ public class ConfigurationController : Controller
 
     // ── Ollama ────────────────────────────────────────────────────────────────
 
+    // POC for the policy-based authorization migration: this action (and the four below) had NO
+    // permission check beyond [RequireAdminLogin] before this — any authenticated admin, including
+    // a zero-permission "member", could call them directly even though the Chatbot page itself
+    // requires "chatbot". [Authorize] closes that gap declaratively instead of another ad-hoc if.
     [HttpPost]
+    [Authorize(Policy = "Permission:chatbot")]
     public async Task<IActionResult> SaveOllamaConfig(string url, string model)
     {
         url   = string.IsNullOrWhiteSpace(url)   ? "http://localhost:11434" : url.Trim();
@@ -219,6 +225,7 @@ public class ConfigurationController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:chatbot")]
     public async Task PullOllamaModel([FromBody] JsonElement body)
     {
         Response.Headers.ContentType  = "text/event-stream";
@@ -277,6 +284,7 @@ public class ConfigurationController : Controller
     // ── Gemini API key management ────────────────────────────────────────────
 
     [HttpPost]
+    [Authorize(Policy = "Permission:chatbot")]
     public async Task<IActionResult> SaveApiKey(string provider, string apiKey)
     {
         if (provider != "gemini" || string.IsNullOrWhiteSpace(apiKey))
@@ -291,6 +299,7 @@ public class ConfigurationController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:chatbot")]
     public async Task<IActionResult> DeleteApiKey(string provider)
     {
         await _apiKeys.DeleteKeyAsync(provider.ToLower());
@@ -299,6 +308,7 @@ public class ConfigurationController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permission:chatbot")]
     public async Task<IActionResult> SetActiveProvider(string provider, string model)
     {
         if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(model))

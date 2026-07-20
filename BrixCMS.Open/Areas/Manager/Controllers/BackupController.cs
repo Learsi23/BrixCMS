@@ -1,5 +1,7 @@
 using BrixCMS.Open.Areas.Manager.Filters;
 using BrixCMS.Open.Data;
+using BrixCMS.Open.Extensions.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -14,18 +16,13 @@ public class BackupController : Controller
     private readonly BrixDbContext _db;
     public BackupController(BrixDbContext db) => _db = db;
 
-    private bool HasPermission(string perm)
-    {
-        var role = HttpContext.Session.GetString("AdminRole") ?? "admin";
-        if (role is "owner" or "admin") return true;
-        var perms = HttpContext.Session.GetString("AdminPermissions") ?? "";
-        return perms.Contains($"\"{perm}\"");
-    }
-
-    // GET /Manager/Backup — shows the backup/restore UI
+    // GET /Manager/Backup — shows the backup/restore UI.
+    // POC for the policy-based authorization migration: this controller already had a correct
+    // ad-hoc HasPermission("backup") check — migrating it to [Authorize] confirms the new policy
+    // pipeline reproduces existing, already-working behavior before rolling out to the rest.
+    [Authorize(Policy = "Permission:backup")]
     public IActionResult Index()
     {
-        if (!HasPermission("backup")) return RedirectToAction("Index", "Manager");
         return View();
     }
 

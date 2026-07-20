@@ -1,8 +1,10 @@
 using BrixCMS.Open.Data;
+using BrixCMS.Open.Extensions.Authorization;
 using BrixCMS.Open.Services;
 using BrixCMS.Open.Services.Email;
 using BrixCMS.Open.Services.Ingestion;
 using Markdig;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -24,6 +26,8 @@ namespace BrixCMS.Open.Extensions;
 ///   app.UseStaticFiles();
 ///   app.UseRouting();
 ///   app.UseSession();
+///   app.UseAuthentication();  // populates HttpContext.User from the admin auth cookie
+///   app.UseAuthorization();   // evaluates [Authorize] attributes
 ///   app.UseAntiforgery();
 ///   app.MapBrixCmsAdmin();    // /Manager admin panel
 ///   app.MapBrixCmsApi();      // /api/content/* headless endpoints
@@ -91,6 +95,34 @@ public static class BrixCmsExtensions
             o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             o.IdleTimeout        = TimeSpan.FromMinutes(opts.SessionTimeoutMinutes);
         });
+
+        // ── Authentication & authorization — admin identity ─────────────────────
+        // Standard ASP.NET Core cookie auth: AdminAuthService.BuildPrincipal() maps an
+        // AdminUser row to the ClaimsPrincipal signed in via HttpContext.SignInAsync at login.
+        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, o =>
+            {
+                o.Cookie.Name = opts.SessionCookieName + ".Auth";
+                o.Cookie.HttpOnly = true;
+                o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                o.Cookie.SameSite = SameSiteMode.Strict;
+                o.ExpireTimeSpan = TimeSpan.FromHours(24);
+                o.SlidingExpiration = true;
+                o.LoginPath = "/admin/manager";
+                o.AccessDeniedPath = "/Manager";
+                o.Events.OnRedirectToLogin = ctx =>
+                {
+                    if (ctx.Request.Path.StartsWithSegments("/api") ||
+                        string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+                    }
+                    ctx.Response.Redirect(ctx.RedirectUri);
+                    return Task.CompletedTask;
+                };
+            });
+        services.AddAdminAuthorization();
 
         // ── Rate limiting ─────────────────────────────────────────────────────
         services.AddRateLimiter(rl =>

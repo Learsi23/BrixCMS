@@ -12,10 +12,9 @@ public class RequireAdminLoginAttribute : ActionFilterAttribute
 {
     public override void OnActionExecuting(ActionExecutingContext context)
     {
-        var session = context.HttpContext.Session;
-
-        // Full auth
-        if (session.GetString("AdminAuth") == "1")
+        // Full auth — backed by the standard cookie-auth pipeline (UseAuthentication in
+        // Program.cs), not a session flag.
+        if (context.HttpContext.User.Identity?.IsAuthenticated == true)
             return;
 
         // Redirect to login, preserving the return URL

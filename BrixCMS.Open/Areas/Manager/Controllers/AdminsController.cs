@@ -1,6 +1,8 @@
 using BrixCMS.Open.Areas.Manager.Filters;
 using BrixCMS.Open.Data;
+using BrixCMS.Open.Extensions.Authorization;
 using BrixCMS.Open.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -21,7 +23,7 @@ public class AdminsController : Controller
     }
 
     private bool CurrentUserIsOwner() =>
-        HttpContext.Session.GetString("AdminIsOwner") == "1";
+        User.HasClaim("AdminIsOwner", "1");
 
     // ── GET /Manager/Admins ───────────────────────────────────────
     // Accessible to all authenticated admins (including members)
@@ -44,11 +46,9 @@ public class AdminsController : Controller
     // ── POST /Manager/Admins/Create ───────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AdminAuthorizationPolicies.OwnerOnly)]
     public async Task<IActionResult> Create(string email, string name, string password, string[]? permissions)
     {
-        if (!CurrentUserIsOwner())
-            return RedirectToAction("Index", "Manager");
-
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
             TempData["Error"] = "Email and password are required.";
@@ -70,11 +70,9 @@ public class AdminsController : Controller
     // ── POST /Manager/Admins/EditPermissions ──────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AdminAuthorizationPolicies.OwnerOnly)]
     public async Task<IActionResult> EditPermissions(int id, string[]? permissions)
     {
-        if (!CurrentUserIsOwner())
-            return RedirectToAction("Index", "Manager");
-
         var user = await _db.AdminUsers.FindAsync(id);
         if (user == null || user.IsOwner)
         {
@@ -91,11 +89,9 @@ public class AdminsController : Controller
     // ── POST /Manager/Admins/Delete ───────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = AdminAuthorizationPolicies.OwnerOnly)]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!CurrentUserIsOwner())
-            return RedirectToAction("Index", "Manager");
-
         var deleted = await _auth.DeleteAdminAsync(id);
         TempData[deleted ? "Success" : "Error"] = deleted
             ? "Team member removed."

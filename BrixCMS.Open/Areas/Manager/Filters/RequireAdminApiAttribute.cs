@@ -12,7 +12,7 @@ public class RequireAdminApiAttribute : ActionFilterAttribute
 {
     public override void OnActionExecuting(ActionExecutingContext context)
     {
-        if (context.HttpContext.Session.GetString("AdminAuth") != "1")
+        if (context.HttpContext.User.Identity?.IsAuthenticated != true)
             context.Result = new UnauthorizedObjectResult(new { error = "Admin authentication required." });
     }
 }

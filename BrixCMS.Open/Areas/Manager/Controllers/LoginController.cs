@@ -1,5 +1,7 @@
 using BrixCMS.Open.Data;
 using BrixCMS.Open.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -12,11 +14,24 @@ public class LoginController : Controller
 
     public LoginController(AdminAuthService auth) => _auth = auth;
 
+    private async Task SignInAdminAsync(AdminUser admin)
+    {
+        // Kept in Session purely for display purposes (nav bar, "edited by" trails) — the
+        // security decisions (login-required, IsOwner, role, permissions) live in the cookie's
+        // claims from here on, not in Session.
+        HttpContext.Session.SetString("AdminEmail", admin.Email);
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            AdminAuthService.BuildPrincipal(admin),
+            new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24) });
+    }
+
     // ── GET /admin/manager ────────────────────────────────────────
     [HttpGet]
     public IActionResult Index(string? returnUrl = null)
     {
-        if (HttpContext.Session.GetString("AdminAuth") == "1")
+        if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Manager");
 
         ViewBag.ReturnUrl = returnUrl;
@@ -41,17 +56,14 @@ public class LoginController : Controller
 
         if (admin.TwoFactorEnabled)
         {
-            // Partial auth: store admin ID for the 2FA step
+            // Partial auth: no cookie is issued yet, so a stolen/guessed password alone never
+            // yields an authenticated HttpContext.User. Only a passed TOTP check below signs in.
             HttpContext.Session.SetString("AdminPreAuth", admin.Id.ToString());
             return RedirectToAction("TwoFactor", new { returnUrl });
         }
 
         // Full auth
-        HttpContext.Session.SetString("AdminAuth", "1");
-        HttpContext.Session.SetString("AdminEmail", admin.Email);
-        HttpContext.Session.SetString("AdminIsOwner", admin.IsOwner ? "1" : "0");
-        HttpContext.Session.SetString("AdminRole", admin.IsOwner ? "owner" : (admin.Role ?? "admin"));
-        HttpContext.Session.SetString("AdminPermissions", admin.Permissions ?? "[]");
+        await SignInAdminAsync(admin);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
@@ -91,11 +103,7 @@ public class LoginController : Controller
         }
 
         HttpContext.Session.Remove("AdminPreAuth");
-        HttpContext.Session.SetString("AdminAuth", "1");
-        HttpContext.Session.SetString("AdminEmail", admin.Email);
-        HttpContext.Session.SetString("AdminIsOwner", admin.IsOwner ? "1" : "0");
-        HttpContext.Session.SetString("AdminRole", admin.IsOwner ? "owner" : (admin.Role ?? "admin"));
-        HttpContext.Session.SetString("AdminPermissions", admin.Permissions ?? "[]");
+        await SignInAdminAsync(admin);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
@@ -104,9 +112,10 @@ public class LoginController : Controller
     }
 
     // ── GET /Manager/Login/Logout ─────────────────────────────────
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
         HttpContext.Session.Clear();
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Index");
     }
 }

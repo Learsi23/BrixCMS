@@ -485,6 +485,48 @@ public class ManagerController : Controller
         return RedirectToAction("Edit", new { id = pageGuid });
     }
 
+    // REORDER BLOCKS (batch drag-and-drop) — renumbers SortOrder for one sibling set (the root
+    // list, or one block-group's children, identified by parentId) in a single call instead of the
+    // one-swap-at-a-time MoveBlock above. MoveBlock/the up-down buttons stay untouched as the
+    // accessible fallback; this only adds an AJAX alternative that SortableJS in Edit.cshtml /
+    // _BlockEditor.cshtml calls on drop. Returns JSON — no redirect/reload, unlike MoveBlock.
+    [HttpPost]
+    public async Task<IActionResult> ReorderBlocks(string pageId, string? parentId, string blockIdsJson)
+    {
+        if (!Guid.TryParse(pageId, out var pageGuid))
+            return Json(new { error = "Invalid page ID." });
+
+        Guid? parentGuid = null;
+        if (!string.IsNullOrWhiteSpace(parentId))
+        {
+            if (!Guid.TryParse(parentId, out var pg)) return Json(new { error = "Invalid parent block ID." });
+            parentGuid = pg;
+        }
+
+        List<Guid>? orderedIds;
+        try { orderedIds = JsonSerializer.Deserialize<List<Guid>>(blockIdsJson); }
+        catch { return Json(new { error = "Invalid block IDs." }); }
+
+        if (orderedIds == null || orderedIds.Count == 0)
+            return Json(new { error = "No block IDs provided." });
+
+        var siblings = await _db.Blocks
+            .Where(b => b.PageId == pageGuid && b.ParentId == parentGuid)
+            .ToListAsync();
+
+        if (siblings.Count == 0) return Json(new { error = "No blocks found." });
+
+        var byId = siblings.ToDictionary(b => b.Id);
+        int sort = 0;
+        foreach (var id in orderedIds)
+            if (byId.TryGetValue(id, out var b)) b.SortOrder = sort++;
+        foreach (var b in siblings.OrderBy(b => b.SortOrder))
+            if (!orderedIds.Contains(b.Id)) b.SortOrder = sort++;
+
+        await _db.SaveChangesAsync();
+        return Json(new { success = true });
+    }
+
     private IActionResult BackTo(string? returnUrl) =>
         !string.IsNullOrEmpty(returnUrl) ? (IActionResult)Redirect(returnUrl) : RedirectToAction(nameof(Index));
 

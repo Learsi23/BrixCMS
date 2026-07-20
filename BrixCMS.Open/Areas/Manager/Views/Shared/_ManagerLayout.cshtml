@@ -110,10 +110,9 @@
                 }
 
                 @{
-                    var _role         = Context.Session.GetString("AdminRole") ?? "admin";
+                    var _role         = Context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "admin";
                     var _isFullAccess = _role is "owner" or "admin";
-                    var _perms        = Context.Session.GetString("AdminPermissions") ?? "";
-                    bool CanAccess(string p) => _isFullAccess || _perms.Contains($"\"{p}\"");
+                    bool CanAccess(string p) => _isFullAccess || Context.User.HasClaim("permission", p);
                 }
                 @Html.Raw(NavLink("/Manager", "fas fa-file-alt", "Pages"))
                 @if (CanAccess("media"))         { @Html.Raw(NavLink("/Manager/Media",                 "fas fa-images",      "Media")) }

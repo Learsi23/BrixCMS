@@ -263,9 +263,10 @@
             }
             else
             {
+                <div id="root-block-list" data-block-children data-parent-id="">
                 @foreach (var b in rootBlocks)
                 {
-                    <div class="group relative">
+                    <div class="group relative" data-block-id="@b.Id">
                         <div class="absolute -top-4 left-0 right-0 flex justify-center z-30">
                             <button @@click="openSelector('@b.Id')"
                                 class="bg-emerald-500 hover:bg-emerald-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-xl border-2 border-white hover:scale-110 transition">
@@ -275,6 +276,7 @@
                         <div class="bg-white border border-gray-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow overflow-hidden relative mt-6 mb-8">
                             <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                                 <div class="flex items-center gap-2">
+                                    <span class="brix-drag-handle text-gray-300 hover:text-emerald-500 cursor-grab active:cursor-grabbing select-none" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>
                                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">@b.Type</span>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -285,10 +287,12 @@
                                     </button>
                                     <div class="flex bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200">
                                         <button onclick="executeAction('@Model.Id', '@b.Id', 'up', 'MoveBlock')"
+                                                title="Move up (keyboard/screen-reader friendly alternative to drag)"
                                                 class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-l-lg">
                                             <i class="fas fa-arrow-up text-xs"></i>
                                         </button>
                                         <button onclick="executeAction('@Model.Id', '@b.Id', 'down', 'MoveBlock')"
+                                                title="Move down (keyboard/screen-reader friendly alternative to drag)"
                                                 class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-r-lg">
                                             <i class="fas fa-arrow-down text-xs"></i>
                                         </button>
@@ -308,6 +312,7 @@
                         </div>
                     </div>
                 }
+                </div>
 
                 <div class="flex justify-center pt-4 pb-8">
                     <button @@click="openSelector(null)"
@@ -460,6 +465,20 @@
 </div>
 
 @Html.AntiForgeryToken()
+
+<style>
+    .brix-drag-handle {
+        cursor: grab; display: inline-flex; align-items: center; justify-content: center;
+        width: 2rem; height: 2rem; border-radius: 0.5rem;
+    }
+    .brix-drag-handle:hover { background: rgba(16,185,129,.12); }
+    .brix-drag-handle:active { cursor: grabbing; }
+    .sortable-ghost  { opacity: .35; background: #ecfdf5 !important; }
+    .sortable-chosen { background: #d1fae5; }
+    .sortable-drag   { box-shadow: 0 8px 24px rgba(16,185,129,.25); border-radius: 1rem; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
 <script>
     // -- Quick publish (flip IsPublished without touching blocks) --
@@ -689,4 +708,72 @@
             .then(function () { console.log('Live edit saved'); })
             .catch(function () { alert('Could not save — check your connection'); });
     }
+</script>
+
+<script>
+    // ── Drag-and-drop block reorder (SortableJS) ──
+    // Replaces the full-page-reload up/down buttons with real drag-and-drop. The buttons stay in
+    // place as a keyboard/screen-reader-friendly fallback; this only adds an AJAX alternative.
+    // One Sortable instance per sibling list — the root list and every open block-group's children
+    // list — each scoped to its own [data-block-children][data-parent-id] container so a drag never
+    // crosses between groups (matches the ParentId-scoped sibling semantics MoveBlock already uses).
+    (function () {
+        function dragToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+        }
+
+        async function persistOrder(container) {
+            const parentId = container.dataset.parentId || '';
+            const ids = Array.from(container.querySelectorAll(':scope > [data-block-id]'))
+                .map(function (n) { return n.dataset.blockId; });
+
+            const fd = new FormData();
+            fd.append('pageId', '@Model.Id');
+            fd.append('parentId', parentId);
+            fd.append('blockIdsJson', JSON.stringify(ids));
+            fd.append('__RequestVerificationToken', dragToken());
+
+            try {
+                const r = await fetch('/Manager/Manager/ReorderBlocks', { method: 'POST', body: fd });
+                const d = await r.json().catch(function () { return { error: 'Invalid response.' }; });
+                if (!d.success) {
+                    alert(d.error || 'Could not save the new order — reloading.');
+                    window.location.reload();
+                }
+            } catch (e) {
+                alert('Network error saving the new order — reloading.');
+                window.location.reload();
+            }
+        }
+
+        function initBlockDragAndDrop() {
+            if (typeof Sortable === 'undefined') return;
+            document.querySelectorAll('[data-block-children]').forEach(function (container) {
+                Sortable.create(container, {
+                    handle: '.brix-drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    // Native HTML5 drag-and-drop (SortableJS's default when available) is unreliable
+                    // once nested inside layouts with absolutely-positioned siblings — like the
+                    // floating "+" insert-block button overlaying each card here. forceFallback makes
+                    // Sortable drive the drag itself via mouse/touch events instead.
+                    forceFallback: true,
+                    fallbackClass: 'sortable-fallback',
+                    fallbackTolerance: 3,
+                    onEnd: function (evt) {
+                        if (evt.oldIndex === evt.newIndex) return;
+                        persistOrder(container);
+                    },
+                });
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initBlockDragAndDrop);
+        } else {
+            initBlockDragAndDrop();
+        }
+    })();
 </script>

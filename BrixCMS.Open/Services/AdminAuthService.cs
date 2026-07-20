@@ -1,7 +1,10 @@
 using BrixCMS.Open.Data;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace BrixCMS.Open.Services;
 
@@ -138,6 +141,45 @@ public class AdminAuthService
             }
         }
         return output;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  CLAIMS  — maps an AdminUser row to the ClaimsPrincipal signed in via HttpContext.SignInAsync
+    // ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds the ClaimsPrincipal issued at login. One "permission" claim is minted per entry in
+    /// the AdminUser.Permissions JSON array so PermissionAuthorizationHandler can check them
+    /// without re-parsing JSON on every request.
+    /// </summary>
+    public static ClaimsPrincipal BuildPrincipal(AdminUser admin)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, admin.Id.ToString()),
+            new(ClaimTypes.Email, admin.Email),
+            new(ClaimTypes.Name, admin.Name),
+            new("AdminIsOwner", admin.IsOwner ? "1" : "0"),
+            new(ClaimTypes.Role, admin.IsOwner ? "owner" : (admin.Role ?? "admin")),
+        };
+
+        foreach (var permission in ParsePermissions(admin.Permissions))
+            claims.Add(new Claim("permission", permission));
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        return new ClaimsPrincipal(identity);
+    }
+
+    private static IEnumerable<string> ParsePermissions(string? permissionsJson)
+    {
+        if (string.IsNullOrWhiteSpace(permissionsJson)) yield break;
+
+        string[]? permissions;
+        try { permissions = JsonSerializer.Deserialize<string[]>(permissionsJson); }
+        catch { yield break; }
+
+        if (permissions == null) yield break;
+        foreach (var permission in permissions) yield return permission;
     }
 
     // ─────────────────────────────────────────────────────────────

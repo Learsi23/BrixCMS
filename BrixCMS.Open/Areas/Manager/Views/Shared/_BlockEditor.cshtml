@@ -936,19 +936,22 @@
     @if (isGroup)
     {
         <div class="mt-8 pl-6 border-l-2 border-purple-200 space-y-3">
+            <div data-block-children data-parent-id="@Model.Id" class="space-y-3">
             @foreach (var child in childBlocks)
             {
                 var childType = Registry.GetBlockType(child.Type);
                 var childAttr = childType?.GetCustomAttribute<BlockTypeAttribute>();
                 var childIsGroup = childType != null && typeof(BlockGroupBase).IsAssignableFrom(childType);
 
-                <div x-data="{ open: false }"
+                <div x-data="{ open: false }" data-block-id="@child.Id"
                      class="rounded-2xl border @(childIsGroup ? "border-purple-200 bg-purple-50/20" : "border-gray-200 bg-white") shadow-sm overflow-hidden">
 
                     @* Child block header (always visible) *@
                     <div class="flex items-center justify-between px-4 py-3 @(childIsGroup ? "bg-purple-50" : "bg-gray-50") border-b border-gray-100 cursor-pointer"
                          @@click="open = !open">
                         <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="brix-drag-handle text-gray-300 hover:text-purple-500 cursor-grab active:cursor-grabbing select-none"
+                                  title="Drag to reorder" @@click.stop><i class="fas fa-grip-vertical text-xs"></i></span>
                             <span class="@(childIsGroup ? "text-purple-500" : "text-emerald-500")">
                                 <i class="@(childAttr?.Icon ?? "fas fa-box") text-xs"></i>
                             </span>
@@ -1003,6 +1006,7 @@
                     </div>
                 </div>
             }
+            </div>
 
             <button type="button"
                     @@click="openSelector('@Model.Id')"

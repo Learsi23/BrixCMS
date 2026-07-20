@@ -1,5 +1,6 @@
 using BrixCMS.Open.Data;
 using BrixCMS.Open.Extensions;
+using BrixCMS.Open.Extensions.Authorization;
 using BrixCMS.Open.Services;
 using BrixCMS.Open.Services.Email;
 using BrixCMS.Open.Services.Ingestion;
@@ -11,6 +12,7 @@ using Microsoft.SemanticKernel.Connectors.InMemory;
 using OllamaSharp;
 
 using Markdig;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenAI;
@@ -112,6 +114,39 @@ builder.Services.AddSession(options =>
 });
 
 // =====================================================
+// 2️⃣a AUTHENTICATION & AUTHORIZATION — admin identity
+// =====================================================
+// Standard ASP.NET Core cookie auth replaces the old "Session['AdminAuth']=='1'" convention.
+// AdminAuthService.BuildPrincipal() maps an AdminUser row to the ClaimsPrincipal signed in
+// here; password hashing (PBKDF2) and TOTP verification are unchanged, only what happens
+// after a successful check (SignInAsync instead of writing session strings) is new.
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.Cookie.Name = ".BrixCMS.Open.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.ExpireTimeSpan = TimeSpan.FromHours(24);
+        options.SlidingExpiration = true;
+        options.LoginPath = "/admin/manager";
+        options.AccessDeniedPath = "/Manager";
+        options.Events.OnRedirectToLogin = ctx =>
+        {
+            if (ctx.Request.Path.StartsWithSegments("/api") ||
+                string.Equals(ctx.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+            ctx.Response.Redirect(ctx.RedirectUri);
+            return Task.CompletedTask;
+        };
+    });
+
+builder.Services.AddAdminAuthorization();
+
+// =====================================================
 // 3️⃣ BLAZOR
 // =====================================================
 builder.Services
@@ -193,6 +228,10 @@ app.UseRateLimiter();
 app.UseResponseCaching();
 app.UseAntiforgery();
 app.UseSession();
+
+// Populate HttpContext.User from the admin auth cookie, then evaluate any [Authorize] attributes.
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.Use(async (ctx, next) =>
 {

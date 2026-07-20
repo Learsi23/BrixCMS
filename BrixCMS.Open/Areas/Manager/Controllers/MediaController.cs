@@ -21,10 +21,9 @@ namespace BrixCMS.Open.Areas.Manager.Controllers
 
         private bool HasPermission(string perm)
         {
-            var role = HttpContext.Session.GetString("AdminRole") ?? "admin";
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "admin";
             if (role is "owner" or "admin") return true;
-            var perms = HttpContext.Session.GetString("AdminPermissions") ?? "";
-            return perms.Contains($"\"{perm}\"");
+            return User.HasClaim("permission", perm);
         }
 
         public IActionResult Index(string folder = "", bool picker = false)
