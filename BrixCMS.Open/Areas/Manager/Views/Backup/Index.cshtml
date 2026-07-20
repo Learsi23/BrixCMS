@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "Backup & Restore";
+    Layout = "_ManagerLayout";
+}
+
+<div class="p-8 max-w-3xl mx-auto">
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-black text-gray-900 mb-2">Backup & Restore</h1>
+        <p class="text-gray-500">Export all pages and blocks as JSON, or restore from a previous backup.</p>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="space-y-6">
+
+        @* ── EXPORT ── *@
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <h2 class="text-xl font-black text-white flex items-center gap-3">
+                    <i class="fas fa-download"></i>
+                    Export Backup
+                </h2>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">
+                    Downloads a <code class="bg-gray-100 px-1 rounded font-mono text-xs">.json</code> file containing all pages and blocks.
+                    Store it somewhere safe — you can restore from it at any time.
+                </p>
+                <a href="@Url.Action("Export", "Backup", new { area = "Manager" })"
+                   class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm">
+                    <i class="fas fa-download"></i>
+                    Download backup (.json)
+                </a>
+            </div>
+        </div>
+
+        @* ── IMPORT ── *@
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-violet-500 to-violet-600 px-6 py-4">
+                <h2 class="text-xl font-black text-white flex items-center gap-3">
+                    <i class="fas fa-upload"></i>
+                    Restore from Backup
+                </h2>
+            </div>
+            <div class="p-6">
+                <form asp-action="Import" asp-controller="Backup" asp-area="Manager"
+                      method="post" enctype="multipart/form-data" class="space-y-5">
+
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-2">Backup file (.json)</label>
+                        <input type="file" name="file" accept=".json" required
+                               class="block w-full text-sm text-gray-700 border border-gray-200 rounded-xl px-3 py-2
+                                      file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                                      file:text-sm file:font-bold file:bg-violet-50 file:text-violet-700
+                                      hover:file:bg-violet-100 cursor-pointer" />
+                    </div>
+
+                    <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <input type="checkbox" name="replaceAll" id="replaceAll" value="true"
+                               class="mt-0.5 h-4 w-4 rounded border-gray-300 text-amber-600 cursor-pointer" />
+                        <div>
+                            <label for="replaceAll" class="text-sm font-bold text-amber-800 cursor-pointer">
+                                Replace all existing data
+                            </label>
+                            <p class="text-xs text-amber-700 mt-0.5">
+                                Deletes <strong>all</strong> current pages and blocks before importing.
+                                Use only if you want a full reset.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm">
+                        <i class="fas fa-upload"></i>
+                        Restore backup
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
