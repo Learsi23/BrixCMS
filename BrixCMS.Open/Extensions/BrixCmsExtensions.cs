@@ -18,7 +18,8 @@ namespace BrixCMS.Open.Extensions;
 /// <summary>
 /// Extension methods for wiring BrixCMS into any ASP.NET Core 10 application.
 ///
-/// Minimal headless setup (Content API + Admin only):
+/// Minimal headless setup (Content API only — works from the BrixCMS.Open.Core
+/// NuGet package alone):
 /// <code>
 ///   builder.Services.AddBrixCms(builder.Configuration);
 ///   var app = builder.Build();
@@ -29,10 +30,21 @@ namespace BrixCMS.Open.Extensions;
 ///   app.UseAuthentication();  // populates HttpContext.User from the admin auth cookie
 ///   app.UseAuthorization();   // evaluates [Authorize] attributes
 ///   app.UseAntiforgery();
-///   app.MapBrixCmsAdmin();    // /Manager admin panel
 ///   app.MapBrixCmsApi();      // /api/content/* headless endpoints
 ///   app.Run();
 /// </code>
+///
+/// <para>
+/// <see cref="MapBrixCmsAdmin"/> additionally maps the <c>/Manager</c> visual
+/// admin panel routes, but this only works when the host project also contains
+/// BrixCMS's MVC Controllers and Razor Views (Controllers/, Areas/Manager/,
+/// Views/, TagHelpers/, ViewComponents/). The BrixCMS.Open.Core NuGet package
+/// does NOT include those files (it packs only Models/Data/Services/Extensions/DTOs),
+/// so calling MapBrixCmsAdmin() from a project that only references Core will
+/// always 404 on /admin/manager. Use `dotnet new install BrixCMS.Open.Templates`
+/// for a project that already contains the admin UI, or copy those folders from
+/// https://github.com/Learsi23/BrixCMS into your host project.
+/// </para>
 /// </summary>
 public static class BrixCmsExtensions
 {
@@ -185,7 +197,17 @@ public static class BrixCmsExtensions
 
     // ── Middleware / routing ──────────────────────────────────────────────────
 
-    /// <summary>Maps the BrixCMS admin panel routes (<c>/Manager/**</c>).</summary>
+    /// <summary>
+    /// Maps the BrixCMS admin panel routes (<c>/Manager/**</c>).
+    /// </summary>
+    /// <remarks>
+    /// Requires the host project to contain BrixCMS's Manager-area MVC Controllers
+    /// and Razor Views. The headless BrixCMS.Open.Core NuGet package does not ship
+    /// them, so these routes 404 if this is the only source of BrixCMS code in the
+    /// project — start from <c>dotnet new install BrixCMS.Open.Templates</c> instead,
+    /// or copy Controllers/, Areas/Manager/, Views/, TagHelpers/ and ViewComponents/
+    /// from the GitHub repo into the host project.
+    /// </remarks>
     public static IEndpointRouteBuilder MapBrixCmsAdmin(this IEndpointRouteBuilder app)
     {
         app.MapControllerRoute(

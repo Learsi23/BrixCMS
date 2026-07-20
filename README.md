@@ -79,6 +79,8 @@ Open `https://localhost:5001` — your site is running.
 Admin panel: `https://localhost:5001/Manager`  
 Default credentials: `admin@brix.com` / `admin123` — **change these immediately.**
 
+> ⚠️ **Don't `dotnet add package BrixCMS.Open.Core` expecting the admin panel.** That package is headless-only — DbContext, services and the Content API, with no MVC Controllers or Razor Views — so `/Manager` (and any `MapBrixCmsAdmin()` route) will 404 if it's the only BrixCMS package in your project. Use Option A or B above for the full CMS with the visual admin panel; reach for `BrixCMS.Open.Core` only if you're embedding the headless engine into an app that brings its own admin UI.
+
 ---
 
 ## AI Chatbot Setup
